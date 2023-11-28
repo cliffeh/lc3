@@ -1,5 +1,5 @@
 bin_PROGRAMS = lc3
-lc3_SOURCES = main.c
+lc3_SOURCES = main.c vm.c
 
 ACLOCAL_AMFLAGS = -I m4
 
