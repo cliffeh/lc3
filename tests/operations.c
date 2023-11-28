@@ -17,5 +17,5 @@ main ()
   inst_to_bits (buf, inst);
   printf ("%X: %s\n", inst, buf);
   assert (strcmp ("0100000000000000", buf) == 0);
-  assert(GET_OP(inst) == OP_JSR);
+  assert (GET_OP (inst) == OP_JSR);
 }
