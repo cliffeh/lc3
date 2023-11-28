@@ -50,3 +50,18 @@ m4/lt~obsolete.m4
 # can automatically generate from config.status script
 # (which is called by configure script))
 Makefile
+
+# out damn tilde
+*~
+
+# generated source files
+/config.h
+
+# generated object files
+*.o
+
+# generated binaries
+lc3
+
+# generated dist files
+lc3-*.tar.gz
