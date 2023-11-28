@@ -75,3 +75,4 @@ lc3-*.tar.gz
 
 # test binaries
 tests/inst_to_bits
+tests/operations

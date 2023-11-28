@@ -41,5 +41,12 @@ enum
 };
 
 #define GET_OP(inst) (inst >> 12)
+#define SET_OP(inst, op)                                                      \
+  do                                                                          \
+    {                                                                         \
+      inst &= 0x0FFF;                                                         \
+      inst |= (op << 12);                                                     \
+    }                                                                         \
+  while (0)
 
 #endif
