@@ -68,3 +68,10 @@ lc3
 
 # generated dist files
 lc3-*.tar.gz
+
+# testing logs
+*.log
+*.trs
+
+# test binaries
+tests/inst_to_bits
