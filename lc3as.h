@@ -1,24 +1,25 @@
 #pragma once
 
-typedef struct inst {
-    int op;
-    int dr, sr1, sr2;
-    int immediate;
-    char *label;
-} inst;
+#include "lc3.h"
+#include <stdint.h> // for uint16_t
 
-typedef struct inst_list {
-    inst *head;
-    struct inst_list *tail;
-} inst_list;
+typedef struct instruction
+{
+  uint16_t addr;
+  int op;
+  int dr, sr1, sr2;
+  int immediate;
+  char *label;
+} instruction;
 
-typedef struct label {
-    char *label, *stringz;
-    int addr;
-} label;
+typedef struct instruction_list
+{
+  instruction *head;
+  struct inst_list *tail;
+} instruction_list;
 
-// TODO a more efficient label lookup mechanism
-typedef struct label_list {
-    label *head;
-    struct label_list *tail;
-} label_list;
+typedef struct program
+{
+  uint16_t orig; // starting address
+  instruction_list instructions;
+} program;

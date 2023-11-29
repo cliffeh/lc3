@@ -1,4 +1,5 @@
 %{
+#include "lc3as.h"
 #include "parse.h"
 %}
 
@@ -32,6 +33,8 @@
 \.ORIG           { return(ORIG);    }
 \.END            { return(END);     }
 \.STRINGZ        { return(STRINGZ); }
+
+0?[xX][0-9]{1,4} { return(HEXLIT);  }
 
 [_a-zA-Z][_\-a-zA-Z0-9]* {
   return(IDENT);

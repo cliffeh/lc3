@@ -6,24 +6,60 @@ void yyerror();
 extern char *yytext;
 %}
 
+%union {
+  char *str;
+  uint16_t addr;
+  int code;
+  program prog;
+  instruction_list inst_list;
+  instruction inst;
+}
+
 // operations
 %token ADD AND BR JMP JSR JSRR LD LDI LDR
 %token LEA NOT RET RTI ST STI STR TRAP
 
-// registers
-%token REG
-
 // assembler directives
 %token ORIG END STRINGZ
 
-%token IDENT
- 
+%token <code> REG
+%token <addr> HEXLIT
+%token <str>  IDENT
+
+%type <prog> program
+%type <inst_list> instruction_list
+%type <inst> instruction
+%type <inst> label
+%type <inst> line
+
 %start program
 
 %%
 
-program: REG {  }
+program:
+ORIG HEXLIT '\n'
+instruction_list
+END
+ { $$.orig = $2; }
 ;
+
+instruction_list: {}
+/* empty */
+| instruction_list line
+;
+
+line:
+label '\n'
+| instruction '\n'
+| label instruction '\n'
+;
+
+label: IDENT { $$.label = $1; };
+
+instruction:
+ADD REG ',' REG ',' REG {}
+;
+
 
 %%
 
