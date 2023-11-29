@@ -5,13 +5,20 @@ void /*int*/ yyerror();
 extern char *yytext;
 %}
 
-%token REGISTER
+// operations
+%token ADD AND BR JMP JSR JSRR LD LDI LDR
+%token LEA NOT RET RTI ST STI STR TRAP
+
+// registers
+%token REG
+
+%token IDENT
  
 %start program
 
 %%
 
-program: REGISTER { printf("parser register: %s\n", yytext); }
+program: REG { printf("parser register: %s\n", yytext); }
 ;
 
 %%
@@ -19,4 +26,4 @@ program: REGISTER { printf("parser register: %s\n", yytext); }
 // TODO better parsing errors
 void yyerror (char const *s) {
    fprintf (stderr, "%s\n", s);
- }
+}
