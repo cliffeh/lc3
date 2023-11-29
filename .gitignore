@@ -59,6 +59,7 @@ Makefile
 
 # generated source files
 /config.h
+/scan.c
 
 # generated object files
 *.o

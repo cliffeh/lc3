@@ -1,5 +1,5 @@
-bin_PROGRAMS = lc3
-lc3_SOURCES = main.c vm.c
+bin_PROGRAMS = lc3c
+lc3c_SOURCES = scan.l
 
 include_HEADERS = lc3.h
 
