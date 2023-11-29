@@ -65,7 +65,7 @@ Makefile
 *.o
 
 # generated binaries
-lc3
+lc3c
 
 # generated dist files
 lc3-*.tar.gz
