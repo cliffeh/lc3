@@ -1,10 +1,12 @@
 bin_PROGRAMS = lc3c
-lc3c_SOURCES = scan.l main.c
+lc3c_SOURCES = main.c parse.y scan.l
 
 include_HEADERS = lc3.h
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
+
+AM_YFLAGS = -d
 
 # TODO move all this under tests with a separate makefile
 check_PROGRAMS = tests/inst_to_bits tests/operations

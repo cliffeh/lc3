@@ -59,6 +59,8 @@ Makefile
 
 # generated source files
 /config.h
+/parse.c
+/parse.h
 /scan.c
 
 # generated object files
