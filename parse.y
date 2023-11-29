@@ -1,7 +1,8 @@
 %{
+#include "lc3as.h"
 #include <stdio.h>
-int yylex();
-void /*int*/ yyerror();
+int yylex();    // from our scanner
+void yyerror();
 extern char *yytext;
 %}
 
@@ -21,12 +22,14 @@ extern char *yytext;
 
 %%
 
-program: REG { printf("parser register: %s\n", yytext); }
+program: REG {  }
 ;
 
 %%
 
-// TODO better parsing errors
-void yyerror (char const *s) {
+// TODO better error messages
+void
+yyerror (char const *s)
+{
    fprintf (stderr, "%s\n", s);
 }

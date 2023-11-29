@@ -1,3 +1,5 @@
+#include "lc3as.h"
+
 extern int yyparse();
 
 int
