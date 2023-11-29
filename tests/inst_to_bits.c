@@ -15,4 +15,9 @@ main ()
   inst_to_bits (buf, inst);
   printf ("%X: %s\n", inst, buf);
   assert (strcmp ("1111000000000000", buf) == 0);
+
+  inst = 12345;
+  inst_to_bits (buf, inst);
+  printf ("%X: %s\n", inst, buf);
+  assert (strcmp ("0011000000111001", buf) == 0);
 }
