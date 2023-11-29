@@ -1,5 +1,5 @@
 bin_PROGRAMS = lc3as
-lc3as_SOURCES = main.c parse.y scan.l
+lc3as_SOURCES = lc3as.c parse.y scan.l
 
 include_HEADERS = lc3.h
 
