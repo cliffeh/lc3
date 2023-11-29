@@ -12,6 +12,9 @@ extern char *yytext;
 // registers
 %token REG
 
+// assembler directives
+%token ORIG END STRINGZ
+
 %token IDENT
  
 %start program

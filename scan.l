@@ -27,7 +27,11 @@
 [sS][tT][rR]     { return(STR);  }
 [tT][rR][aA][pP] { return(TRAP); }
 
-[rR][0-7]        { return(REG); }
+[rR][0-7]        { return(REG);  }
+
+\.ORIG           { return(ORIG);    }
+\.END            { return(END);     }
+\.STRINGZ        { return(STRINGZ); }
 
 [_a-zA-Z][_\-a-zA-Z0-9]* {
   return(IDENT);
