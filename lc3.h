@@ -1,5 +1,4 @@
-#ifndef LC3_H
-#define LC3_H 1
+#pragma once
 
 #define MEMORY_MAX (1 << 16)
 
@@ -67,5 +66,3 @@ enum
     TRAP_PUTSP = 0x24, /* output a byte string */
     TRAP_HALT = 0x25   /* halt the program */
 };
-
-#endif
