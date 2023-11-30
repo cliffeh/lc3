@@ -43,12 +43,12 @@ dump_program (program *prog)
           {
             if (inst->immediate)
               {
-                fprintf (out, "ADD R%d, R%d, #%d\n", inst->dr, inst->sr1,
+                fprintf (out, "  ADD R%d, R%d, #%d\n", inst->dr, inst->sr1,
                          inst->imm5);
               }
             else
               {
-                fprintf (out, "ADD R%d, R%d, R%d\n", inst->dr, inst->sr1,
+                fprintf (out, "  ADD R%d, R%d, R%d\n", inst->dr, inst->sr1,
                          inst->sr2);
               }
           }
@@ -57,12 +57,12 @@ dump_program (program *prog)
           {
             if (inst->immediate)
               {
-                fprintf (out, "AND R%d, R%d, #%d\n", inst->dr, inst->sr1,
+                fprintf (out, "  AND R%d, R%d, #%d\n", inst->dr, inst->sr1,
                          inst->imm5);
               }
             else
               {
-                fprintf (out, "AND R%d, R%d, R%d\n", inst->dr, inst->sr1,
+                fprintf (out, "  AND R%d, R%d, R%d\n", inst->dr, inst->sr1,
                          inst->sr2);
               }
           }
