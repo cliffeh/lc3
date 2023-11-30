@@ -11,35 +11,38 @@ extern char *yytext;
 %parse-param {program **prog}
 
 %union {
-  char *str;
-  uint16_t addr;
-  int code;
   instruction_list *inst_list;
   instruction *inst;
+  uint16_t addr;
+  int reg;
 }
 
 // operations
 %token ADD AND BR JMP JSR JSRR LD LDI LDR
 %token LEA NOT RET RTI ST STI STR TRAP
 
+// registers
+%token REG
+
 // assembler directives
 %token ORIG END STRINGZ
 
-%token <code> REG
-%token <addr> HEXLIT
-%token IDENT
+// literals
+%token DECLIT HEXLIT IDENT
 
 %type <inst_list> instruction_list
 %type <inst> instruction
+%type <addr> integer
+%type <reg> register
 
 %start program
 
 %%
 
 program:
-ORIG HEXLIT
-instruction_list
-END
+  ORIG integer
+  instruction_list
+  END
 {
   *prog = calloc(1, sizeof(program));
   (*prog)->orig = $2;
@@ -48,7 +51,7 @@ END
 ;
 
 instruction_list:
-/* empty */
+  /* empty */
 { $$ = 0; }
 | instruction instruction_list
 {
@@ -59,12 +62,49 @@ instruction_list:
 ;
 
 instruction:
-IDENT
+  IDENT // label
 {
   $$ = calloc(1, sizeof(instruction));
-  $$->line_label = strdup(yytext);
+  $$->label = strdup(yytext);
+  // special case for labels
+  $$->op = -1;
 }
-| ADD REG ',' REG ',' REG {}
+| ADD register ',' register ',' register
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_ADD;
+  $$->dr =  $2;
+  $$->sr1 = $4;
+  $$->sr2 = $6;
+  $$->immediate = 0;
+}
+| ADD register ',' register ',' integer
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_ADD;
+  $$->dr =  $2;
+  $$->sr1 = $4;
+  $$->imm5 = $6;
+  $$->immediate = 1;
+}
+;
+
+integer:
+  HEXLIT
+{
+  // parse the literal to a uint16_t
+  $$ = strtol(yytext+1, 0, 16);
+}
+| DECLIT
+{
+  $$ = atoi(yytext+1);
+}
+;
+
+register: REG
+{
+  $$ = char_to_reg(*(yytext+1));
+}
 ;
 
 %%
@@ -73,5 +113,5 @@ IDENT
 void
 yyerror (char const *s)
 {
-   fprintf (stderr, "%s\n", s);
+  fprintf (stderr, "%s\n", s);
 }

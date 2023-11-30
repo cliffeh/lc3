@@ -8,8 +8,8 @@ typedef struct instruction
   uint16_t addr;
   int op;
   int dr, sr1, sr2;
-  int immediate;
-  char *line_label, op_label;
+  int immediate, imm5;
+  char *label;
 } instruction;
 
 typedef struct instruction_list
@@ -25,3 +25,4 @@ typedef struct program
 } program;
 
 void dump_program(program *prog);
+int char_to_reg(char c);
