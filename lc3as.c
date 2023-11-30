@@ -53,6 +53,20 @@ dump_program (program *prog)
               }
           }
           break;
+        case OP_AND:
+          {
+            if (inst->immediate)
+              {
+                fprintf (out, "AND R%d, R%d, #%d\n", inst->dr, inst->sr1,
+                         inst->imm5);
+              }
+            else
+              {
+                fprintf (out, "AND R%d, R%d, R%d\n", inst->dr, inst->sr1,
+                         inst->sr2);
+              }
+          }
+          break;
         default:
           {
             fprintf (stderr, "I don't know how to print this op\n");

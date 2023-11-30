@@ -13,7 +13,7 @@ extern char *yytext;
 %union {
   instruction_list *inst_list;
   instruction *inst;
-  uint16_t addr;
+  uint16_t num;
   int reg;
 }
 
@@ -32,15 +32,15 @@ extern char *yytext;
 
 %type <inst_list> instruction_list
 %type <inst> instruction
-%type <addr> integer
-%type <reg> register
+%type <num> num
+%type <reg> reg
 
 %start program
 
 %%
 
 program:
-  ORIG integer
+  ORIG num
   instruction_list
   END
 {
@@ -69,7 +69,7 @@ instruction:
   // special case for labels
   $$->op = -1;
 }
-| ADD register ',' register ',' register
+| ADD reg ',' reg ',' reg
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_ADD;
@@ -78,7 +78,7 @@ instruction:
   $$->sr2 = $6;
   $$->immediate = 0;
 }
-| ADD register ',' register ',' integer
+| ADD reg ',' reg ',' num
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_ADD;
@@ -87,9 +87,27 @@ instruction:
   $$->imm5 = $6;
   $$->immediate = 1;
 }
+| AND reg ',' reg ',' reg
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_AND;
+  $$->dr =  $2;
+  $$->sr1 = $4;
+  $$->sr2 = $6;
+  $$->immediate = 0;
+}
+| AND reg ',' reg ',' num
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_AND;
+  $$->dr =  $2;
+  $$->sr1 = $4;
+  $$->imm5 = $6;
+  $$->immediate = 1;
+}
 ;
 
-integer:
+num:
   HEXLIT
 {
   // parse the literal to a uint16_t
@@ -101,7 +119,7 @@ integer:
 }
 ;
 
-register: REG
+reg: REG
 {
   $$ = char_to_reg(*(yytext+1));
 }
