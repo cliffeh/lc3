@@ -23,6 +23,25 @@ main (int argc, char *argv[])
   return rc;
 }
 
+static const char *
+reg_to_str (int reg)
+{
+  // clang-format off
+  switch(reg)
+    {
+    case R_R0: return "R0";
+    case R_R1: return "R1";
+    case R_R2: return "R2";
+    case R_R3: return "R3";
+    case R_R4: return "R4";
+    case R_R5: return "R5";
+    case R_R6: return "R6";
+    case R_R7: return "R7";
+    default:  return "RUNKNOWN";
+    }
+  // clang-format on
+}
+
 void
 dump_program (program *prog)
 {
@@ -43,13 +62,13 @@ dump_program (program *prog)
           {
             if (inst->immediate)
               {
-                fprintf (out, "  ADD R%d, R%d, #%d\n", inst->dr, inst->sr1,
-                         inst->imm5);
+                fprintf (out, "  ADD %s, %s, #%d\n", reg_to_str (inst->dr),
+                         reg_to_str (inst->sr1), inst->imm5);
               }
             else
               {
-                fprintf (out, "  ADD R%d, R%d, R%d\n", inst->dr, inst->sr1,
-                         inst->sr2);
+                fprintf (out, "  ADD %s, %s, %s\n", reg_to_str (inst->dr),
+                         reg_to_str (inst->sr1), reg_to_str (inst->sr2));
               }
           }
           break;
@@ -57,13 +76,13 @@ dump_program (program *prog)
           {
             if (inst->immediate)
               {
-                fprintf (out, "  AND R%d, R%d, #%d\n", inst->dr, inst->sr1,
-                         inst->imm5);
+                fprintf (out, "  AND %s, %s, #%d\n", reg_to_str (inst->dr),
+                         reg_to_str (inst->sr1), inst->imm5);
               }
             else
               {
-                fprintf (out, "  AND R%d, R%d, R%d\n", inst->dr, inst->sr1,
-                         inst->sr2);
+                fprintf (out, "  AND %s, %s, %s\n", reg_to_str (inst->dr),
+                         reg_to_str (inst->sr1), reg_to_str (inst->sr2));
               }
           }
           break;
@@ -84,20 +103,20 @@ dump_program (program *prog)
           break;
         case OP_JMP:
           {
-            fprintf (out, "  JMP R%d\n", inst->dr);
+            fprintf (out, "  JMP %s\n", reg_to_str (inst->dr));
           }
           break;
         case OP_JSR:
           {
-            if(inst->immediate)
+            if (inst->immediate)
               fprintf (out, "  JSR %s\n", inst->label);
             else
-              fprintf (out, "  JSRR R%d\n", inst->dr);
+              fprintf (out, "  JSRR %s\n", reg_to_str (inst->dr));
           }
           break;
         case OP_LD:
           {
-            fprintf (out, "  LD R%d, %s\n", inst->dr, inst->label);
+            fprintf (out, "  LD %s, %s\n", reg_to_str (inst->dr), inst->label);
           }
           break;
         default:
