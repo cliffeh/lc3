@@ -29,8 +29,10 @@ dump_program (program *prog)
   // TODO pass this in?
   FILE *out = stdout;
   fprintf (out, ".ORIG x%X\n", prog->orig);
-  /*for(instruction_list *l = prog->instructions; l; l = l->tail){
-    instruction *inst = l->head;
-    fprintf (out, "%s\n", inst->line_label);
-  }*/
+  for (instruction_list *l = prog->instructions; l; l = l->tail)
+    {
+      instruction *inst = l->head;
+      fprintf (out, "%s\n", inst->line_label);
+    }
+  fprintf (out, ".END\n");
 }

@@ -8,11 +8,6 @@ void yyerror();
 extern char *yytext;
 %}
 
-/* Generate the parser description file. */
-%verbose
-/* Enable run-time traces (yydebug). */
-%define parse.trace
-
 %parse-param {program **prog}
 
 %union {
@@ -48,18 +43,28 @@ END
 {
   *prog = calloc(1, sizeof(program));
   (*prog)->orig = $2;
+  (*prog)->instructions = $3;
 }
 ;
 
 instruction_list:
 /* empty */
+{ $$ = 0; }
 | instruction instruction_list
+{
+  $$ = calloc(1, sizeof(instruction_list));
+  $$->head = $1;
+  $$->tail = $2;
+}
 ;
 
 instruction:
 IDENT
-| IDENT instruction
-| ADD REG ',' REG ',' REG
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->line_label = strdup(yytext);
+}
+| ADD REG ',' REG ',' REG {}
 ;
 
 %%

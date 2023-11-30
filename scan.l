@@ -45,7 +45,6 @@
 }
 
 [_a-zA-Z][_\-a-zA-Z0-9]* {
-  printf("returning IDENT: %s\n", yytext);
   return(IDENT);
 }
 
