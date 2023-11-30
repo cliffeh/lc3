@@ -95,6 +95,11 @@ dump_program (program *prog)
               fprintf (out, "  JSRR R%d\n", inst->dr);
           }
           break;
+        case OP_LD:
+          {
+            fprintf (out, "  LD R%d, %s\n", inst->dr, inst->label);
+          }
+          break;
         default:
           {
             fprintf (stderr, "I don't know how to print this op\n");

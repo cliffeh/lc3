@@ -144,6 +144,13 @@ instruction:
   $$->dr = $2;
   $$->immediate = 0;
 }
+| LD reg ',' label
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_LD;
+  $$->dr = $2;
+  $$->label = $4;
+}
 ;
 
 num:
