@@ -82,6 +82,19 @@ dump_program (program *prog)
             fprintf (out, "  BR%s %s\n", cond, inst->label);
           }
           break;
+        case OP_JMP:
+          {
+            fprintf (out, "  JMP R%d\n", inst->dr);
+          }
+          break;
+        case OP_JSR:
+          {
+            if(inst->immediate)
+              fprintf (out, "  JSR %s\n", inst->label);
+            else
+              fprintf (out, "  JSRR R%d\n", inst->dr);
+          }
+          break;
         default:
           {
             fprintf (stderr, "I don't know how to print this op\n");

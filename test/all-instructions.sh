@@ -7,4 +7,4 @@ SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
 # TODO check the output
-"$BUILDDIR/lc3as" < "$SRCDIR/test/all-instructions.asm"
+"$BUILDDIR/lc3as" < "$SRCDIR/test/all-instructions.asm" | diff "$SRCDIR/test/all-instructions.asm" -

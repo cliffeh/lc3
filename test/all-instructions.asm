@@ -10,4 +10,8 @@ label2
   BRnp label1
   BRnz label2
   BRnzp label1
+  JMP R4
+label3
+  JSR label3
+  JSRR R5
 .END

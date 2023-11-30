@@ -124,6 +124,26 @@ instruction:
     }
   }
 }
+| JMP reg
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_JMP;
+  $$->dr = $2;
+}
+| JSR label
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_JSR;
+  $$->label = $2;
+  $$->immediate = 1;
+}
+| JSRR reg
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_JSR;
+  $$->dr = $2;
+  $$->immediate = 0;
+}
 ;
 
 num:
