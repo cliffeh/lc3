@@ -15,6 +15,10 @@ test_operations_SOURCES = test/operations.c util.c
 
 check_SCRIPTS = test/all-instructions.sh
 
+TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
+TEST_INPUTS = test/all-instructions.asm
 
-EXTRA_DIST = README.md LICENSE
+dist_doc_DATA = LICENSE README.md
+
+EXTRA_DIST = $(check_SCRIPTS) $(TEST_INPUTS)
