@@ -9,7 +9,7 @@
  /* op codes */
 [aA][dD][dD]       { return(ADD);  }
 [aA][nN][dD]       { return(AND);  }
-[bB][rR]([nN]|[zZ]|[pP]|[zZ][pP]|[nN][pP]|[nN][zZ][pP]?])?    {
+[bB][rR][nN]?[zZ]?[pP]?            {
                      return(BR);   }
 [jJ][mM][pP]       { return(JMP);  }
 [jJ][sS][rR]       { return(JSR);  }
@@ -44,7 +44,7 @@
   return(DECLIT);
 }
 [_a-zA-Z][_\-a-zA-Z0-9]* {
-  return(IDENT);
+  return(LABEL);
 }
 
 , { return(','); }

@@ -15,6 +15,7 @@ extern char *yytext;
   instruction *inst;
   uint16_t num;
   int reg;
+  char *str;
 }
 
 // operations
@@ -28,12 +29,14 @@ extern char *yytext;
 %token ORIG END STRINGZ
 
 // literals
-%token DECLIT HEXLIT IDENT
+%token DECLIT HEXLIT LABEL
 
 %type <inst_list> instruction_list
 %type <inst> instruction
 %type <num> num
 %type <reg> reg
+%type <str> branch
+%type <str> label
 
 %start program
 
@@ -62,7 +65,7 @@ instruction_list:
 ;
 
 instruction:
-  IDENT // label
+  LABEL // label
 {
   $$ = calloc(1, sizeof(instruction));
   $$->label = strdup(yytext);
@@ -105,6 +108,22 @@ instruction:
   $$->imm5 = $6;
   $$->immediate = 1;
 }
+| branch label
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_BR;
+  $$->label = $2;
+  for(char *p = $1; *p; p++) {
+    switch(*p) {
+      case 'n':
+      case 'N': $$->cond |= FL_NEG; break;
+      case 'z':
+      case 'Z': $$->cond |= FL_ZRO; break;
+      case 'p':
+      case 'P': $$->cond |= FL_POS; break;
+    }
+  }
+}
 ;
 
 num:
@@ -122,6 +141,18 @@ num:
 reg: REG
 {
   $$ = char_to_reg(*(yytext+1));
+}
+;
+
+label: LABEL
+{
+  $$ = strdup(yytext);
+}
+;
+
+branch: BR
+{
+  $$ = strdup(yytext);
 }
 ;
 

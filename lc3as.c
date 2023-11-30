@@ -67,6 +67,21 @@ dump_program (program *prog)
               }
           }
           break;
+        case OP_BR:
+          {
+            char cond[4], *p = cond;
+            if (inst->cond & FL_NEG)
+              *p++ = 'n';
+
+            if (inst->cond & FL_ZRO)
+              *p++ = 'z';
+
+            if (inst->cond & FL_POS)
+              *p++ = 'p';
+
+            fprintf (out, "  BR%s %s\n", cond, inst->label);
+          }
+          break;
         default:
           {
             fprintf (stderr, "I don't know how to print this op\n");

@@ -8,7 +8,7 @@ typedef struct instruction
   uint16_t addr;
   int op;
   int dr, sr1, sr2;
-  int immediate, imm5;
+  int immediate, imm5, cond;
   char *label;
 } instruction;
 
