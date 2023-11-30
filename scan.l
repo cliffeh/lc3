@@ -30,14 +30,23 @@
 
 [rR][0-7]        { return(REG);  }
 
-\.ORIG           { return(ORIG);    }
-\.END            { return(END);     }
-\.STRINGZ        { return(STRINGZ); }
+\.[oO][rR][iI][gG] { return(ORIG);    }
+\.[eE][nN][dD]     { return(END);     }
+\.[sS][tT][rR][iI][nN][gG][zZ] { return(STRINGZ); }
 
-0?[xX][0-9]{1,4} { return(HEXLIT);  }
+0?[xX][0-9a-fA-F]{1,4} {
+  // TODO there should be a better way
+  char *p = yytext;
+  while(*p == 'x' || *p == 'X')
+    p++;
+  long result = strtol(p, 0, 16);
+  yylval.addr = result;
+  return(HEXLIT);
+}
 
 [_a-zA-Z][_\-a-zA-Z0-9]* {
+  printf("returning IDENT: %s\n", yytext);
   return(IDENT);
 }
 
-[ \t]* // ignore whitespace
+[ \t\n]* // ignore whitespace

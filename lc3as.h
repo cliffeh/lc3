@@ -9,17 +9,19 @@ typedef struct instruction
   int op;
   int dr, sr1, sr2;
   int immediate;
-  char *label;
+  char *line_label, op_label;
 } instruction;
 
 typedef struct instruction_list
 {
   instruction *head;
-  struct inst_list *tail;
+  struct instruction_list *tail;
 } instruction_list;
 
 typedef struct program
 {
   uint16_t orig; // starting address
-  instruction_list instructions;
+  instruction_list *instructions;
 } program;
+
+void dump_program(program *prog);

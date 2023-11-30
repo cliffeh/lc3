@@ -1,18 +1,26 @@
 %{
 #include "lc3as.h"
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 int yylex();    // from our scanner
 void yyerror();
 extern char *yytext;
 %}
 
+/* Generate the parser description file. */
+%verbose
+/* Enable run-time traces (yydebug). */
+%define parse.trace
+
+%parse-param {program **prog}
+
 %union {
   char *str;
   uint16_t addr;
   int code;
-  program prog;
-  instruction_list inst_list;
-  instruction inst;
+  instruction_list *inst_list;
+  instruction *inst;
 }
 
 // operations
@@ -24,42 +32,35 @@ extern char *yytext;
 
 %token <code> REG
 %token <addr> HEXLIT
-%token <str>  IDENT
+%token IDENT
 
-%type <prog> program
 %type <inst_list> instruction_list
 %type <inst> instruction
-%type <inst> label
-%type <inst> line
 
 %start program
 
 %%
 
 program:
-ORIG HEXLIT '\n'
+ORIG HEXLIT
 instruction_list
 END
- { $$.orig = $2; }
+{
+  *prog = calloc(1, sizeof(program));
+  (*prog)->orig = $2;
+}
 ;
 
-instruction_list: {}
+instruction_list:
 /* empty */
-| instruction_list line
+| instruction instruction_list
 ;
-
-line:
-label '\n'
-| instruction '\n'
-| label instruction '\n'
-;
-
-label: IDENT { $$.label = $1; };
 
 instruction:
-ADD REG ',' REG ',' REG {}
+IDENT
+| IDENT instruction
+| ADD REG ',' REG ',' REG
 ;
-
 
 %%
 
