@@ -119,6 +119,11 @@ dump_program (program *prog)
             fprintf (out, "  LD %s, %s\n", reg_to_str (inst->dr), inst->label);
           }
           break;
+        case OP_LDI:
+          {
+            fprintf (out, "  LDI %s, %s\n", reg_to_str (inst->dr), inst->label);
+          }
+          break;
         default:
           {
             fprintf (stderr, "I don't know how to print this op\n");

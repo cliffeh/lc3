@@ -151,6 +151,13 @@ instruction:
   $$->dr = $2;
   $$->label = $4;
 }
+| LDI reg ',' label
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_LDI;
+  $$->dr = $2;
+  $$->label = $4;
+}
 ;
 
 num:

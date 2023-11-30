@@ -15,4 +15,5 @@ label3
   JSR label3
   JSRR R5
   LD R6, label2
+  LDI R2, label1
 .END
