@@ -67,30 +67,31 @@ dump_program (program *prog)
   for (instruction_list *l = prog->instructions; l; l = l->tail)
     {
       instruction *inst = l->head;
+      // PREAMBLE HERE
       // uncomment to debug addresses!
       // fprintf (out, "%d  ", inst->addr);
       switch (inst->op)
         {
         case -2:
           {
-            fprintf (out, "  .STRINGZ \"%s\"\n", inst->label);
+            fprintf (out, "  .STRINGZ \"%s\"", inst->label);
           }
           break;
         case -1:
           {
-            fprintf (out, "%s\n", inst->label);
+            fprintf (out, "%s", inst->label);
           }
           break;
         case OP_ADD:
           {
             if (inst->immediate)
               {
-                fprintf (out, "  ADD %s, %s, #%d\n", reg_to_str (inst->reg[0]),
+                fprintf (out, "  ADD %s, %s, #%d", reg_to_str (inst->reg[0]),
                          reg_to_str (inst->reg[1]), inst->imm5);
               }
             else
               {
-                fprintf (out, "  ADD %s, %s, %s\n", reg_to_str (inst->reg[0]),
+                fprintf (out, "  ADD %s, %s, %s", reg_to_str (inst->reg[0]),
                          reg_to_str (inst->reg[1]), reg_to_str (inst->reg[2]));
               }
           }
@@ -99,7 +100,7 @@ dump_program (program *prog)
           {
             if (inst->immediate)
               {
-                fprintf (out, "  AND %s, %s, #%d\n", reg_to_str (inst->reg[0]),
+                fprintf (out, "  AND %s, %s, #%d", reg_to_str (inst->reg[0]),
                          reg_to_str (inst->reg[1]), inst->imm5);
               }
             else
@@ -121,92 +122,94 @@ dump_program (program *prog)
             if (inst->cond & FL_POS)
               *p++ = 'p';
 
-            fprintf (out, "  BR%s %s\n", cond, inst->label);
+            fprintf (out, "  BR%s %s", cond, inst->label);
           }
           break;
         case OP_JMP:
           {
             if (inst->immediate)
-              fprintf (out, "  JMP %s\n", reg_to_str (inst->reg[0]));
+              fprintf (out, "  JMP %s", reg_to_str (inst->reg[0]));
             else // RET special case
-              fprintf (out, "  RET\n");
+              fprintf (out, "  RET");
           }
           break;
         case OP_JSR:
           {
             if (inst->immediate)
-              fprintf (out, "  JSR %s\n", inst->label);
+              fprintf (out, "  JSR %s", inst->label);
             else
-              fprintf (out, "  JSRR %s\n", reg_to_str (inst->reg[0]));
+              fprintf (out, "  JSRR %s", reg_to_str (inst->reg[0]));
           }
           break;
         case OP_LD:
           {
-            fprintf (out, "  LD %s, %s\n", reg_to_str (inst->reg[0]),
+            fprintf (out, "  LD %s, %s", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
         case OP_LDI:
           {
-            fprintf (out, "  LDI %s, %s\n", reg_to_str (inst->reg[0]),
+            fprintf (out, "  LDI %s, %s", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
         case OP_LDR:
           {
-            fprintf (out, "  LDR %s, %s, #%d\n", reg_to_str (inst->reg[0]),
+            fprintf (out, "  LDR %s, %s, #%d", reg_to_str (inst->reg[0]),
                      reg_to_str (inst->reg[1]), inst->offset6);
           }
           break;
         case OP_LEA:
           {
-            fprintf (out, "  LEA %s, %s\n", reg_to_str (inst->reg[0]),
+            fprintf (out, "  LEA %s, %s", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
         case OP_NOT:
           {
-            fprintf (out, "  NOT %s, %s\n", reg_to_str (inst->reg[0]),
+            fprintf (out, "  NOT %s, %s", reg_to_str (inst->reg[0]),
                      reg_to_str (inst->reg[1]));
           }
           break;
         case OP_RTI:
           {
-            fprintf (out, "  RTI\n");
+            fprintf (out, "  RTI");
           }
           break;
         case OP_ST:
           {
-            fprintf (out, "  ST %s, %s\n", reg_to_str (inst->reg[0]),
+            fprintf (out, "  ST %s, %s", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
         case OP_STI:
           {
-            fprintf (out, "  STI %s, %s\n", reg_to_str (inst->reg[0]),
+            fprintf (out, "  STI %s, %s", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
         case OP_STR:
           {
-            fprintf (out, "  STR %s, %s, #%d\n", reg_to_str (inst->reg[0]),
+            fprintf (out, "  STR %s, %s, #%d", reg_to_str (inst->reg[0]),
                      reg_to_str (inst->reg[1]), inst->offset6);
           }
           break;
         case OP_TRAP:
           {
             if (inst->immediate)
-              fprintf (out, "  TRAP x%x\n", inst->trapvect8);
+              fprintf (out, "  TRAP x%x", inst->trapvect8);
             else
-              fprintf (out, "  %s\n", trapvec8_to_str (inst->trapvect8));
+              fprintf (out, "  %s", trapvec8_to_str (inst->trapvect8));
           }
           break;
         default:
           {
-            fprintf (stderr, "I don't know how to print this op (%d)\n",
+            fprintf (stderr, "I don't know how to print this op (%d)",
                      inst->op);
           }
         }
+      // POSTAMBLE HERE
+      fprintf (out, "\n");
     }
   fprintf (out, ".END\n");
 }
