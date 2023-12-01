@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern int yyparse(program *prog);
+extern int yyparse (program *prog);
 
 int
 main (int argc, char *argv[])
@@ -42,6 +42,22 @@ reg_to_str (int reg)
   // clang-format on
 }
 
+static const char *
+trapvec8_to_str (int trapvec8)
+{
+  // clang-format off
+  switch (trapvec8)
+    {
+      case 0x20: return "GETC";
+      case 0x21: return "OUT";
+      case 0x22: return "PUTS";
+      case 0x23: return "IN";
+      case 0x24: return "PUTSP";
+      case 0x25: return "HALT";
+    }
+  // clang-format on
+}
+
 void
 dump_program (program *prog)
 {
@@ -55,6 +71,13 @@ dump_program (program *prog)
       // fprintf (out, "%d  ", inst->addr);
       switch (inst->op)
         {
+        case -2:
+          {
+            // TODO support other directives? (this is the only unhandled one
+            // at present...)
+            fprintf (out, "  .STRINGZ \"%s\"\n", inst->label);
+          }
+          break;
         case -1:
           {
             fprintf (out, "%s\n", inst->label);
@@ -105,10 +128,10 @@ dump_program (program *prog)
           break;
         case OP_JMP:
           {
-            if (!inst->immediate) // RET special case
-              fprintf (out, "  RET\n");
-            else
+            if (inst->immediate)
               fprintf (out, "  JMP %s\n", reg_to_str (inst->reg[0]));
+            else // RET special case
+              fprintf (out, "  RET\n");
           }
           break;
         case OP_JSR:
@@ -174,12 +197,16 @@ dump_program (program *prog)
           break;
         case OP_TRAP:
           {
-            fprintf (out, "  TRAP x%x\n", inst->trapvect8);
+            if (inst->immediate)
+              fprintf (out, "  TRAP x%x\n", inst->trapvect8);
+            else
+              fprintf (out, "%s\n", trapvec8_to_str (inst->trapvect8));
           }
           break;
         default:
           {
-            fprintf (stderr, "I don't know how to print this op\n");
+            fprintf (stderr, "I don't know how to print this op (%d)\n",
+                     inst->op);
           }
         }
     }

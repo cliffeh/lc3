@@ -28,4 +28,6 @@ THERE
   STI R5, THERE
   STR R4, R2, #5
   TRAP x27
+HELLO
+  .STRINGZ "Hello, World!"
 .END

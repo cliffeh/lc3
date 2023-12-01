@@ -206,8 +206,9 @@ directive:
   STRINGZ STRLIT
 {
   $$ = calloc(1, sizeof(instruction));
-  // TODO trim()
-  $$->label = strdup(yytext);
+  // TODO a more sophisticated way of trimming quotes
+  $$->label = strdup(yytext+1);
+  $$->label[strlen($$->label)-1] = 0;
   $$->op = -2;
   $$->addr = prog->len;
   prog->len += 16*(strlen($$->label)+1);
