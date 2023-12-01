@@ -1,7 +1,8 @@
 #include "lc3as.h"
-#include "parse.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+extern int yyparse(program *prog);
 
 int
 main (int argc, char *argv[])
