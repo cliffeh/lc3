@@ -27,4 +27,5 @@ THERE
   ST R5, HERE
   STI R5, THERE
   STR R4, R2, #5
+  TRAP x27
 .END

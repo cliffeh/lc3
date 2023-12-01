@@ -183,6 +183,10 @@ instruction:
 {
   OP_3ARG($$, OP_STR, reg[0], $2, reg[1], $4, offset6, $6);
 }
+| TRAP num
+{
+  OP_1ARG($$, OP_TRAP, trapvect8, $2);
+}
 ;
 
 num:

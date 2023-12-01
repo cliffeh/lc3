@@ -169,6 +169,11 @@ dump_program (program *prog)
                      reg_to_str (inst->reg[1]), inst->offset6);
           }
           break;
+        case OP_TRAP:
+          {
+            fprintf (out, "  TRAP x%x\n", inst->trapvect8);
+          }
+          break;
         default:
           {
             fprintf (stderr, "I don't know how to print this op\n");

@@ -9,7 +9,8 @@ typedef struct instruction
   int op;
   // TODO these ints could probably be collapsed...
   int reg[3];
-  int immediate, imm5, offset6, cond;
+  int cond, immediate;
+  int imm5, offset6, trapvect8;
   char *label;
 } instruction;
 
