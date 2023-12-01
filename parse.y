@@ -49,13 +49,13 @@ extern char *yytext;
 %token ORIG END STRINGZ
 
 // literals
-%token DECLIT HEXLIT LABEL
+%token DECLIT HEXLIT STRLIT LABEL
 
 %type program
 %type <inst_list> instruction_list
 %type <inst> instruction
 // special cases of instruction
-%type <inst> label trap
+%type <inst> directive label trap
 %type <num> num
 %type <reg> reg
 %type <str> branch
@@ -139,7 +139,7 @@ instruction:
   OP_1ARG($$, OP_JMP, reg[0], $2);
   // as a convention, we'll use the immediate flag
   // to distinguish between JMP and RET
-  $$->immediate = 0;
+  $$->immediate = 1;
 }
 | JSR LABEL
 {
@@ -175,9 +175,6 @@ instruction:
 {
   // special case of JMP, where R7 is implied as DR
   OP_1ARG($$, OP_JMP, reg[0], char_to_reg('7'));
-  // as a convention, we'll use the immediate flag
-  // to distinguish between JMP and RET
-  $$->immediate = 1;
 }
 | RTI
 {
@@ -198,10 +195,23 @@ instruction:
 | TRAP num
 {
   OP_1ARG($$, OP_TRAP, trapvect8, $2);
+  $$->immediate = 1;
 }
+| directive
 | trap
 | label
 ;
+
+directive:
+  STRINGZ STRLIT
+{
+  $$ = calloc(1, sizeof(instruction));
+  // TODO trim()
+  $$->label = strdup(yytext);
+  $$->op = -2;
+  $$->addr = prog->len;
+  prog->len += 16*(strlen($$->label)+1);
+}
 
 label: LABEL
 {
@@ -220,32 +230,26 @@ trap:
   GETC
 {
   OP_1ARG($$, OP_TRAP, trapvect8, 0x20);
-  $$->immediate = 1;
 }
 | OUT
 {
   OP_1ARG($$, OP_TRAP, trapvect8, 0x21);
-  $$->immediate = 1;
 }
 | PUTS
 {
   OP_1ARG($$, OP_TRAP, trapvect8, 0x22);
-  $$->immediate = 1;
 }
 | IN
 {
   OP_1ARG($$, OP_TRAP, trapvect8, 0x23);
-  $$->immediate = 1;
 }
 | PUTSP
 {
   OP_1ARG($$, OP_TRAP, trapvect8, 0x24);
-  $$->immediate = 1;
 }
 | HALT
 {
   OP_1ARG($$, OP_TRAP, trapvect8, 0x25);
-  $$->immediate = 1;
 }
 ;
 

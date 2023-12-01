@@ -105,7 +105,7 @@ dump_program (program *prog)
           break;
         case OP_JMP:
           {
-            if (inst->immediate) // RET special case
+            if (!inst->immediate) // RET special case
               fprintf (out, "  RET\n");
             else
               fprintf (out, "  JMP %s\n", reg_to_str (inst->reg[0]));

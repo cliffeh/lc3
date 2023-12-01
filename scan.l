@@ -49,6 +49,7 @@
 #(0|-?[1-9][0-9]*) {
   return(DECLIT);
 }
+\"[^\"]*\"               { return(STRLIT); }
 [_a-zA-Z][_\-a-zA-Z0-9]* { return(LABEL);  }
 
 , { return(','); }
