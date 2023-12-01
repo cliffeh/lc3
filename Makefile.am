@@ -20,6 +20,6 @@ TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 TEST_INPUTS = test/all-instructions.asm
 
-dist_doc_DATA = LICENSE README.md
+dist_doc_DATA = LICENSE README.md TODO.md
 
 EXTRA_DIST = $(check_SCRIPTS) $(TEST_INPUTS)
