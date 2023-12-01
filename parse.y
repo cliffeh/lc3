@@ -193,6 +193,25 @@ instruction:
   // to distinguish between JMP and RET
   $$->immediate = 1;
 }
+| RTI
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_RTI;
+}
+| ST reg ',' label
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_ST;
+  $$->sr1 = $2;
+  $$->label = $4;
+}
+| STI reg ',' label
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_STI;
+  $$->sr1 = $2;
+  $$->label = $4;
+}
 ;
 
 num:

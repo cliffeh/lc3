@@ -19,6 +19,11 @@ label3
   LDI R2, label1
   LDR R4, R2, #-5
   LEA R4, TARGET
+HERE
   NOT R4, R6
   RET
+  RTI
+THERE
+  ST R5, HERE
+  STI R5, THERE
 .END

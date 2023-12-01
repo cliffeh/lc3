@@ -147,6 +147,23 @@ dump_program (program *prog)
                      reg_to_str (inst->sr1));
           }
           break;
+        case OP_RTI:
+          {
+            fprintf (out, "  RTI\n");
+          }
+          break;
+        case OP_ST:
+          {
+            fprintf (out, "  ST %s, %s\n", reg_to_str (inst->sr1),
+                     inst->label);
+          }
+          break;
+          case OP_STI:
+          {
+            fprintf (out, "  STI %s, %s\n", reg_to_str (inst->sr1),
+                     inst->label);
+          }
+          break;
         default:
           {
             fprintf (stderr, "I don't know how to print this op\n");
