@@ -73,8 +73,6 @@ dump_program (program *prog)
         {
         case -2:
           {
-            // TODO support other directives? (this is the only unhandled one
-            // at present...)
             fprintf (out, "  .STRINGZ \"%s\"\n", inst->label);
           }
           break;
