@@ -36,7 +36,7 @@ reg_to_str (int reg)
     case R_R5: return "R5";
     case R_R6: return "R6";
     case R_R7: return "R7";
-    default:  return "RUNKNOWN";
+    default:   return "R?";
     }
   // clang-format on
 }
