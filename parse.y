@@ -7,8 +7,6 @@ int yylex();    // from our scanner
 void yyerror();
 extern char *yytext;
 
-int rel_addr;
-
 // some convenience macros for operations
 #define OP_NARG(dest, code) \
   dest = calloc(1, sizeof(instruction)); \
@@ -25,7 +23,6 @@ int rel_addr;
 %}
 
 %parse-param    { program *prog }
-%initial-action { rel_addr = 0; }
 
 %union {
   program *prog;
@@ -52,7 +49,7 @@ int rel_addr;
 // literals
 %token DECLIT HEXLIT LABEL
 
-%type <prog> program
+%type program
 %type <inst_list> instruction_list
 %type <inst> instruction
 %type <num> num
@@ -69,9 +66,8 @@ program:
   instruction_list
   END
 {
-  $$ = prog; // return value
-  $$->orig = $2;
-  $$->instructions = $3;
+  prog->orig = $2;
+  prog->instructions = $3;
 }
 ;
 
@@ -91,9 +87,9 @@ instruction_list:
   $$->tail = 0;
   $$->last = $$;
 
-  $1->addr = rel_addr;
+  $1->addr = prog->len;
   if($1->op >= 0) // don't increment for labels
-    rel_addr += 16;
+    prog->len += 16;
 }
 | instruction_list instruction
 {
@@ -102,9 +98,9 @@ instruction_list:
   $1->last = $1->last->tail;
   $$ = $1;
 
-  $2->addr = rel_addr;
+  $2->addr = prog->len;
   if($2->op >= 0) // don't increment for labels
-    rel_addr += 16;
+    prog->len += 16;
 }
 ;
 

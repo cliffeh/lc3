@@ -24,8 +24,9 @@ typedef struct instruction_list
 typedef struct program
 {
   uint16_t orig; // starting address
+  uint16_t len;  // total length of program
   instruction_list *instructions;
 } program;
 
-void dump_program(program *prog);
-int char_to_reg(char c);
+void dump_program (program *prog);
+int char_to_reg (char c);
