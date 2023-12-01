@@ -54,11 +54,11 @@ extern char *yytext;
 %type program
 %type <inst_list> instruction_list
 %type <inst> instruction
-%type <inst> trap
+// special cases of instruction
+%type <inst> label trap
 %type <num> num
 %type <reg> reg
 %type <str> branch
-%type <str> label
 
 %start program
 
@@ -100,16 +100,7 @@ instruction_list:
 ;
 
 instruction:
-  LABEL // label
-{
-  $$ = calloc(1, sizeof(instruction));
-  $$->label = strdup(yytext);
-
-  // special case for labels
-  $$->op = -1;
-  $$->addr = prog->len;
-}
-| ADD reg ',' reg ',' reg
+  ADD reg ',' reg ',' reg
 {
   OP_3ARG($$, OP_ADD, reg[0], $2, reg[1], $4, reg[2], $6);
   $$->immediate = 0;
@@ -129,9 +120,9 @@ instruction:
   OP_3ARG($$, OP_AND, reg[0], $2, reg[1], $4, imm5, $6);
   $$->immediate = 1;
 }
-| branch label
+| branch LABEL
 {
-  OP_1ARG($$, OP_BR, label, $2);
+  OP_1ARG($$, OP_BR, label, strdup(yytext));
   for(char *p = $1+2; *p; p++) {
     switch(*p) {
       case 'n':
@@ -150,9 +141,9 @@ instruction:
   // to distinguish between JMP and RET
   $$->immediate = 0;
 }
-| JSR label
+| JSR LABEL
 {
-  OP_1ARG($$, OP_JSR, label, $2);
+  OP_1ARG($$, OP_JSR, label, strdup(yytext));
   $$->immediate = 1;
 }
 | JSRR reg
@@ -160,21 +151,21 @@ instruction:
   OP_1ARG($$, OP_JSR, reg[0], $2);
   $$->immediate = 0;
 }
-| LD reg ',' label
+| LD reg ',' LABEL
 {
-  OP_2ARG($$, OP_LD, reg[0], $2, label, $4);
+  OP_2ARG($$, OP_LD, reg[0], $2, label, strdup(yytext));
 }
-| LDI reg ',' label
+| LDI reg ',' LABEL
 {
-  OP_2ARG($$, OP_LDI, reg[0], $2, label, $4);
+  OP_2ARG($$, OP_LDI, reg[0], $2, label, strdup(yytext));
 }
 | LDR reg ',' reg ',' num
 {
   OP_3ARG($$, OP_LDR, reg[0], $2, reg[1], $4, offset6, $6);
 }
-| LEA reg ',' label
+| LEA reg ',' LABEL
 {
-  OP_2ARG($$, OP_LEA, reg[0], $2, label, $4);
+  OP_2ARG($$, OP_LEA, reg[0], $2, label, strdup(yytext));
 }
 | NOT reg ',' reg
 {
@@ -192,13 +183,13 @@ instruction:
 {
   OP_NARG($$, OP_RTI);
 }
-| ST reg ',' label
+| ST reg ',' LABEL
 {
-  OP_2ARG($$, OP_ST, reg[0], $2, label, $4);
+  OP_2ARG($$, OP_ST, reg[0], $2, label, strdup(yytext));
 }
-| STI reg ',' label
+| STI reg ',' LABEL
 {
-  OP_2ARG($$, OP_STI, reg[0], $2, label, $4);
+  OP_2ARG($$, OP_STI, reg[0], $2, label, strdup(yytext));
 }
 | STR reg ',' reg ',' num
 {
@@ -209,6 +200,16 @@ instruction:
   OP_1ARG($$, OP_TRAP, trapvect8, $2);
 }
 | trap
+| label
+;
+
+label: LABEL
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->label = strdup(yytext);
+  $$->op = -1;
+  $$->addr = prog->len;
+}
 ;
 
 /*
@@ -262,12 +263,6 @@ num:
 reg: REG
 {
   $$ = char_to_reg(*(yytext+1));
-}
-;
-
-label: LABEL
-{
-  $$ = strdup(yytext);
 }
 ;
 
