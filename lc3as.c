@@ -200,7 +200,7 @@ dump_program (program *prog)
             if (inst->immediate)
               fprintf (out, "  TRAP x%x\n", inst->trapvect8);
             else
-              fprintf (out, "%s\n", trapvec8_to_str (inst->trapvect8));
+              fprintf (out, "  %s\n", trapvec8_to_str (inst->trapvect8));
           }
           break;
         default:

@@ -28,6 +28,12 @@ THERE
   STI R5, THERE
   STR R4, R2, #5
   TRAP x27
+  GETC
+  OUT
+  PUTS
+  IN
+  PUTSP
+  HALT
 HELLO
   .STRINGZ "Hello, World!"
 .END
