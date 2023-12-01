@@ -13,7 +13,7 @@ extern char *yytext;
 %union {
   instruction_list *inst_list;
   instruction *inst;
-  uint16_t num;
+  int num;
   int reg;
   char *str;
 }
@@ -158,17 +158,31 @@ instruction:
   $$->dr = $2;
   $$->label = $4;
 }
+| LDR reg ',' reg ',' num
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_LDR;
+  $$->dr = $2;
+  $$->sr1 = $4;
+  $$->offset6 = $6;
+}
+| LEA reg ',' label
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_LEA;
+  $$->dr = $2;
+  $$->label = $4;
+}
 ;
 
 num:
   HEXLIT
 {
-  // parse the literal to a uint16_t
   $$ = strtol(yytext+1, 0, 16);
 }
 | DECLIT
 {
-  $$ = atoi(yytext+1);
+  $$ = strtol(yytext+1, 0, 10);
 }
 ;
 

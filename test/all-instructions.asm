@@ -6,6 +6,7 @@ label2
   BR label1
   BRn label2
   BRz label1
+TARGET
   BRzp label2
   BRnp label1
   BRnz label2
@@ -16,4 +17,6 @@ label3
   JSRR R5
   LD R6, label2
   LDI R2, label1
+  LDR R4, R2, #-5
+  LEA R4, TARGET
 .END

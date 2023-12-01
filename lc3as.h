@@ -7,8 +7,9 @@ typedef struct instruction
 {
   uint16_t addr;
   int op;
+  // TODO these ints could probably be collapsed...
   int dr, sr1, sr2;
-  int immediate, imm5, cond;
+  int immediate, imm5, offset6, cond;
   char *label;
 } instruction;
 

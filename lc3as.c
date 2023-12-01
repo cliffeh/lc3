@@ -121,7 +121,19 @@ dump_program (program *prog)
           break;
         case OP_LDI:
           {
-            fprintf (out, "  LDI %s, %s\n", reg_to_str (inst->dr), inst->label);
+            fprintf (out, "  LDI %s, %s\n", reg_to_str (inst->dr),
+                     inst->label);
+          }
+          break;
+        case OP_LDR:
+          {
+            fprintf (out, "  LDR %s, %s, #%d\n", reg_to_str (inst->dr),
+                     reg_to_str (inst->sr1), inst->offset6);
+          }
+          break;
+        case OP_LEA:
+          {
+            fprintf (out, "  LEA %s, %s\n", reg_to_str (inst->dr), inst->label);
           }
           break;
         default:
