@@ -22,6 +22,7 @@ label3
 HERE
   NOT R4, R6
   RET
+  .STRINGZ "howdly doodly"
   RTI
 THERE
   ST R5, HERE
