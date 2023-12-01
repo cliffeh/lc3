@@ -76,17 +76,17 @@ instruction:
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_ADD;
-  $$->dr =  $2;
-  $$->sr1 = $4;
-  $$->sr2 = $6;
+  $$->reg[0] =  $2;
+  $$->reg[1] = $4;
+  $$->reg[2] = $6;
   $$->immediate = 0;
 }
 | ADD reg ',' reg ',' num
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_ADD;
-  $$->dr =  $2;
-  $$->sr1 = $4;
+  $$->reg[0] =  $2;
+  $$->reg[1] = $4;
   $$->imm5 = $6;
   $$->immediate = 1;
 }
@@ -94,17 +94,17 @@ instruction:
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_AND;
-  $$->dr =  $2;
-  $$->sr1 = $4;
-  $$->sr2 = $6;
+  $$->reg[0] =  $2;
+  $$->reg[1] = $4;
+  $$->reg[2] = $6;
   $$->immediate = 0;
 }
 | AND reg ',' reg ',' num
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_AND;
-  $$->dr =  $2;
-  $$->sr1 = $4;
+  $$->reg[0] =  $2;
+  $$->reg[1] = $4;
   $$->imm5 = $6;
   $$->immediate = 1;
 }
@@ -128,7 +128,7 @@ instruction:
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_JMP;
-  $$->dr = $2;
+  $$->reg[0] = $2;
   // as a convention, we'll use the immediate flag
   // to distinguish between JMP and RET
   $$->immediate = 0;
@@ -144,51 +144,51 @@ instruction:
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_JSR;
-  $$->dr = $2;
+  $$->reg[0] = $2;
   $$->immediate = 0;
 }
 | LD reg ',' label
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_LD;
-  $$->dr = $2;
+  $$->reg[0] = $2;
   $$->label = $4;
 }
 | LDI reg ',' label
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_LDI;
-  $$->dr = $2;
+  $$->reg[0] = $2;
   $$->label = $4;
 }
 | LDR reg ',' reg ',' num
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_LDR;
-  $$->dr = $2;
-  $$->sr1 = $4;
+  $$->reg[0] = $2;
+  $$->reg[1] = $4;
   $$->offset6 = $6;
 }
 | LEA reg ',' label
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_LEA;
-  $$->dr = $2;
+  $$->reg[0] = $2;
   $$->label = $4;
 }
 | NOT reg ',' reg
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_NOT;
-  $$->dr = $2;
-  $$->sr1 = $4;
+  $$->reg[0] = $2;
+  $$->reg[1] = $4;
 }
 | RET
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_JMP;
   // special case of JMP, where R7 is implied as DR
-  $$->dr = char_to_reg('7');
+  $$->reg[0] = char_to_reg('7');
   // as a convention, we'll use the immediate flag
   // to distinguish between JMP and RET
   $$->immediate = 1;
@@ -202,14 +202,14 @@ instruction:
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_ST;
-  $$->sr1 = $2;
+  $$->reg[0] = $2;
   $$->label = $4;
 }
 | STI reg ',' label
 {
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_STI;
-  $$->sr1 = $2;
+  $$->reg[0] = $2;
   $$->label = $4;
 }
 ;

@@ -63,13 +63,13 @@ dump_program (program *prog)
           {
             if (inst->immediate)
               {
-                fprintf (out, "  ADD %s, %s, #%d\n", reg_to_str (inst->dr),
-                         reg_to_str (inst->sr1), inst->imm5);
+                fprintf (out, "  ADD %s, %s, #%d\n", reg_to_str (inst->reg[0]),
+                         reg_to_str (inst->reg[1]), inst->imm5);
               }
             else
               {
-                fprintf (out, "  ADD %s, %s, %s\n", reg_to_str (inst->dr),
-                         reg_to_str (inst->sr1), reg_to_str (inst->sr2));
+                fprintf (out, "  ADD %s, %s, %s\n", reg_to_str (inst->reg[0]),
+                         reg_to_str (inst->reg[1]), reg_to_str (inst->reg[2]));
               }
           }
           break;
@@ -77,13 +77,13 @@ dump_program (program *prog)
           {
             if (inst->immediate)
               {
-                fprintf (out, "  AND %s, %s, #%d\n", reg_to_str (inst->dr),
-                         reg_to_str (inst->sr1), inst->imm5);
+                fprintf (out, "  AND %s, %s, #%d\n", reg_to_str (inst->reg[0]),
+                         reg_to_str (inst->reg[1]), inst->imm5);
               }
             else
               {
-                fprintf (out, "  AND %s, %s, %s\n", reg_to_str (inst->dr),
-                         reg_to_str (inst->sr1), reg_to_str (inst->sr2));
+                fprintf (out, "  AND %s, %s, %s\n", reg_to_str (inst->reg[0]),
+                         reg_to_str (inst->reg[1]), reg_to_str (inst->reg[2]));
               }
           }
           break;
@@ -107,7 +107,7 @@ dump_program (program *prog)
             if (inst->immediate) // RET special case
               fprintf (out, "  RET\n");
             else
-              fprintf (out, "  JMP %s\n", reg_to_str (inst->dr));
+              fprintf (out, "  JMP %s\n", reg_to_str (inst->reg[0]));
           }
           break;
         case OP_JSR:
@@ -115,36 +115,37 @@ dump_program (program *prog)
             if (inst->immediate)
               fprintf (out, "  JSR %s\n", inst->label);
             else
-              fprintf (out, "  JSRR %s\n", reg_to_str (inst->dr));
+              fprintf (out, "  JSRR %s\n", reg_to_str (inst->reg[0]));
           }
           break;
         case OP_LD:
           {
-            fprintf (out, "  LD %s, %s\n", reg_to_str (inst->dr), inst->label);
+            fprintf (out, "  LD %s, %s\n", reg_to_str (inst->reg[0]),
+                     inst->label);
           }
           break;
         case OP_LDI:
           {
-            fprintf (out, "  LDI %s, %s\n", reg_to_str (inst->dr),
+            fprintf (out, "  LDI %s, %s\n", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
         case OP_LDR:
           {
-            fprintf (out, "  LDR %s, %s, #%d\n", reg_to_str (inst->dr),
-                     reg_to_str (inst->sr1), inst->offset6);
+            fprintf (out, "  LDR %s, %s, #%d\n", reg_to_str (inst->reg[0]),
+                     reg_to_str (inst->reg[1]), inst->offset6);
           }
           break;
         case OP_LEA:
           {
-            fprintf (out, "  LEA %s, %s\n", reg_to_str (inst->dr),
+            fprintf (out, "  LEA %s, %s\n", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
         case OP_NOT:
           {
-            fprintf (out, "  NOT %s, %s\n", reg_to_str (inst->dr),
-                     reg_to_str (inst->sr1));
+            fprintf (out, "  NOT %s, %s\n", reg_to_str (inst->reg[0]),
+                     reg_to_str (inst->reg[1]));
           }
           break;
         case OP_RTI:
@@ -154,13 +155,13 @@ dump_program (program *prog)
           break;
         case OP_ST:
           {
-            fprintf (out, "  ST %s, %s\n", reg_to_str (inst->sr1),
+            fprintf (out, "  ST %s, %s\n", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
-          case OP_STI:
+        case OP_STI:
           {
-            fprintf (out, "  STI %s, %s\n", reg_to_str (inst->sr1),
+            fprintf (out, "  STI %s, %s\n", reg_to_str (inst->reg[0]),
                      inst->label);
           }
           break;
