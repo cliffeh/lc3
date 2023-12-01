@@ -41,7 +41,7 @@
 \.[oO][rR][iI][gG]       { return(ORIG);   }
 \.[eE][nN][dD]           { return(END);    }
 \.[sS][tT][rR][iI][nN][gG][zZ]             {
-  return(STRINGZ);
+                           return(STRINGZ);
                                            }
 
  /* literals */

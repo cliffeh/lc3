@@ -54,6 +54,7 @@ extern char *yytext;
 %type program
 %type <inst_list> instruction_list
 %type <inst> instruction
+%type <inst> trap
 %type <num> num
 %type <reg> reg
 %type <str> branch
@@ -206,6 +207,44 @@ instruction:
 | TRAP num
 {
   OP_1ARG($$, OP_TRAP, trapvect8, $2);
+}
+| trap
+;
+
+/*
+   convention: set the immediate flag to distinguish between
+   these and TRAP 0xnn
+*/
+trap:
+  GETC
+{
+  OP_1ARG($$, OP_TRAP, trapvect8, 0x20);
+  $$->immediate = 1;
+}
+| OUT
+{
+  OP_1ARG($$, OP_TRAP, trapvect8, 0x21);
+  $$->immediate = 1;
+}
+| PUTS
+{
+  OP_1ARG($$, OP_TRAP, trapvect8, 0x22);
+  $$->immediate = 1;
+}
+| IN
+{
+  OP_1ARG($$, OP_TRAP, trapvect8, 0x23);
+  $$->immediate = 1;
+}
+| PUTSP
+{
+  OP_1ARG($$, OP_TRAP, trapvect8, 0x24);
+  $$->immediate = 1;
+}
+| HALT
+{
+  OP_1ARG($$, OP_TRAP, trapvect8, 0x25);
+  $$->immediate = 1;
 }
 ;
 
