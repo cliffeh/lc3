@@ -20,6 +20,7 @@ main (int argc, char *argv[])
       fprintf (stderr, "there was an error\n");
     }
 
+  // TODO free() prog...
   return rc;
 }
 
@@ -103,7 +104,10 @@ dump_program (program *prog)
           break;
         case OP_JMP:
           {
-            fprintf (out, "  JMP %s\n", reg_to_str (inst->dr));
+            if (inst->immediate) // RET special case
+              fprintf (out, "  RET\n");
+            else
+              fprintf (out, "  JMP %s\n", reg_to_str (inst->dr));
           }
           break;
         case OP_JSR:
@@ -133,7 +137,14 @@ dump_program (program *prog)
           break;
         case OP_LEA:
           {
-            fprintf (out, "  LEA %s, %s\n", reg_to_str (inst->dr), inst->label);
+            fprintf (out, "  LEA %s, %s\n", reg_to_str (inst->dr),
+                     inst->label);
+          }
+          break;
+        case OP_NOT:
+          {
+            fprintf (out, "  NOT %s, %s\n", reg_to_str (inst->dr),
+                     reg_to_str (inst->sr1));
           }
           break;
         default:

@@ -129,6 +129,9 @@ instruction:
   $$ = calloc(1, sizeof(instruction));
   $$->op = OP_JMP;
   $$->dr = $2;
+  // as a convention, we'll use the immediate flag
+  // to distinguish between JMP and RET
+  $$->immediate = 0;
 }
 | JSR label
 {
@@ -172,6 +175,23 @@ instruction:
   $$->op = OP_LEA;
   $$->dr = $2;
   $$->label = $4;
+}
+| NOT reg ',' reg
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_NOT;
+  $$->dr = $2;
+  $$->sr1 = $4;
+}
+| RET
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->op = OP_JMP;
+  // special case of JMP, where R7 is implied as DR
+  $$->dr = char_to_reg('7');
+  // as a convention, we'll use the immediate flag
+  // to distinguish between JMP and RET
+  $$->immediate = 1;
 }
 ;
 
