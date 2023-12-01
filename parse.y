@@ -6,11 +6,26 @@
 int yylex();    // from our scanner
 void yyerror();
 extern char *yytext;
+
+// some convenience macros for operations
+#define OP_NARG(dest, code) \
+  dest = calloc(1, sizeof(instruction)); \
+  dest->op = code
+#define OP_1ARG(dest, code, d1, a1) \
+  OP_NARG(dest, code); \
+  dest->d1 = a1
+#define OP_2ARG(dest, code, d1, a1, d2, a2) \
+  OP_1ARG(dest, code, d1, a1); \
+  dest->d2 = a2
+#define OP_3ARG(dest, code, d1, a1, d2, a2, d3, a3) \
+  OP_2ARG(dest, code, d1, a1, d2, a2); \
+  dest->d3 = a3
 %}
 
-%parse-param {program **prog}
+%parse-param {program *prog}
 
 %union {
+  program *prog;
   instruction_list *inst_list;
   instruction *inst;
   int num;
@@ -31,6 +46,7 @@ extern char *yytext;
 // literals
 %token DECLIT HEXLIT LABEL
 
+%type <prog> program
 %type <inst_list> instruction_list
 %type <inst> instruction
 %type <num> num
@@ -47,9 +63,9 @@ program:
   instruction_list
   END
 {
-  *prog = calloc(1, sizeof(program));
-  (*prog)->orig = $2;
-  (*prog)->instructions = $3;
+  $$ = prog; // return value
+  $$->orig = $2;
+  $$->instructions = $3;
 }
 ;
 
@@ -74,46 +90,28 @@ instruction:
 }
 | ADD reg ',' reg ',' reg
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_ADD;
-  $$->reg[0] =  $2;
-  $$->reg[1] = $4;
-  $$->reg[2] = $6;
+  OP_3ARG($$, OP_ADD, reg[0], $2, reg[1], $4, reg[2], $6);
   $$->immediate = 0;
 }
 | ADD reg ',' reg ',' num
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_ADD;
-  $$->reg[0] =  $2;
-  $$->reg[1] = $4;
-  $$->imm5 = $6;
+  OP_3ARG($$, OP_ADD, reg[0], $2, reg[1], $4, imm5, $6);
   $$->immediate = 1;
 }
 | AND reg ',' reg ',' reg
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_AND;
-  $$->reg[0] =  $2;
-  $$->reg[1] = $4;
-  $$->reg[2] = $6;
+  OP_3ARG($$, OP_AND, reg[0], $2, reg[1], $4, reg[2], $6);
   $$->immediate = 0;
 }
 | AND reg ',' reg ',' num
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_AND;
-  $$->reg[0] =  $2;
-  $$->reg[1] = $4;
-  $$->imm5 = $6;
+  OP_3ARG($$, OP_AND, reg[0], $2, reg[1], $4, imm5, $6);
   $$->immediate = 1;
 }
 | branch label
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_BR;
-  $$->label = $2;
-  for(char *p = $1; *p; p++) {
+  OP_1ARG($$, OP_BR, label, $2);
+  for(char *p = $1+2; *p; p++) {
     switch(*p) {
       case 'n':
       case 'N': $$->cond |= FL_NEG; break;
@@ -126,91 +124,64 @@ instruction:
 }
 | JMP reg
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_JMP;
-  $$->reg[0] = $2;
+  OP_1ARG($$, OP_JMP, reg[0], $2);
   // as a convention, we'll use the immediate flag
   // to distinguish between JMP and RET
   $$->immediate = 0;
 }
 | JSR label
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_JSR;
-  $$->label = $2;
+  OP_1ARG($$, OP_JSR, label, $2);
   $$->immediate = 1;
 }
 | JSRR reg
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_JSR;
-  $$->reg[0] = $2;
+  OP_1ARG($$, OP_JSR, reg[0], $2);
   $$->immediate = 0;
 }
 | LD reg ',' label
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_LD;
-  $$->reg[0] = $2;
-  $$->label = $4;
+  OP_2ARG($$, OP_LD, reg[0], $2, label, $4);
 }
 | LDI reg ',' label
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_LDI;
-  $$->reg[0] = $2;
-  $$->label = $4;
+  OP_2ARG($$, OP_LDI, reg[0], $2, label, $4);
 }
 | LDR reg ',' reg ',' num
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_LDR;
-  $$->reg[0] = $2;
-  $$->reg[1] = $4;
-  $$->offset6 = $6;
+  OP_3ARG($$, OP_LDR, reg[0], $2, reg[1], $4, offset6, $6);
 }
 | LEA reg ',' label
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_LEA;
-  $$->reg[0] = $2;
-  $$->label = $4;
+  OP_2ARG($$, OP_LEA, reg[0], $2, label, $4);
 }
 | NOT reg ',' reg
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_NOT;
-  $$->reg[0] = $2;
-  $$->reg[1] = $4;
+  OP_2ARG($$, OP_NOT, reg[0], $2, reg[1], $4);
 }
 | RET
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_JMP;
   // special case of JMP, where R7 is implied as DR
-  $$->reg[0] = char_to_reg('7');
+  OP_1ARG($$, OP_JMP, reg[0], char_to_reg('7'));
   // as a convention, we'll use the immediate flag
   // to distinguish between JMP and RET
   $$->immediate = 1;
 }
 | RTI
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_RTI;
+  OP_NARG($$, OP_RTI);
 }
 | ST reg ',' label
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_ST;
-  $$->reg[0] = $2;
-  $$->label = $4;
+  OP_2ARG($$, OP_ST, reg[0], $2, label, $4);
 }
 | STI reg ',' label
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->op = OP_STI;
-  $$->reg[0] = $2;
-  $$->label = $4;
+  OP_2ARG($$, OP_STI, reg[0], $2, label, $4);
+}
+| STR reg ',' reg ',' num
+{
+  OP_3ARG($$, OP_STR, reg[0], $2, reg[1], $4, offset6, $6);
 }
 ;
 

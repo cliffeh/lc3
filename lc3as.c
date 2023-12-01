@@ -1,26 +1,24 @@
 #include "lc3as.h"
+#include "parse.h"
 #include <stdio.h>
-
-extern int yyparse (program **prog);
+#include <stdlib.h>
 
 int
 main (int argc, char *argv[])
 {
-  program *prog;
-  int rc;
-
-  rc = yyparse (&prog);
+  program *prog = calloc (1, sizeof (program));
+  int rc = yyparse (prog);
 
   if (rc == 0)
     {
       dump_program (prog);
+      // TODO free_program()
     }
   else
     {
       fprintf (stderr, "there was an error\n");
     }
 
-  // TODO free() prog...
   return rc;
 }
 
@@ -89,7 +87,7 @@ dump_program (program *prog)
           break;
         case OP_BR:
           {
-            char cond[4], *p = cond;
+            char cond[4] = "", *p = cond;
             if (inst->cond & FL_NEG)
               *p++ = 'n';
 
@@ -163,6 +161,12 @@ dump_program (program *prog)
           {
             fprintf (out, "  STI %s, %s\n", reg_to_str (inst->reg[0]),
                      inst->label);
+          }
+          break;
+        case OP_STR:
+          {
+            fprintf (out, "  STR %s, %s, #%d\n", reg_to_str (inst->reg[0]),
+                     reg_to_str (inst->reg[1]), inst->offset6);
           }
           break;
         default:
