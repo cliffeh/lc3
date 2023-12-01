@@ -40,6 +40,9 @@ int rel_addr;
 %token ADD AND BR JMP JSR JSRR LD LDI LDR
 %token LEA NOT RET RTI ST STI STR TRAP
 
+// trap routines
+%token GETC OUT PUTS IN PUTSP HALT
+
 // registers
 %token REG
 
