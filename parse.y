@@ -10,6 +10,8 @@ extern char *yytext;
 // some convenience macros for operations
 #define OP_NARG(dest, code) \
   dest = calloc(1, sizeof(instruction)); \
+  dest->addr = prog->len; \
+  prog->len += 16; \
   dest->op = code
 #define OP_1ARG(dest, code, d1, a1) \
   OP_NARG(dest, code); \
@@ -86,10 +88,6 @@ instruction_list:
   $$->head = $1;
   $$->tail = 0;
   $$->last = $$;
-
-  $1->addr = prog->len;
-  if($1->op >= 0) // don't increment for labels
-    prog->len += 16;
 }
 | instruction_list instruction
 {
@@ -97,10 +95,6 @@ instruction_list:
   $1->last->tail->head = $2;
   $1->last = $1->last->tail;
   $$ = $1;
-
-  $2->addr = prog->len;
-  if($2->op >= 0) // don't increment for labels
-    prog->len += 16;
 }
 ;
 
@@ -109,8 +103,10 @@ instruction:
 {
   $$ = calloc(1, sizeof(instruction));
   $$->label = strdup(yytext);
+
   // special case for labels
   $$->op = -1;
+  $$->addr = prog->len;
 }
 | ADD reg ',' reg ',' reg
 {
