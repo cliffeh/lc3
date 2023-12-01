@@ -50,6 +50,8 @@ dump_program (program *prog)
   for (instruction_list *l = prog->instructions; l; l = l->tail)
     {
       instruction *inst = l->head;
+      // uncomment to debug addresses!
+      // fprintf (out, "%d  ", inst->addr);
       switch (inst->op)
         {
         case -1:

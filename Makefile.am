@@ -6,7 +6,8 @@ include_HEADERS = lc3.h
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
 
-AM_YFLAGS = -d --debug
+# TODO get rid of posix yacc warnings?
+AM_YFLAGS = -d
 
 # TODO move all this under tests with a separate makefile
 check_PROGRAMS = test/inst_to_bits test/operations

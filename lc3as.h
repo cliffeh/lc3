@@ -18,6 +18,7 @@ typedef struct instruction_list
 {
   instruction *head;
   struct instruction_list *tail;
+  struct instruction_list *last;
 } instruction_list;
 
 typedef struct program

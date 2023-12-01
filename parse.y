@@ -7,6 +7,8 @@ int yylex();    // from our scanner
 void yyerror();
 extern char *yytext;
 
+int rel_addr;
+
 // some convenience macros for operations
 #define OP_NARG(dest, code) \
   dest = calloc(1, sizeof(instruction)); \
@@ -22,7 +24,8 @@ extern char *yytext;
   dest->d3 = a3
 %}
 
-%parse-param {program *prog}
+%parse-param    { program *prog }
+%initial-action { rel_addr = 0; }
 
 %union {
   program *prog;
@@ -69,14 +72,36 @@ program:
 }
 ;
 
+/*
+  this would be simpler with right recursion, but:
+    1) we want to be able to capture address instructions, and
+    2) we want to protect against blowing out our stack if
+       the input program is large
+*/
 instruction_list:
   /* empty */
 { $$ = 0; }
-| instruction instruction_list
+| instruction
 {
   $$ = calloc(1, sizeof(instruction_list));
   $$->head = $1;
-  $$->tail = $2;
+  $$->tail = 0;
+  $$->last = $$;
+
+  $1->addr = rel_addr;
+  if($1->op >= 0) // don't increment for labels
+    rel_addr += 16;
+}
+| instruction_list instruction
+{
+  $1->last->tail = calloc(1, sizeof(instruction_list));
+  $1->last->tail->head = $2;
+  $1->last = $1->last->tail;
+  $$ = $1;
+
+  $2->addr = rel_addr;
+  if($2->op >= 0) // don't increment for labels
+    rel_addr += 16;
 }
 ;
 
