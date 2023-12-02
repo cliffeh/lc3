@@ -276,6 +276,7 @@ generate_code (FILE *out, program *prog, int flags)
             if (inst->immediate)
               {
                 inst->inst |= (1 << 5);
+                // bottom 5 bits
                 inst->inst |= (inst->imm5 & 0x0000001F);
                 sprintf (pbuf, "  ADD R%d, R%d, #%d", inst->reg[0],
                          inst->reg[1], inst->imm5);
@@ -297,6 +298,7 @@ generate_code (FILE *out, program *prog, int flags)
             if (inst->immediate)
               {
                 inst->inst |= (1 << 5);
+                // bottom 5 bits
                 inst->inst |= (inst->imm5 & 0x0000001F);
 
                 sprintf (pbuf, "  AND R%d, R%d, #%d", inst->reg[0],
@@ -323,6 +325,11 @@ generate_code (FILE *out, program *prog, int flags)
                          inst->label);
                 err_count++;
               }
+            else
+              {
+                // bottom 9 bits
+                inst->inst |= (addr & 0x000001FF);
+              }
 
             sprintf (pbuf, "  BR");
             char *p = pbuf + 4;
@@ -338,15 +345,62 @@ generate_code (FILE *out, program *prog, int flags)
             sprintf (p, " %s", inst->label);
           }
           break;
+
+        case OP_JMP:
+          {
+
+            if (inst->immediate)
+              {
+                inst->inst |= (inst->reg[0] << 6);
+                sprintf (pbuf, "  JMP R%d", inst->reg[0]);
+              }
+            else
+              { // RET special case
+                inst->inst |= (7 << 6);
+                sprintf (pbuf, "  RET");
+              }
+          }
+          break;
+
+        case OP_JSR:
+          {
+            if (inst->immediate)
+              {
+                inst->inst |= (1 << 11);
+                int addr
+                    = find_address_by_label (prog->instructions, inst->label);
+                if (addr < 0)
+                  {
+                    fprintf (stderr,
+                             "error: could not find address for label '%s'\n",
+                             inst->label);
+                    err_count++;
+                  }
+                else
+                  {
+                    // bottom 11 bits
+                    inst->inst |= (addr & 0x000007FF);
+                  }
+                sprintf (pbuf, "  JSR %s", inst->label);
+              }
+            else
+              {
+                inst->inst |= (inst->reg[0] << 6);
+                sprintf (pbuf, "  JSRR R%d", inst->reg[0]);
+              }
+          }
+          break;
         }
 
       if (flags & FORMAT_HEX)
         PPRINT (out, cp, "x%04X", inst->inst);
+
       if (flags & FORMAT_BITS)
         {
           inst_to_bits (buf, inst->inst);
           PPRINT (out, cp, "%s", buf);
         }
+
       if (flags & FORMAT_PRETTY)
         PPRINT (out, cp, "%s", pbuf);
 

@@ -47,26 +47,9 @@ print_instruction (FILE *out, instruction *inst, int flags)
   switch (inst->op)
     {
 
-    case OP_BR:
-      {
-      }
-      break;
-    case OP_JMP:
-      {
-        if (inst->immediate)
-          fprintf (out, "  JMP %s", reg_to_str (inst->reg[0]));
-        else // RET special case
-          fprintf (out, "  RET");
-      }
-      break;
-    case OP_JSR:
-      {
-        if (inst->immediate)
-          fprintf (out, "  JSR %s", inst->label);
-        else
-          fprintf (out, "  JSRR %s", reg_to_str (inst->reg[0]));
-      }
-      break;
+    
+    
+    
     case OP_LD:
       {
         fprintf (out, "  LD %s, %s", reg_to_str (inst->reg[0]), inst->label);
