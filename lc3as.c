@@ -566,6 +566,11 @@ generate_code (FILE *out, program *prog, int flags)
               inst_to_bits (buf, inst->inst);
               PPRINT (out, cp, "%s", buf);
             }
+
+          if (!flags)
+            {
+              fwrite (&inst->inst, sizeof (uint16_t), 1, out);
+            }
         }
 
       if (flags & FORMAT_PRETTY)
@@ -578,10 +583,6 @@ generate_code (FILE *out, program *prog, int flags)
       if (flags)
         {
           fprintf (out, "\n");
-        }
-      else
-        {
-          // TODO output machine code!
         }
     }
 
