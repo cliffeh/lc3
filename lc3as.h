@@ -2,6 +2,7 @@
 
 #include "lc3.h"
 #include <stdint.h> // for uint16_t
+#include <stdio.h>
 
 typedef struct instruction
 {
@@ -28,6 +29,6 @@ typedef struct program
   instruction_list *instructions;
 } program;
 
-void dump_program (program *prog, int format);
+void dump_program (FILE *out, program *prog, int format);
 void generate_code (program *program);
 int char_to_reg (char c);

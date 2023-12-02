@@ -1,4 +1,14 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#define VERSION_STRING "lc3as " PACKAGE_VERSION
+#endif
+
+#ifndef VERSION_STRING
+#define VERSION_STRING "lc3as unknown"
+#endif
+
 #include "lc3as.h"
+#include "popt/popt.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +24,7 @@
 // print instructions as bit strings
 #define FORMAT_BITS (1 << 3)
 
+extern FILE *yyin;
 extern int yyparse (program *prog);
 
 static const char *
@@ -65,17 +76,101 @@ find_address_by_label (const instruction_list *instructions, const char *label)
 }
 
 int
-main (int argc, char *argv[])
+main (int argc, const char *argv[])
 {
+  int rc, format = FORMAT_ASSEMBLY;
+  char *infile = "-", *outfile = "-";
+  FILE *out = 0;
+  yyin = 0;
+
+  poptContext optCon;
+
+  struct poptOption options[]
+      = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          { "input", 'i', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
+            &outfile, 'i', "read input from FILE", "FILE" },
+          { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
+            &outfile, 'o', "write output to FILE", "FILE" },
+          { "version", 0, POPT_ARG_NONE, 0, 'Z',
+            "show version information and exit", 0 },
+          POPT_AUTOHELP POPT_TABLEEND
+        };
+
+  optCon = poptGetContext (0, argc, argv, options, 0);
+  // poptSetOtherOptionHelp (optCon, "[OPTION...] [FILE]\nWill read from "
+  //                                 "stdin if no FILE is
+  //                                 provided.\nOptions:");
+
+  while ((rc = poptGetNextOpt (optCon)) > 0)
+    {
+      switch (rc)
+        {
+        case 'o':
+          {
+            if (out)
+              {
+                fprintf (stderr,
+                         "error: more than one output file specified\n");
+                poptPrintHelp (optCon, stderr, 0);
+                poptFreeContext (optCon);
+                exit (1);
+              }
+            else
+              {
+                out = fopen (outfile, "w");
+              }
+          }
+          break;
+        case 'i':
+          {
+            // TODO support >1 input file?
+            if (yyin)
+              {
+                fprintf (stderr,
+                         "error: more than one input file specified\n");
+                poptPrintHelp (optCon, stderr, 0);
+                poptFreeContext (optCon);
+                exit (1);
+              }
+            else
+              {
+                yyin = fopen (outfile, "r");
+              }
+          }
+          break;
+        case 'Z':
+          {
+            printf (VERSION_STRING);
+            poptFreeContext (optCon);
+            exit (0);
+          }
+          break;
+        }
+    }
+
+  if (rc != -1)
+    {
+      fprintf (stderr, "error: %s: %s\n",
+               poptBadOption (optCon, POPT_BADOPTION_NOALIAS),
+               poptStrerror (rc));
+      poptPrintHelp (optCon, stderr, 0);
+      poptFreeContext (optCon);
+      exit (1);
+    }
+
+  if (!yyin)
+    yyin = stdin;
+  if (!out)
+    out = stdout;
+
   program *prog = calloc (1, sizeof (program));
-  int rc = yyparse (prog), format = FORMAT_ASSEMBLY;
+
+  rc = yyparse (prog);
 
   if (rc == 0)
     {
-      dump_program (prog, format);
+      dump_program (out, prog, format);
       // TODO free_program()
-      // printf ("addr of label3: %d\n",
-      //         find_address_by_label (prog->instructions, "label3"));
     }
   else
     {
@@ -100,10 +195,8 @@ generate_code (program *prog)
 }
 
 void
-dump_program (program *prog, int format)
+dump_program (FILE *out, program *prog, int format)
 {
-  // TODO pass this in?
-  FILE *out = stdout;
   fprintf (out, ".ORIG x%X\n", prog->orig);
   for (const instruction_list *l = prog->instructions; l; l = l->tail)
     {
