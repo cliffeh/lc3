@@ -1,4 +1,5 @@
 #include "util.h"
+#include "lc3.h"
 
 void
 inst_to_bits (char *dest, uint16_t inst)

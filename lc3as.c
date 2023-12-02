@@ -85,7 +85,8 @@ main (int argc, const char *argv[])
                 fprintf (stderr, "warning: object format overridden by other "
                                  "format flags\n");
               }
-            else if (strcmp (format, "p") == 0 || strcmp (format, "pretty") == 0)
+            else if (strcmp (format, "p") == 0
+                     || strcmp (format, "pretty") == 0)
               {
                 flags |= FORMAT_PRETTY;
               }
@@ -224,8 +225,37 @@ generate_code (FILE *out, program *prog, int flags)
   for (instruction_list *l = prog->instructions; l; l = l->tail)
     {
       instruction *inst = l->head;
-      SET_OP (inst->inst, inst->op);
-      print_instruction (out, inst, flags);
+
+      if (flags & FORMAT_ADDR)
+        fprintf (out, "x%X ", inst->addr);
+
+      if (inst->op >= 0)
+        SET_OP (inst->inst, inst->op);
+      switch (inst->op)
+        {
+        case OP_ADD:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            inst->inst |= (inst->reg[1] << 6);
+            if (inst->immediate)
+              {
+                inst->inst |= (1 << 5);
+                inst->inst |= (inst->imm5 & 0x0000001F);
+                if (flags & FORMAT_PRETTY)
+                  fprintf (out, "  ADD R%d, R%d, #%d", inst->reg[0],
+                           inst->reg[1], inst->imm5);
+              }
+            else
+              {
+                inst->inst |= inst->reg[2];
+                if (flags & FORMAT_PRETTY)
+                  fprintf (out, "  ADD R%d, R%d, R%d", inst->reg[0],
+                           inst->reg[1], inst->reg[2]);
+              }
+          }
+          break;
+        }
+      err_count += print_instruction (out, inst, flags);
       // TODO also output debugging
     }
 

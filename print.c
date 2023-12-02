@@ -1,6 +1,25 @@
 #include "lc3as.h"
 #include <stdio.h>
 
+
+
+// TODO move to util?
+static const char *
+trapvec8_to_str (int trapvec8)
+{
+  // clang-format off
+  switch (trapvec8)
+    {
+      case 0x20: return "GETC";
+      case 0x21: return "OUT";
+      case 0x22: return "PUTS";
+      case 0x23: return "IN";
+      case 0x24: return "PUTSP";
+      case 0x25: return "HALT";
+    }
+  // clang-format on
+}
+
 // TODO move to util?
 static const char *
 reg_to_str (int reg)
@@ -17,23 +36,6 @@ reg_to_str (int reg)
     case R_R6: return "R6";
     case R_R7: return "R7";
     default:   return "R?";
-    }
-  // clang-format on
-}
-
-// TODO move to util?
-static const char *
-trapvec8_to_str (int trapvec8)
-{
-  // clang-format off
-  switch (trapvec8)
-    {
-      case 0x20: return "GETC";
-      case 0x21: return "OUT";
-      case 0x22: return "PUTS";
-      case 0x23: return "IN";
-      case 0x24: return "PUTSP";
-      case 0x25: return "HALT";
     }
   // clang-format on
 }
@@ -60,13 +62,11 @@ print_instruction (FILE *out, instruction *inst, int flags)
       {
         if (inst->immediate)
           {
-            fprintf (out, "  ADD %s, %s, #%d", reg_to_str (inst->reg[0]),
-                     reg_to_str (inst->reg[1]), inst->imm5);
+            
           }
         else
           {
-            fprintf (out, "  ADD %s, %s, %s", reg_to_str (inst->reg[0]),
-                     reg_to_str (inst->reg[1]), reg_to_str (inst->reg[2]));
+            
           }
       }
       break;
@@ -178,4 +178,5 @@ print_instruction (FILE *out, instruction *inst, int flags)
     }
   // POSTAMBLE HERE
   fprintf (out, "\n");
+  return 0;
 }

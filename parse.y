@@ -107,6 +107,10 @@ instruction:
 }
 | ADD reg ',' reg ',' num
 {
+  if($6 < -16 || $6 > 15) {
+    fprintf(stderr, "error: imm5 value out of range: '%d'\n", $6);
+    YYERROR;
+  }
   OP_3ARG($$, OP_ADD, reg[0], $2, reg[1], $4, imm5, $6);
   $$->immediate = 1;
 }
