@@ -9,6 +9,7 @@
 
 #include "lc3as.h"
 #include "popt/popt.h"
+#include "util.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -217,7 +218,8 @@ char_to_reg (char c)
 int
 generate_code (FILE *out, program *prog, int flags)
 {
-  int err_count = 0;
+  int err_count = 0, chars_printed;
+  char buf[32] = "";
 
   if (flags & FORMAT_PRETTY)
     fprintf (out, ".ORIG x%X\n", prog->orig);
@@ -225,14 +227,37 @@ generate_code (FILE *out, program *prog, int flags)
   for (instruction_list *l = prog->instructions; l; l = l->tail)
     {
       instruction *inst = l->head;
+      chars_printed = 0;
 
       if (flags & FORMAT_ADDR)
-        fprintf (out, "x%X ", inst->addr);
+        chars_printed += fprintf (out, "x%X", (prog->orig + inst->addr));
 
       if (inst->op >= 0)
         SET_OP (inst->inst, inst->op);
+
+      // TODO need to actually print out the object code!
       switch (inst->op)
         {
+        case -2:
+          {
+            if (flags & FORMAT_PRETTY)
+              {
+                fprintf (out, "%s  .STRINGZ \"%s\"\n",
+                         (chars_printed ? "  " : ""), inst->label);
+                continue;
+              }
+          }
+          break;
+        case -1:
+          {
+            if (flags & FORMAT_PRETTY)
+              {
+                chars_printed += fprintf (
+                    out, "%s%s\n", (chars_printed ? "  " : ""), inst->label);
+                continue;
+              }
+          }
+          break;
         case OP_ADD:
           {
             inst->inst |= (inst->reg[0] << 9);
@@ -242,19 +267,36 @@ generate_code (FILE *out, program *prog, int flags)
                 inst->inst |= (1 << 5);
                 inst->inst |= (inst->imm5 & 0x0000001F);
                 if (flags & FORMAT_PRETTY)
-                  fprintf (out, "  ADD R%d, R%d, #%d", inst->reg[0],
-                           inst->reg[1], inst->imm5);
+                  chars_printed
+                      += fprintf (out, "%s  ADD R%d, R%d, #%d",
+                                  (chars_printed ? "  " : ""), inst->reg[0],
+                                  inst->reg[1], inst->imm5);
               }
             else
               {
                 inst->inst |= inst->reg[2];
                 if (flags & FORMAT_PRETTY)
-                  fprintf (out, "  ADD R%d, R%d, R%d", inst->reg[0],
-                           inst->reg[1], inst->reg[2]);
+                  chars_printed
+                      += fprintf (out, "%s  ADD R%d, R%d, R%d",
+                                  (chars_printed ? "  " : ""), inst->reg[0],
+                                  inst->reg[1], inst->reg[2]);
               }
           }
           break;
         }
+
+      if (flags & FORMAT_HEX)
+        fprintf (out, "%sx%X", (chars_printed ? "  " : ""), inst->inst);
+      if (flags & FORMAT_BITS)
+        {
+          inst_to_bits (buf, inst->inst);
+          fprintf (out, "%s%s", (chars_printed ? "  " : ""), buf);
+        }
+
+      // TODO enable this once all the other instructions are moved
+      // if(flags)
+      //   fprintf(out, "\n");
+
       err_count += print_instruction (out, inst, flags);
       // TODO also output debugging
     }

@@ -53,23 +53,7 @@ print_instruction (FILE *out, instruction *inst, int flags)
         fprintf (out, "  .STRINGZ \"%s\"", inst->label);
       }
       break;
-    case -1:
-      {
-        fprintf (out, "%s", inst->label);
-      }
-      break;
-    case OP_ADD:
-      {
-        if (inst->immediate)
-          {
-            
-          }
-        else
-          {
-            
-          }
-      }
-      break;
+    
     case OP_AND:
       {
         if (inst->immediate)
