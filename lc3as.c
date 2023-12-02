@@ -9,9 +9,22 @@
 
 #include "lc3as.h"
 #include "popt/popt.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define ERR_EXIT(args...)                                                     \
+  do                                                                          \
+    {                                                                         \
+      fprintf (stderr, "error: ");                                            \
+      fprintf (stderr, args);                                                 \
+      fprintf (stderr, "\n");                                                 \
+      poptPrintHelp (optCon, stderr, 0);                                      \
+      poptFreeContext (optCon);                                               \
+      exit (1);                                                               \
+    }                                                                         \
+  while (0)
 
 extern FILE *yyin;
 extern int yyparse (program *prog);
@@ -20,16 +33,20 @@ int
 main (int argc, const char *argv[])
 {
   int rc, flags = FORMAT_OBJECT;
-  char *infile = "-", *outfile = "-", *format = "object";
-  FILE *out = 0;
+  char *infile = "-", *outfile = "-", *debugfile = 0, *format = "object";
+  FILE *out = 0, *debugout = 0;
   yyin = 0;
 
   poptContext optCon;
 
   struct poptOption options[] = {
     /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+    { "debug", 'd', POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL, &debugfile, 'd',
+      "output debug information to FILE; defaults to stderr if FILE is "
+      "unspecified",
+      "FILE" },
     { "format", 'f', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &format, 'f',
-      "output format; can be one of o[bject], a[ssembly], h[ex], b[its]",
+      "output format; can be one of a[ssembly], b[its], h[ex], o[bject]",
       "FORMAT" },
     { "input", 'i', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &infile, 'i',
       "read input from FILE", "FILE" },
@@ -46,8 +63,50 @@ main (int argc, const char *argv[])
     {
       switch (rc)
         {
+        case 'd':
+          {
+            if (debugout)
+              {
+                ERR_EXIT ("more than one debug output file specified");
+              }
+            else if (strcmp (debugfile, "-") == 0)
+              {
+                debugout = stdout;
+              }
+            else
+              {
+                if (!(debugout = fopen (debugfile, "w")))
+                  {
+                    ERR_EXIT ("couldn't open debug output file '%s': %s",
+                              debugfile, strerror (errno));
+                  }
+              }
+          }
+          break;
+
         case 'f':
           {
+            if (strcmp (format, "a") == 0 || strcmp (format, "assembly") == 0)
+              {
+                flags |= FORMAT_ASSEMBLY;
+              }
+            else if (strcmp (format, "b") == 0 || strcmp (format, "bits") == 0)
+              {
+                flags |= FORMAT_BITS;
+              }
+            else if (strcmp (format, "h") == 0 || strcmp (format, "hex") == 0)
+              {
+                flags |= FORMAT_HEX;
+              }
+            else if (strcmp (format, "o") == 0
+                     || strcmp (format, "object") == 0)
+              {
+                flags = FORMAT_OBJECT;
+              }
+            else
+              {
+                ERR_EXIT ("unknown format specified '%s'", format);
+              }
           }
           break;
 
@@ -56,15 +115,19 @@ main (int argc, const char *argv[])
             // TODO support >1 input file?
             if (yyin)
               {
-                fprintf (stderr,
-                         "error: more than one input file specified\n");
-                poptPrintHelp (optCon, stderr, 0);
-                poptFreeContext (optCon);
-                exit (1);
+                ERR_EXIT ("more than one input file specified");
+              }
+            else if (strcmp (infile, "-") == 0)
+              {
+                yyin = stdin;
               }
             else
               {
-                yyin = fopen (infile, "r");
+                if (!(yyin = fopen (infile, "r")))
+                  {
+                    ERR_EXIT ("couldn't open input file '%s': %s", infile,
+                              strerror (errno));
+                  }
               }
           }
           break;
@@ -73,15 +136,19 @@ main (int argc, const char *argv[])
           {
             if (out)
               {
-                fprintf (stderr,
-                         "error: more than one output file specified\n");
-                poptPrintHelp (optCon, stderr, 0);
-                poptFreeContext (optCon);
-                exit (1);
+                ERR_EXIT ("more than one output file specified");
+              }
+            else if (strcmp (outfile, "-") == 0)
+              {
+                out = stdout;
               }
             else
               {
-                out = fopen (outfile, "w");
+                if (!(out = fopen (outfile, "w")))
+                  {
+                    ERR_EXIT ("couldn't open output file '%s': %s", outfile,
+                              strerror (errno));
+                  }
               }
           }
           break;
@@ -98,12 +165,8 @@ main (int argc, const char *argv[])
 
   if (rc != -1)
     {
-      fprintf (stderr, "error: %s: %s\n",
-               poptBadOption (optCon, POPT_BADOPTION_NOALIAS),
-               poptStrerror (rc));
-      poptPrintHelp (optCon, stderr, 0);
-      poptFreeContext (optCon);
-      exit (1);
+      ERR_EXIT ("%s: %s\n", poptBadOption (optCon, POPT_BADOPTION_NOALIAS),
+                poptStrerror (rc));
     }
 
   if (!yyin)
@@ -154,8 +217,6 @@ generate_code (program *prog)
         }
     }
 }
-
-
 
 int
 char_to_reg (char c)
