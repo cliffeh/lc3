@@ -97,9 +97,6 @@ main (int argc, const char *argv[])
         };
 
   optCon = poptGetContext (0, argc, argv, options, 0);
-  // poptSetOtherOptionHelp (optCon, "[OPTION...] [FILE]\nWill read from "
-  //                                 "stdin if no FILE is
-  //                                 provided.\nOptions:");
 
   while ((rc = poptGetNextOpt (optCon)) > 0)
     {
