@@ -40,9 +40,8 @@ typedef struct program
   instruction_list *instructions;
 } program;
 
-void print_program (FILE *out, program *prog, int flags, FILE *debug);
-void print_instruction (FILE *out, instruction *inst, int flags, FILE *debug);
-void generate_code (program *program);
+int generate_code (FILE *out, program *prog, int flags, FILE *debug);
+int print_instruction (FILE *out, instruction *inst, int flags);
 int char_to_reg (char c);
 int find_address_by_label (const instruction_list *instructions,
                            const char *label);

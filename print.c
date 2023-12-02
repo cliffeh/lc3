@@ -38,8 +38,8 @@ trapvec8_to_str (int trapvec8)
   // clang-format on
 }
 
-void
-print_instruction (FILE *out, instruction *inst, int flags, FILE *debug)
+int
+print_instruction (FILE *out, instruction *inst, int flags)
 {
   // PREAMBLE HERE
   // if (flags & FORMAT_DEBUG)
@@ -178,20 +178,4 @@ print_instruction (FILE *out, instruction *inst, int flags, FILE *debug)
     }
   // POSTAMBLE HERE
   fprintf (out, "\n");
-}
-
-void
-print_program (FILE *out, program *prog, int flags, FILE *debug)
-{
-  if (flags & FORMAT_ASSEMBLY)
-    fprintf (out, ".ORIG x%X\n", prog->orig);
-
-  for (instruction_list *l = prog->instructions; l; l = l->tail)
-    {
-      instruction *inst = l->head;
-      print_instruction (out, inst, flags, debug);
-    }
-
-  if (flags & FORMAT_ASSEMBLY)
-    fprintf (out, ".END\n");
 }

@@ -180,7 +180,10 @@ main (int argc, const char *argv[])
 
   if (rc == 0)
     {
-      print_program (out, prog, flags, debug);
+      if ((rc = generate_code (out, prog, flags, debug)) != 0)
+        {
+          fprintf (stderr, "%i errors found\n", rc);
+        }
       // TODO free_program()
     }
   else
@@ -205,20 +208,6 @@ find_address_by_label (const instruction_list *instructions, const char *label)
   return -1;
 }
 
-void
-generate_code (program *prog)
-{
-  // TODO pass this in?
-  FILE *out = stdout;
-  for (const instruction_list *l = prog->instructions; l; l = l->tail)
-    {
-      const instruction *inst = l->head;
-      switch (inst->op)
-        {
-        }
-    }
-}
-
 int
 char_to_reg (char c)
 {
@@ -236,4 +225,25 @@ char_to_reg (char c)
     default:  return R_COUNT;
     }
   // clang-format on
+}
+
+int
+generate_code (FILE *out, program *prog, int flags, FILE *debug)
+{
+  int err_count = 0;
+
+  if (flags & FORMAT_ASSEMBLY)
+    fprintf (out, ".ORIG x%X\n", prog->orig);
+
+  for (instruction_list *l = prog->instructions; l; l = l->tail)
+    {
+      instruction *inst = l->head;
+      print_instruction (out, inst, flags);
+      // TODO also output debugging
+    }
+
+  if (flags & FORMAT_ASSEMBLY)
+    fprintf (out, ".END\n");
+
+  return err_count;
 }
