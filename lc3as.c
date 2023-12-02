@@ -34,7 +34,7 @@ main (int argc, const char *argv[])
 {
   int rc, flags = FORMAT_OBJECT;
   char *infile = "-", *outfile = "-", *debugfile = 0, *format = "object";
-  FILE *out = 0, *debugout = 0;
+  FILE *out = 0, *debug = 0;
   yyin = 0;
 
   poptContext optCon;
@@ -65,17 +65,17 @@ main (int argc, const char *argv[])
         {
         case 'd':
           {
-            if (debugout)
+            if (debug)
               {
                 ERR_EXIT ("more than one debug output file specified");
               }
             else if (strcmp (debugfile, "-") == 0)
               {
-                debugout = stdout;
+                debug = stdout;
               }
             else
               {
-                if (!(debugout = fopen (debugfile, "w")))
+                if (!(debug = fopen (debugfile, "w")))
                   {
                     ERR_EXIT ("couldn't open debug output file '%s': %s",
                               debugfile, strerror (errno));
@@ -180,11 +180,12 @@ main (int argc, const char *argv[])
 
   if (rc == 0)
     {
-      print_program (out, prog, flags);
+      print_program (out, prog, flags, debug);
       // TODO free_program()
     }
   else
     {
+      // TODO better error handling/messages
       fprintf (stderr, "there was an error\n");
     }
 

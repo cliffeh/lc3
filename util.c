@@ -1,4 +1,4 @@
-#include <stdint.h> // for uint16_t
+#include "util.h"
 
 void
 inst_to_bits (char *dest, uint16_t inst)

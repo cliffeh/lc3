@@ -12,7 +12,7 @@
 #define FORMAT_HEX (1 << 1)
 // print instructions as bit strings
 #define FORMAT_BITS (1 << 2)
-// include instruction addresses
+// include additional debugging information (e.g., instruction addresses)
 #define FORMAT_DEBUG (1 << 3)
 
 typedef struct instruction
@@ -40,7 +40,8 @@ typedef struct program
   instruction_list *instructions;
 } program;
 
-void print_program (FILE *out, program *prog, int flags);
+void print_program (FILE *out, program *prog, int flags, FILE *debug);
+void print_instruction (FILE *out, instruction *inst, int flags, FILE *debug);
 void generate_code (program *program);
 int char_to_reg (char c);
 int find_address_by_label (const instruction_list *instructions,

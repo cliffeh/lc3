@@ -1,10 +1,9 @@
 #include "../lc3.h"
+#include "../util.h"
 #include <assert.h>
 #include <stdint.h> // for uint16_t
 #include <stdio.h>  // for printf
 #include <string.h> // for strcmp
-
-void inst_to_bits (char *dest, uint16_t inst);
 
 int
 main ()
