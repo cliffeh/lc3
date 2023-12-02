@@ -19,8 +19,9 @@
 
 typedef struct instruction
 {
-  uint16_t addr, inst;
+  uint16_t inst;
   int op;
+  int pos;
   // TODO these ints could probably be collapsed...
   int reg[3];
   int cond, immediate;
@@ -45,5 +46,5 @@ typedef struct program
 int generate_code (FILE *out, program *prog, int flags);
 int print_instruction (FILE *out, instruction *inst, int flags);
 int char_to_reg (char c);
-int find_address_by_label (const instruction_list *instructions,
+int find_position_by_label (const instruction_list *instructions,
                            const char *label);

@@ -10,8 +10,7 @@ extern char *yytext;
 // some convenience macros for operations
 #define OP_NARG(dest, code) \
   dest = calloc(1, sizeof(instruction)); \
-  dest->addr = prog->len; \
-  prog->len += 16; \
+  dest->pos = prog->len++; \
   dest->op = code
 #define OP_1ARG(dest, code, d1, a1) \
   OP_NARG(dest, code); \
@@ -210,8 +209,8 @@ directive:
   $$->label = strdup(yytext+1);
   $$->label[strlen($$->label)-1] = 0;
   $$->op = -2;
-  $$->addr = prog->len;
-  prog->len += 16*(strlen($$->label)+1);
+  $$->pos = prog->len;
+  prog->len += (strlen($$->label)+1);
 }
 
 label: LABEL
@@ -219,7 +218,7 @@ label: LABEL
   $$ = calloc(1, sizeof(instruction));
   $$->label = strdup(yytext);
   $$->op = -1;
-  $$->addr = prog->len;
+  $$->pos = prog->len;
 }
 ;
 

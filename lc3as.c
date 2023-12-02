@@ -183,15 +183,16 @@ main (int argc, const char *argv[])
   return rc;
 }
 
-// TODO a more efficient way of looking up label addresses
+// TODO a more efficient way of looking up label positions
 int
-find_address_by_label (const instruction_list *instructions, const char *label)
+find_position_by_label (const instruction_list *instructions,
+                        const char *label)
 {
   for (const instruction_list *l = instructions; l; l = l->tail)
     {
       const instruction *inst = l->head;
       if (inst->op == -1 && strcmp (label, inst->label) == 0)
-        return inst->addr;
+        return inst->pos;
     }
   return -1;
 }
@@ -241,10 +242,20 @@ trapvec8_to_str (int trapvec8)
     }                                                                         \
   while (0)
 
+// TODO put this somewhere else?
+#define PCOFFSET(curr, dest, bitmask) ((dest - curr - 1) & bitmask)
+
 int
 generate_code (FILE *out, program *prog, int flags)
 {
   int err_count = 0, cp = 0;
+  uint16_t tmp16;
+
+  if (!flags)
+    {
+      tmp16 = swap16 (prog->orig);
+      fwrite (&tmp16, sizeof (uint16_t), 1, out);
+    }
 
   if (flags & FORMAT_PRETTY)
     PPRINT (out, cp, ".ORIG x%04X\n", prog->orig);
@@ -261,7 +272,7 @@ generate_code (FILE *out, program *prog, int flags)
           SET_OP (inst->inst, inst->op);
           // TODO use orig+addr?
           if (flags & FORMAT_ADDR)
-            PPRINT (out, cp, "x%04X", inst->addr);
+            PPRINT (out, cp, "x%04X", (inst->pos * 16));
         }
 
       // TODO need to actually print out the object code!
@@ -272,6 +283,20 @@ generate_code (FILE *out, program *prog, int flags)
             if (flags & FORMAT_PRETTY)
               {
                 sprintf (pbuf, ".STRINGZ \"%s\"", inst->label);
+              }
+
+            if (!flags)
+              {
+                uint16_t c;
+                for (char *p = inst->label; *p; p++)
+                  {
+                    c = (uint16_t)*p;
+                    tmp16 = swap16 (c);
+                    fwrite (&tmp16, sizeof (uint16_t), 1, out);
+                  }
+                // null terminate
+                tmp16 = 0;
+                fwrite (&tmp16, sizeof (uint16_t), 1, out);
               }
           }
           break;
@@ -334,18 +359,18 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_BR:
           {
             inst->inst |= (inst->cond << 9);
-            int addr = find_address_by_label (prog->instructions, inst->label);
-            if (addr < 0)
+            int dest = find_position_by_label (prog->instructions, inst->label);
+            if (dest < 0)
               {
                 fprintf (stderr,
-                         "error: could not find address for label '%s'\n",
+                         "error: could not find position for label '%s'\n",
                          inst->label);
                 err_count++;
               }
             else
               {
-                // bottom 9 bits
-                inst->inst |= (addr & 0x000001FF);
+                // PCoffset9
+                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
               }
 
             sprintf (pbuf, "BR");
@@ -384,19 +409,19 @@ generate_code (FILE *out, program *prog, int flags)
             if (inst->immediate)
               {
                 inst->inst |= (1 << 11);
-                int addr
-                    = find_address_by_label (prog->instructions, inst->label);
-                if (addr < 0)
+                int dest
+                    = find_position_by_label (prog->instructions, inst->label);
+                if (dest < 0)
                   {
                     fprintf (stderr,
-                             "error: could not find address for label '%s'\n",
+                             "error: could not find position for label '%s'\n",
                              inst->label);
                     err_count++;
                   }
                 else
                   {
-                    // bottom 11 bits
-                    inst->inst |= (addr & 0x000007FF);
+                    // PCoffset11
+                    inst->inst |= PCOFFSET(inst->pos, dest, 0x000007FF);
                   }
                 sprintf (pbuf, "JSR %s", inst->label);
               }
@@ -411,18 +436,18 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_LD:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int addr = find_address_by_label (prog->instructions, inst->label);
-            if (addr < 0)
+            int dest = find_position_by_label (prog->instructions, inst->label);
+            if (dest < 0)
               {
                 fprintf (stderr,
-                         "error: could not find address for label '%s'\n",
+                         "error: could not find position for label '%s'\n",
                          inst->label);
                 err_count++;
               }
             else
               {
-                // bottom 9 bits
-                inst->inst |= (addr & 0x000001FF);
+                // PCoffset9
+                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "LD R%d, %s", inst->reg[0], inst->label);
           }
@@ -431,18 +456,18 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_LDI:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int addr = find_address_by_label (prog->instructions, inst->label);
-            if (addr < 0)
+            int dest = find_position_by_label (prog->instructions, inst->label);
+            if (dest < 0)
               {
                 fprintf (stderr,
-                         "error: could not find address for label '%s'\n",
+                         "error: could not find position for label '%s'\n",
                          inst->label);
                 err_count++;
               }
             else
               {
-                // bottom 9 bits
-                inst->inst |= (addr & 0x000001FF);
+                // PCoffset9
+                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "LDI R%d, %s", inst->reg[0], inst->label);
           }
@@ -462,18 +487,18 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_LEA:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int addr = find_address_by_label (prog->instructions, inst->label);
-            if (addr < 0)
+            int dest = find_position_by_label (prog->instructions, inst->label);
+            if (dest < 0)
               {
                 fprintf (stderr,
-                         "error: could not find address for label '%s'\n",
+                         "error: could not find position for label '%s'\n",
                          inst->label);
                 err_count++;
               }
             else
               {
-                // bottom 9 bits
-                inst->inst |= (addr & 0x000001FF);
+                // PCoffset9
+                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "LEA R%d, %s", inst->reg[0], inst->label);
           }
@@ -497,18 +522,18 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_ST:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int addr = find_address_by_label (prog->instructions, inst->label);
-            if (addr < 0)
+            int dest = find_position_by_label (prog->instructions, inst->label);
+            if (dest < 0)
               {
                 fprintf (stderr,
-                         "error: could not find address for label '%s'\n",
+                         "error: could not find position for label '%s'\n",
                          inst->label);
                 err_count++;
               }
             else
               {
-                // bottom 9 bits
-                inst->inst |= (addr & 0x000001FF);
+                // PCoffset9
+                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "ST R%d, %s", inst->reg[0], inst->label);
           }
@@ -517,18 +542,18 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_STI:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int addr = find_address_by_label (prog->instructions, inst->label);
-            if (addr < 0)
+            int dest = find_position_by_label (prog->instructions, inst->label);
+            if (dest < 0)
               {
                 fprintf (stderr,
-                         "error: could not find address for label '%s'\n",
+                         "error: could not find position for label '%s'\n",
                          inst->label);
                 err_count++;
               }
             else
               {
-                // bottom 9 bits
-                inst->inst |= (addr & 0x000001FF);
+                // PCoffset9
+                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "STI R%d, %s", inst->reg[0], inst->label);
           }
@@ -569,7 +594,8 @@ generate_code (FILE *out, program *prog, int flags)
 
           if (!flags)
             {
-              fwrite (&inst->inst, sizeof (uint16_t), 1, out);
+              tmp16 = swap16 (inst->inst);
+              fwrite (&tmp16, sizeof (uint16_t), 1, out);
             }
         }
 

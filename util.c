@@ -13,3 +13,8 @@ inst_to_bits (char *dest, uint16_t inst)
   // null-terminate like a good citizen
   dest[16] = 0;
 }
+
+uint16_t swap16(uint16_t x)
+{
+    return (x << 8) | (x >> 8);
+}
