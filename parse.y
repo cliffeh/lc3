@@ -56,7 +56,7 @@ extern char *yytext;
 %type <inst> instruction
 // special cases of instruction
 %type <inst> directive label trap
-%type <num> num imm5 offset6
+%type <num> num imm5 offset6 trapvect8
 %type <reg> reg
 %type <str> branch
 
@@ -192,7 +192,7 @@ instruction:
 {
   OP_3ARG($$, OP_STR, reg[0], $2, reg[1], $4, offset6, $6);
 }
-| TRAP num
+| TRAP trapvect8
 {
   OP_1ARG($$, OP_TRAP, trapvect8, $2);
   $$->immediate = 1;
@@ -270,6 +270,17 @@ offset6:
 {
   if($1 < -32 || $1 > 31) {
     fprintf(stderr, "error: offset6 value out of range: %d\n", $1);
+    YYERROR;
+  }
+  $$ = $1;
+}
+;
+
+trapvect8:
+  num
+{
+  if($1 < 0 || $1 > 255) {
+    fprintf(stderr, "error: trapvect8 value out of range: %d\n", $1);
     YYERROR;
   }
   $$ = $1;
