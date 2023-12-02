@@ -1,5 +1,6 @@
 bin_PROGRAMS = lc3as
 lc3as_SOURCES = lc3as.c lc3as.h parse.y scan.l
+lc3as_LDADD = popt/libpopt.a
 
 include_HEADERS = lc3.h
 
@@ -8,6 +9,8 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 # TODO get rid of posix yacc warnings?
 AM_YFLAGS = -d
+
+SUBDIRS = popt
 
 # TODO move all this under tests with a separate makefile
 check_PROGRAMS = test/inst_to_bits test/operations

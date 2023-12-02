@@ -1,0 +1,28 @@
+# autotools-generated files
+.deps/
+aclocal.m4
+ar-lib
+autom4te.cache/
+compile
+config.h
+config.h.in
+config.h.in~
+config.log
+config.status
+configure
+configure~
+depcomp
+install-sh
+Makefile
+Makefile.in
+missing
+stamp-h1
+
+# generated object files
+*.o
+
+# generated library
+libpopt.a
+
+# distribution files
+popt-*.tar.gz
