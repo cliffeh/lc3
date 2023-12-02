@@ -1,8 +1,6 @@
 #include "lc3as.h"
 #include <stdio.h>
 
-
-
 // TODO move to util?
 static const char *
 trapvec8_to_str (int trapvec8)
@@ -48,39 +46,9 @@ print_instruction (FILE *out, instruction *inst, int flags)
   // fprintf (out, "%d  ", inst->addr);
   switch (inst->op)
     {
-    case -2:
-      {
-        fprintf (out, "  .STRINGZ \"%s\"", inst->label);
-      }
-      break;
-    
-    case OP_AND:
-      {
-        if (inst->immediate)
-          {
-            fprintf (out, "  AND %s, %s, #%d", reg_to_str (inst->reg[0]),
-                     reg_to_str (inst->reg[1]), inst->imm5);
-          }
-        else
-          {
-            fprintf (out, "  AND %s, %s, %s\n", reg_to_str (inst->reg[0]),
-                     reg_to_str (inst->reg[1]), reg_to_str (inst->reg[2]));
-          }
-      }
-      break;
+
     case OP_BR:
       {
-        char cond[4] = "", *p = cond;
-        if (inst->cond & FL_NEG)
-          *p++ = 'n';
-
-        if (inst->cond & FL_ZRO)
-          *p++ = 'z';
-
-        if (inst->cond & FL_POS)
-          *p++ = 'p';
-
-        fprintf (out, "  BR%s %s", cond, inst->label);
       }
       break;
     case OP_JMP:
@@ -157,7 +125,8 @@ print_instruction (FILE *out, instruction *inst, int flags)
       break;
     default:
       {
-        fprintf (stderr, "I don't know how to print this op (%d)", inst->op);
+        // fprintf (stderr, "I don't know how to print this op (%d)",
+        // inst->op);
       }
     }
   // POSTAMBLE HERE

@@ -215,22 +215,31 @@ char_to_reg (char c)
   // clang-format on
 }
 
+#define PPRINT(out, cp, args...)                                              \
+  do                                                                          \
+    {                                                                         \
+      if (cp)                                                                 \
+        cp += fprintf (out, "  ");                                            \
+      cp += fprintf (out, args);                                              \
+    }                                                                         \
+  while (0)
+
 int
 generate_code (FILE *out, program *prog, int flags)
 {
-  int err_count = 0, chars_printed;
+  int err_count = 0, cp = 0;
   char buf[32] = "";
 
   if (flags & FORMAT_PRETTY)
-    fprintf (out, ".ORIG x%X\n", prog->orig);
+    PPRINT (out, cp, ".ORIG x%X\n", prog->orig);
 
   for (instruction_list *l = prog->instructions; l; l = l->tail)
     {
       instruction *inst = l->head;
-      chars_printed = 0;
+      cp = 0;
 
       if (flags & FORMAT_ADDR)
-        chars_printed += fprintf (out, "x%X", (prog->orig + inst->addr));
+        PPRINT (out, cp, "x%X", (prog->orig + inst->addr));
 
       if (inst->op >= 0)
         SET_OP (inst->inst, inst->op);
@@ -242,22 +251,22 @@ generate_code (FILE *out, program *prog, int flags)
           {
             if (flags & FORMAT_PRETTY)
               {
-                fprintf (out, "%s  .STRINGZ \"%s\"\n",
-                         (chars_printed ? "  " : ""), inst->label);
+                PPRINT (out, cp, "  .STRINGZ \"%s\"\n", inst->label);
                 continue;
               }
           }
           break;
+
         case -1:
           {
             if (flags & FORMAT_PRETTY)
               {
-                chars_printed += fprintf (
-                    out, "%s%s\n", (chars_printed ? "  " : ""), inst->label);
+                PPRINT (out, cp, "%s\n", inst->label);
                 continue;
               }
           }
           break;
+
         case OP_ADD:
           {
             inst->inst |= (inst->reg[0] << 9);
@@ -267,30 +276,69 @@ generate_code (FILE *out, program *prog, int flags)
                 inst->inst |= (1 << 5);
                 inst->inst |= (inst->imm5 & 0x0000001F);
                 if (flags & FORMAT_PRETTY)
-                  chars_printed
-                      += fprintf (out, "%s  ADD R%d, R%d, #%d",
-                                  (chars_printed ? "  " : ""), inst->reg[0],
-                                  inst->reg[1], inst->imm5);
+                  PPRINT (out, cp, "  ADD R%d, R%d, #%d", inst->reg[0],
+                          inst->reg[1], inst->imm5);
               }
             else
               {
                 inst->inst |= inst->reg[2];
                 if (flags & FORMAT_PRETTY)
-                  chars_printed
-                      += fprintf (out, "%s  ADD R%d, R%d, R%d",
-                                  (chars_printed ? "  " : ""), inst->reg[0],
-                                  inst->reg[1], inst->reg[2]);
+                  PPRINT (out, cp, "  ADD R%d, R%d, R%d", inst->reg[0],
+                          inst->reg[1], inst->reg[2]);
+              }
+          }
+          break;
+
+        case OP_AND:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            inst->inst |= (inst->reg[1] << 6);
+            if (inst->immediate)
+              {
+                inst->inst |= (1 << 5);
+                inst->inst |= (inst->imm5 & 0x0000001F);
+                if (flags & FORMAT_PRETTY)
+                  PPRINT (out, cp, "  AND R%d, R%d, #%d", inst->reg[0],
+                          inst->reg[1], inst->imm5);
+              }
+            else
+              {
+                inst->inst |= inst->reg[2];
+                if (flags & FORMAT_PRETTY)
+                  PPRINT (out, cp, "  AND R%d, R%d, R%d", inst->reg[0],
+                          inst->reg[1], inst->reg[2]);
+              }
+          }
+          break;
+
+        case OP_BR:
+          {
+            inst->inst |= (inst->cond << 9);
+
+            if (flags & FORMAT_PRETTY)
+              {
+                char cond[4] = "", *p = cond;
+                if (inst->cond & FL_NEG)
+                  *p++ = 'n';
+
+                if (inst->cond & FL_ZRO)
+                  *p++ = 'z';
+
+                if (inst->cond & FL_POS)
+                  *p++ = 'p';
+
+                PPRINT (out, cp, "  BR%s %s", cond, inst->label);
               }
           }
           break;
         }
 
       if (flags & FORMAT_HEX)
-        fprintf (out, "%sx%X", (chars_printed ? "  " : ""), inst->inst);
+        PPRINT (out, cp, "x%X", inst->inst);
       if (flags & FORMAT_BITS)
         {
           inst_to_bits (buf, inst->inst);
-          fprintf (out, "%s%s", (chars_printed ? "  " : ""), buf);
+          PPRINT (out, cp, "%s", buf);
         }
 
       // TODO enable this once all the other instructions are moved
