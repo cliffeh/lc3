@@ -6,14 +6,16 @@
 
 // print out assembled object code
 #define FORMAT_OBJECT 0
-// pretty-print the assembly back out
-#define FORMAT_ASSEMBLY (1 << 0)
-// print instructions as hex
-#define FORMAT_HEX (1 << 1)
+// include instruction addresses
+#define FORMAT_ADDR (1 << 0)
 // print instructions as bit strings
-#define FORMAT_BITS (1 << 2)
-// include additional debugging information (e.g., instruction addresses)
-#define FORMAT_DEBUG (1 << 3)
+#define FORMAT_BITS (1 << 1)
+// print instructions as hex
+#define FORMAT_HEX (1 << 2)
+// pretty-print the assembly back out
+#define FORMAT_PRETTY (1 << 3)
+// debugging output
+#define FORMAT_DEBUG (FORMAT_ADDR|FORMAT_BITS|FORMAT_HEX|FORMAT_PRETTY)
 
 typedef struct instruction
 {
@@ -40,7 +42,7 @@ typedef struct program
   instruction_list *instructions;
 } program;
 
-int generate_code (FILE *out, program *prog, int flags, FILE *debug);
+int generate_code (FILE *out, program *prog, int flags);
 int print_instruction (FILE *out, instruction *inst, int flags);
 int char_to_reg (char c);
 int find_address_by_label (const instruction_list *instructions,

@@ -33,20 +33,17 @@ int
 main (int argc, const char *argv[])
 {
   int rc, flags = FORMAT_OBJECT;
-  char *infile = "-", *outfile = "-", *debugfile = 0, *format = "object";
-  FILE *out = 0, *debug = 0;
+  char *infile = "-", *outfile = "-", *format = "object";
+  FILE *out = 0;
   yyin = 0;
 
   poptContext optCon;
 
   struct poptOption options[] = {
     /* longName, shortName, argInfo, arg, val, descrip, argDescript */
-    { "debug", 'd', POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL, &debugfile, 'd',
-      "output debug information to FILE; defaults to stderr if FILE is "
-      "unspecified",
-      "FILE" },
-    { "format", 'f', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &format, 'f',
-      "output format; can be one of a[ssembly], b[its], h[ex], o[bject]",
+    { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &format, 'F',
+      "output format; can be one of a[ddress], b[its], d[ebug], h[ex], "
+      "o[bject], p[retty] (note: debug is shorthand for -Fa -Fb -Fh -Fp)",
       "FORMAT" },
     { "input", 'i', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &infile, 'i',
       "read input from FILE", "FILE" },
@@ -63,36 +60,20 @@ main (int argc, const char *argv[])
     {
       switch (rc)
         {
-        case 'd':
+        case 'F':
           {
-            if (debug)
+            if (strcmp (format, "a") == 0 || strcmp (format, "address") == 0)
               {
-                ERR_EXIT ("more than one debug output file specified");
-              }
-            else if (strcmp (debugfile, "-") == 0)
-              {
-                debug = stdout;
-              }
-            else
-              {
-                if (!(debug = fopen (debugfile, "w")))
-                  {
-                    ERR_EXIT ("couldn't open debug output file '%s': %s",
-                              debugfile, strerror (errno));
-                  }
-              }
-          }
-          break;
-
-        case 'f':
-          {
-            if (strcmp (format, "a") == 0 || strcmp (format, "assembly") == 0)
-              {
-                flags |= FORMAT_ASSEMBLY;
+                flags |= FORMAT_ADDR;
               }
             else if (strcmp (format, "b") == 0 || strcmp (format, "bits") == 0)
               {
                 flags |= FORMAT_BITS;
+              }
+            else if (strcmp (format, "d") == 0
+                     || strcmp (format, "debug") == 0)
+              {
+                flags = FORMAT_DEBUG;
               }
             else if (strcmp (format, "h") == 0 || strcmp (format, "hex") == 0)
               {
@@ -101,7 +82,12 @@ main (int argc, const char *argv[])
             else if (strcmp (format, "o") == 0
                      || strcmp (format, "object") == 0)
               {
-                flags = FORMAT_OBJECT;
+                fprintf (stderr, "warning: object format overridden by other "
+                                 "format flags\n");
+              }
+            else if (strcmp (format, "p") == 0 || strcmp (format, "pretty") == 0)
+              {
+                flags |= FORMAT_PRETTY;
               }
             else
               {
@@ -180,7 +166,7 @@ main (int argc, const char *argv[])
 
   if (rc == 0)
     {
-      if ((rc = generate_code (out, prog, flags, debug)) != 0)
+      if ((rc = generate_code (out, prog, flags)) != 0)
         {
           fprintf (stderr, "%i errors found\n", rc);
         }
@@ -228,21 +214,22 @@ char_to_reg (char c)
 }
 
 int
-generate_code (FILE *out, program *prog, int flags, FILE *debug)
+generate_code (FILE *out, program *prog, int flags)
 {
   int err_count = 0;
 
-  if (flags & FORMAT_ASSEMBLY)
+  if (flags & FORMAT_PRETTY)
     fprintf (out, ".ORIG x%X\n", prog->orig);
 
   for (instruction_list *l = prog->instructions; l; l = l->tail)
     {
       instruction *inst = l->head;
+      SET_OP (inst->inst, inst->op);
       print_instruction (out, inst, flags);
       // TODO also output debugging
     }
 
-  if (flags & FORMAT_ASSEMBLY)
+  if (flags & FORMAT_PRETTY)
     fprintf (out, ".END\n");
 
   return err_count;
