@@ -270,10 +270,10 @@ generate_code (FILE *out, program *prog, int flags)
       if (inst->op >= 0)
         {
           SET_OP (inst->inst, inst->op);
-          // TODO use orig+addr?
-          if (flags & FORMAT_ADDR)
-            PPRINT (out, cp, "x%04X", (inst->pos * 16));
         }
+
+      if (flags & FORMAT_ADDR)
+        PPRINT (out, cp, "x%04X", (inst->pos * 16));
 
       // TODO need to actually print out the object code!
       switch (inst->op)
@@ -359,7 +359,8 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_BR:
           {
             inst->inst |= (inst->cond << 9);
-            int dest = find_position_by_label (prog->instructions, inst->label);
+            int dest
+                = find_position_by_label (prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -370,7 +371,7 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // PCoffset9
-                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
+                inst->inst |= PCOFFSET (inst->pos, dest, 0x000001FF);
               }
 
             sprintf (pbuf, "BR");
@@ -421,7 +422,7 @@ generate_code (FILE *out, program *prog, int flags)
                 else
                   {
                     // PCoffset11
-                    inst->inst |= PCOFFSET(inst->pos, dest, 0x000007FF);
+                    inst->inst |= PCOFFSET (inst->pos, dest, 0x000007FF);
                   }
                 sprintf (pbuf, "JSR %s", inst->label);
               }
@@ -436,7 +437,8 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_LD:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int dest = find_position_by_label (prog->instructions, inst->label);
+            int dest
+                = find_position_by_label (prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -447,7 +449,7 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // PCoffset9
-                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
+                inst->inst |= PCOFFSET (inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "LD R%d, %s", inst->reg[0], inst->label);
           }
@@ -456,7 +458,8 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_LDI:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int dest = find_position_by_label (prog->instructions, inst->label);
+            int dest
+                = find_position_by_label (prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -467,7 +470,7 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // PCoffset9
-                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
+                inst->inst |= PCOFFSET (inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "LDI R%d, %s", inst->reg[0], inst->label);
           }
@@ -487,7 +490,8 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_LEA:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int dest = find_position_by_label (prog->instructions, inst->label);
+            int dest
+                = find_position_by_label (prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -498,7 +502,7 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // PCoffset9
-                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
+                inst->inst |= PCOFFSET (inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "LEA R%d, %s", inst->reg[0], inst->label);
           }
@@ -522,7 +526,8 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_ST:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int dest = find_position_by_label (prog->instructions, inst->label);
+            int dest
+                = find_position_by_label (prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -533,7 +538,7 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // PCoffset9
-                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
+                inst->inst |= PCOFFSET (inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "ST R%d, %s", inst->reg[0], inst->label);
           }
@@ -542,7 +547,8 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_STI:
           {
             inst->inst |= (inst->reg[0] << 9);
-            int dest = find_position_by_label (prog->instructions, inst->label);
+            int dest
+                = find_position_by_label (prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -553,7 +559,7 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // PCoffset9
-                inst->inst |= PCOFFSET(inst->pos, dest, 0x000001FF);
+                inst->inst |= PCOFFSET (inst->pos, dest, 0x000001FF);
               }
             sprintf (pbuf, "STI R%d, %s", inst->reg[0], inst->label);
           }
