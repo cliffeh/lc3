@@ -256,12 +256,13 @@ generate_code (FILE *out, program *prog, int flags)
 
       instruction *inst = l->head;
 
-      // TODO use orig+addr?
-      if (flags & FORMAT_ADDR)
-        PPRINT (out, cp, "x%04X", inst->addr);
-
       if (inst->op >= 0)
-        SET_OP (inst->inst, inst->op);
+        {
+          SET_OP (inst->inst, inst->op);
+          // TODO use orig+addr?
+          if (flags & FORMAT_ADDR)
+            PPRINT (out, cp, "x%04X", inst->addr);
+        }
 
       // TODO need to actually print out the object code!
       switch (inst->op)
@@ -270,10 +271,7 @@ generate_code (FILE *out, program *prog, int flags)
           {
             if (flags & FORMAT_PRETTY)
               {
-                if (!cp)
-                  fprintf (out, "  ");
-                PPRINT (out, cp, ".STRINGZ \"%s\"\n", inst->label);
-                continue;
+                sprintf (pbuf, ".STRINGZ \"%s\"", inst->label);
               }
           }
           break;
@@ -558,13 +556,16 @@ generate_code (FILE *out, program *prog, int flags)
           break;
         }
 
-      if (flags & FORMAT_HEX)
-        PPRINT (out, cp, "x%04X", inst->inst);
-
-      if (flags & FORMAT_BITS)
+      if (inst->op >= 0)
         {
-          inst_to_bits (buf, inst->inst);
-          PPRINT (out, cp, "%s", buf);
+          if (flags & FORMAT_HEX)
+            PPRINT (out, cp, "x%04X", inst->inst);
+
+          if (flags & FORMAT_BITS)
+            {
+              inst_to_bits (buf, inst->inst);
+              PPRINT (out, cp, "%s", buf);
+            }
         }
 
       if (flags & FORMAT_PRETTY)
@@ -580,7 +581,7 @@ generate_code (FILE *out, program *prog, int flags)
         }
       else
         {
-          // TODO output instruction code!
+          // TODO output machine code!
         }
     }
 
