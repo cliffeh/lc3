@@ -228,18 +228,20 @@ int
 generate_code (FILE *out, program *prog, int flags)
 {
   int err_count = 0, cp = 0;
-  char buf[32] = "";
 
   if (flags & FORMAT_PRETTY)
-    PPRINT (out, cp, ".ORIG x%X\n", prog->orig);
+    PPRINT (out, cp, ".ORIG x%04X\n", prog->orig);
 
   for (instruction_list *l = prog->instructions; l; l = l->tail)
     {
-      instruction *inst = l->head;
+      char buf[32] = "", pbuf[4096] = "";
       cp = 0;
 
+      instruction *inst = l->head;
+
+      // TODO use orig+addr?
       if (flags & FORMAT_ADDR)
-        PPRINT (out, cp, "x%X", (prog->orig + inst->addr));
+        PPRINT (out, cp, "x%04X", inst->addr);
 
       if (inst->op >= 0)
         SET_OP (inst->inst, inst->op);
@@ -275,16 +277,15 @@ generate_code (FILE *out, program *prog, int flags)
               {
                 inst->inst |= (1 << 5);
                 inst->inst |= (inst->imm5 & 0x0000001F);
-                if (flags & FORMAT_PRETTY)
-                  PPRINT (out, cp, "  ADD R%d, R%d, #%d", inst->reg[0],
-                          inst->reg[1], inst->imm5);
+                sprintf (pbuf, "  ADD R%d, R%d, #%d", inst->reg[0],
+                         inst->reg[1], inst->imm5);
               }
             else
               {
                 inst->inst |= inst->reg[2];
-                if (flags & FORMAT_PRETTY)
-                  PPRINT (out, cp, "  ADD R%d, R%d, R%d", inst->reg[0],
-                          inst->reg[1], inst->reg[2]);
+
+                sprintf (pbuf, "  ADD R%d, R%d, R%d", inst->reg[0],
+                         inst->reg[1], inst->reg[2]);
               }
           }
           break;
@@ -297,16 +298,16 @@ generate_code (FILE *out, program *prog, int flags)
               {
                 inst->inst |= (1 << 5);
                 inst->inst |= (inst->imm5 & 0x0000001F);
-                if (flags & FORMAT_PRETTY)
-                  PPRINT (out, cp, "  AND R%d, R%d, #%d", inst->reg[0],
-                          inst->reg[1], inst->imm5);
+
+                sprintf (pbuf, "  AND R%d, R%d, #%d", inst->reg[0],
+                         inst->reg[1], inst->imm5);
               }
             else
               {
                 inst->inst |= inst->reg[2];
-                if (flags & FORMAT_PRETTY)
-                  PPRINT (out, cp, "  AND R%d, R%d, R%d", inst->reg[0],
-                          inst->reg[1], inst->reg[2]);
+
+                sprintf (pbuf, "  AND R%d, R%d, R%d", inst->reg[0],
+                         inst->reg[1], inst->reg[2]);
               }
           }
           break;
@@ -314,32 +315,40 @@ generate_code (FILE *out, program *prog, int flags)
         case OP_BR:
           {
             inst->inst |= (inst->cond << 9);
-
-            if (flags & FORMAT_PRETTY)
+            int addr = find_address_by_label (prog->instructions, inst->label);
+            if (addr < 0)
               {
-                char cond[4] = "", *p = cond;
-                if (inst->cond & FL_NEG)
-                  *p++ = 'n';
-
-                if (inst->cond & FL_ZRO)
-                  *p++ = 'z';
-
-                if (inst->cond & FL_POS)
-                  *p++ = 'p';
-
-                PPRINT (out, cp, "  BR%s %s", cond, inst->label);
+                fprintf (stderr,
+                         "error: could not find address for label '%s'\n",
+                         inst->label);
+                err_count++;
               }
+
+            sprintf (pbuf, "  BR");
+            char *p = pbuf + 4;
+            if (inst->cond & FL_NEG)
+              *p++ = 'n';
+
+            if (inst->cond & FL_ZRO)
+              *p++ = 'z';
+
+            if (inst->cond & FL_POS)
+              *p++ = 'p';
+
+            sprintf (p, " %s", inst->label);
           }
           break;
         }
 
       if (flags & FORMAT_HEX)
-        PPRINT (out, cp, "x%X", inst->inst);
+        PPRINT (out, cp, "x%04X", inst->inst);
       if (flags & FORMAT_BITS)
         {
           inst_to_bits (buf, inst->inst);
           PPRINT (out, cp, "%s", buf);
         }
+      if (flags & FORMAT_PRETTY)
+        PPRINT (out, cp, "%s", pbuf);
 
       // TODO enable this once all the other instructions are moved
       // if(flags)
