@@ -215,6 +215,23 @@ char_to_reg (char c)
   // clang-format on
 }
 
+// TODO move to util?
+static const char *
+trapvec8_to_str (int trapvec8)
+{
+  // clang-format off
+  switch (trapvec8)
+    {
+      case 0x20: return "GETC";
+      case 0x21: return "OUT";
+      case 0x22: return "PUTS";
+      case 0x23: return "IN";
+      case 0x24: return "PUTSP";
+      case 0x25: return "HALT";
+    }
+  // clang-format on
+}
+
 #define PPRINT(out, cp, args...)                                              \
   do                                                                          \
     {                                                                         \
@@ -253,7 +270,9 @@ generate_code (FILE *out, program *prog, int flags)
           {
             if (flags & FORMAT_PRETTY)
               {
-                PPRINT (out, cp, "  .STRINGZ \"%s\"\n", inst->label);
+                if (!cp)
+                  fprintf (out, "  ");
+                PPRINT (out, cp, ".STRINGZ \"%s\"\n", inst->label);
                 continue;
               }
           }
@@ -278,15 +297,15 @@ generate_code (FILE *out, program *prog, int flags)
                 inst->inst |= (1 << 5);
                 // bottom 5 bits
                 inst->inst |= (inst->imm5 & 0x0000001F);
-                sprintf (pbuf, "  ADD R%d, R%d, #%d", inst->reg[0],
-                         inst->reg[1], inst->imm5);
+                sprintf (pbuf, "ADD R%d, R%d, #%d", inst->reg[0], inst->reg[1],
+                         inst->imm5);
               }
             else
               {
                 inst->inst |= inst->reg[2];
 
-                sprintf (pbuf, "  ADD R%d, R%d, R%d", inst->reg[0],
-                         inst->reg[1], inst->reg[2]);
+                sprintf (pbuf, "ADD R%d, R%d, R%d", inst->reg[0], inst->reg[1],
+                         inst->reg[2]);
               }
           }
           break;
@@ -301,15 +320,15 @@ generate_code (FILE *out, program *prog, int flags)
                 // bottom 5 bits
                 inst->inst |= (inst->imm5 & 0x0000001F);
 
-                sprintf (pbuf, "  AND R%d, R%d, #%d", inst->reg[0],
-                         inst->reg[1], inst->imm5);
+                sprintf (pbuf, "AND R%d, R%d, #%d", inst->reg[0], inst->reg[1],
+                         inst->imm5);
               }
             else
               {
                 inst->inst |= inst->reg[2];
 
-                sprintf (pbuf, "  AND R%d, R%d, R%d", inst->reg[0],
-                         inst->reg[1], inst->reg[2]);
+                sprintf (pbuf, "AND R%d, R%d, R%d", inst->reg[0], inst->reg[1],
+                         inst->reg[2]);
               }
           }
           break;
@@ -331,8 +350,8 @@ generate_code (FILE *out, program *prog, int flags)
                 inst->inst |= (addr & 0x000001FF);
               }
 
-            sprintf (pbuf, "  BR");
-            char *p = pbuf + 4;
+            sprintf (pbuf, "BR");
+            char *p = pbuf + 2;
             if (inst->cond & FL_NEG)
               *p++ = 'n';
 
@@ -352,12 +371,12 @@ generate_code (FILE *out, program *prog, int flags)
             if (inst->immediate)
               {
                 inst->inst |= (inst->reg[0] << 6);
-                sprintf (pbuf, "  JMP R%d", inst->reg[0]);
+                sprintf (pbuf, "JMP R%d", inst->reg[0]);
               }
             else
               { // RET special case
                 inst->inst |= (7 << 6);
-                sprintf (pbuf, "  RET");
+                sprintf (pbuf, "RET");
               }
           }
           break;
@@ -381,12 +400,12 @@ generate_code (FILE *out, program *prog, int flags)
                     // bottom 11 bits
                     inst->inst |= (addr & 0x000007FF);
                   }
-                sprintf (pbuf, "  JSR %s", inst->label);
+                sprintf (pbuf, "JSR %s", inst->label);
               }
             else
               {
                 inst->inst |= (inst->reg[0] << 6);
-                sprintf (pbuf, "  JSRR R%d", inst->reg[0]);
+                sprintf (pbuf, "JSRR R%d", inst->reg[0]);
               }
           }
           break;
@@ -407,7 +426,7 @@ generate_code (FILE *out, program *prog, int flags)
                 // bottom 9 bits
                 inst->inst |= (addr & 0x000001FF);
               }
-            sprintf (pbuf, "  LD R%d, %s", inst->reg[0], inst->label);
+            sprintf (pbuf, "LD R%d, %s", inst->reg[0], inst->label);
           }
           break;
 
@@ -427,7 +446,7 @@ generate_code (FILE *out, program *prog, int flags)
                 // bottom 9 bits
                 inst->inst |= (addr & 0x000001FF);
               }
-            sprintf (pbuf, "  LDI R%d, %s", inst->reg[0], inst->label);
+            sprintf (pbuf, "LDI R%d, %s", inst->reg[0], inst->label);
           }
           break;
 
@@ -437,8 +456,104 @@ generate_code (FILE *out, program *prog, int flags)
             inst->inst |= (inst->reg[1] << 6);
             // bottom 6 bits
             inst->inst |= (inst->offset6 & 0x0000003F);
-            sprintf (pbuf, "  LDR R%d, R%d, #%d", inst->reg[0], inst->reg[1],
+            sprintf (pbuf, "LDR R%d, R%d, #%d", inst->reg[0], inst->reg[1],
                      inst->offset6);
+          }
+          break;
+
+        case OP_LEA:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            int addr = find_address_by_label (prog->instructions, inst->label);
+            if (addr < 0)
+              {
+                fprintf (stderr,
+                         "error: could not find address for label '%s'\n",
+                         inst->label);
+                err_count++;
+              }
+            else
+              {
+                // bottom 9 bits
+                inst->inst |= (addr & 0x000001FF);
+              }
+            sprintf (pbuf, "LEA R%d, %s", inst->reg[0], inst->label);
+          }
+          break;
+
+        case OP_NOT:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            inst->inst |= (inst->reg[1] << 6);
+            inst->inst |= (0x3F); // bottom 6 bits
+            sprintf (pbuf, "NOT R%d, R%d", inst->reg[0], inst->reg[1]);
+          }
+          break;
+
+        case OP_RTI:
+          {
+            sprintf (pbuf, "RTI");
+          }
+          break;
+
+        case OP_ST:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            int addr = find_address_by_label (prog->instructions, inst->label);
+            if (addr < 0)
+              {
+                fprintf (stderr,
+                         "error: could not find address for label '%s'\n",
+                         inst->label);
+                err_count++;
+              }
+            else
+              {
+                // bottom 9 bits
+                inst->inst |= (addr & 0x000001FF);
+              }
+            sprintf (pbuf, "ST R%d, %s", inst->reg[0], inst->label);
+          }
+          break;
+
+        case OP_STI:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            int addr = find_address_by_label (prog->instructions, inst->label);
+            if (addr < 0)
+              {
+                fprintf (stderr,
+                         "error: could not find address for label '%s'\n",
+                         inst->label);
+                err_count++;
+              }
+            else
+              {
+                // bottom 9 bits
+                inst->inst |= (addr & 0x000001FF);
+              }
+            sprintf (pbuf, "STI R%d, %s", inst->reg[0], inst->label);
+          }
+          break;
+
+        case OP_STR:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            inst->inst |= (inst->reg[1] << 6);
+            // bottom 6 bits
+            inst->inst |= (inst->offset6 & 0x0000003F);
+            sprintf (pbuf, "STR R%d, R%d, #%d", inst->reg[0], inst->reg[1],
+                     inst->offset6);
+          }
+          break;
+
+        case OP_TRAP:
+          {
+            inst->inst |= inst->trapvect8;
+            if (inst->immediate)
+              sprintf (pbuf, "TRAP x%x", inst->trapvect8);
+            else
+              sprintf (pbuf, "%s", trapvec8_to_str (inst->trapvect8));
           }
           break;
         }
@@ -453,14 +568,20 @@ generate_code (FILE *out, program *prog, int flags)
         }
 
       if (flags & FORMAT_PRETTY)
-        PPRINT (out, cp, "%s", pbuf);
+        {
+          if (!cp)
+            fprintf (out, "  ");
+          PPRINT (out, cp, "%s", pbuf);
+        }
 
-      // TODO enable this once all the other instructions are moved
-      // if(flags)
-      //   fprintf(out, "\n");
-
-      err_count += print_instruction (out, inst, flags);
-      // TODO also output debugging
+      if (flags)
+        {
+          fprintf (out, "\n");
+        }
+      else
+        {
+          // TODO output instruction code!
+        }
     }
 
   if (flags & FORMAT_PRETTY)
