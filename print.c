@@ -46,26 +46,6 @@ print_instruction (FILE *out, instruction *inst, int flags)
   // fprintf (out, "%d  ", inst->addr);
   switch (inst->op)
     {
-
-    
-    
-    
-    case OP_LD:
-      {
-        fprintf (out, "  LD %s, %s", reg_to_str (inst->reg[0]), inst->label);
-      }
-      break;
-    case OP_LDI:
-      {
-        fprintf (out, "  LDI %s, %s", reg_to_str (inst->reg[0]), inst->label);
-      }
-      break;
-    case OP_LDR:
-      {
-        fprintf (out, "  LDR %s, %s, #%d", reg_to_str (inst->reg[0]),
-                 reg_to_str (inst->reg[1]), inst->offset6);
-      }
-      break;
     case OP_LEA:
       {
         fprintf (out, "  LEA %s, %s", reg_to_str (inst->reg[0]), inst->label);

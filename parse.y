@@ -56,7 +56,7 @@ extern char *yytext;
 %type <inst> instruction
 // special cases of instruction
 %type <inst> directive label trap
-%type <num> num
+%type <num> num imm5 offset6
 %type <reg> reg
 %type <str> branch
 
@@ -105,12 +105,8 @@ instruction:
   OP_3ARG($$, OP_ADD, reg[0], $2, reg[1], $4, reg[2], $6);
   $$->immediate = 0;
 }
-| ADD reg ',' reg ',' num
+| ADD reg ',' reg ',' imm5
 {
-  if($6 < -16 || $6 > 15) {
-    fprintf(stderr, "error: imm5 value out of range: '%d'\n", $6);
-    YYERROR;
-  }
   OP_3ARG($$, OP_ADD, reg[0], $2, reg[1], $4, imm5, $6);
   $$->immediate = 1;
 }
@@ -119,7 +115,7 @@ instruction:
   OP_3ARG($$, OP_AND, reg[0], $2, reg[1], $4, reg[2], $6);
   $$->immediate = 0;
 }
-| AND reg ',' reg ',' num
+| AND reg ',' reg ',' imm5
 {
   OP_3ARG($$, OP_AND, reg[0], $2, reg[1], $4, imm5, $6);
   $$->immediate = 1;
@@ -163,7 +159,7 @@ instruction:
 {
   OP_2ARG($$, OP_LDI, reg[0], $2, label, strdup(yytext));
 }
-| LDR reg ',' reg ',' num
+| LDR reg ',' reg ',' offset6
 {
   OP_3ARG($$, OP_LDR, reg[0], $2, reg[1], $4, offset6, $6);
 }
@@ -192,7 +188,7 @@ instruction:
 {
   OP_2ARG($$, OP_STI, reg[0], $2, label, strdup(yytext));
 }
-| STR reg ',' reg ',' num
+| STR reg ',' reg ',' offset6
 {
   OP_3ARG($$, OP_STR, reg[0], $2, reg[1], $4, offset6, $6);
 }
@@ -255,6 +251,28 @@ trap:
 | HALT
 {
   OP_1ARG($$, OP_TRAP, trapvect8, 0x25);
+}
+;
+
+imm5:
+  num
+{
+  if($1 < -16 || $1 > 15) {
+    fprintf(stderr, "error: imm5 value out of range: %d\n", $1);
+    YYERROR;
+  }
+  $$ = $1;
+}
+;
+
+offset6:
+  num
+{
+  if($1 < -32 || $1 > 31) {
+    fprintf(stderr, "error: offset6 value out of range: %d\n", $1);
+    YYERROR;
+  }
+  $$ = $1;
 }
 ;
 

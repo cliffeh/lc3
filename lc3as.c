@@ -390,6 +390,57 @@ generate_code (FILE *out, program *prog, int flags)
               }
           }
           break;
+
+        case OP_LD:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            int addr = find_address_by_label (prog->instructions, inst->label);
+            if (addr < 0)
+              {
+                fprintf (stderr,
+                         "error: could not find address for label '%s'\n",
+                         inst->label);
+                err_count++;
+              }
+            else
+              {
+                // bottom 9 bits
+                inst->inst |= (addr & 0x000001FF);
+              }
+            sprintf (pbuf, "  LD R%d, %s", inst->reg[0], inst->label);
+          }
+          break;
+
+        case OP_LDI:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            int addr = find_address_by_label (prog->instructions, inst->label);
+            if (addr < 0)
+              {
+                fprintf (stderr,
+                         "error: could not find address for label '%s'\n",
+                         inst->label);
+                err_count++;
+              }
+            else
+              {
+                // bottom 9 bits
+                inst->inst |= (addr & 0x000001FF);
+              }
+            sprintf (pbuf, "  LDI R%d, %s", inst->reg[0], inst->label);
+          }
+          break;
+
+        case OP_LDR:
+          {
+            inst->inst |= (inst->reg[0] << 9);
+            inst->inst |= (inst->reg[1] << 6);
+            // bottom 6 bits
+            inst->inst |= (inst->offset6 & 0x0000003F);
+            sprintf (pbuf, "  LDR R%d, R%d, #%d", inst->reg[0], inst->reg[1],
+                     inst->offset6);
+          }
+          break;
         }
 
       if (flags & FORMAT_HEX)
