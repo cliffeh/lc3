@@ -1,27 +1,20 @@
 #include "lc3as.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+// print out assembled binary code
+#define FORMAT_BIN 0
+// pretty-print the assembly back out
+#define FORMAT_ASSEMBLY (1 << 0)
+// include instruction addresses
+#define FORMAT_ASSEMBLY_DEBUG (1 << 1)
+// print instructions as hex
+#define FORMAT_HEX (1 << 2)
+// print instructions as bit strings
+#define FORMAT_BITS (1 << 3)
 
 extern int yyparse (program *prog);
-
-int
-main (int argc, char *argv[])
-{
-  program *prog = calloc (1, sizeof (program));
-  int rc = yyparse (prog);
-
-  if (rc == 0)
-    {
-      dump_program (prog);
-      // TODO free_program()
-    }
-  else
-    {
-      fprintf (stderr, "there was an error\n");
-    }
-
-  return rc;
-}
 
 static const char *
 reg_to_str (int reg)
@@ -58,18 +51,66 @@ trapvec8_to_str (int trapvec8)
   // clang-format on
 }
 
+// TODO a more efficient way of looking up label addresses
+static int
+find_address_by_label (const instruction_list *instructions, const char *label)
+{
+  for (const instruction_list *l = instructions; l; l = l->tail)
+    {
+      const instruction *inst = l->head;
+      if (inst->op == -1 && strcmp (label, inst->label) == 0)
+        return inst->addr;
+    }
+  return -1;
+}
+
+int
+main (int argc, char *argv[])
+{
+  program *prog = calloc (1, sizeof (program));
+  int rc = yyparse (prog), format = FORMAT_ASSEMBLY;
+
+  if (rc == 0)
+    {
+      dump_program (prog, format);
+      // TODO free_program()
+      // printf ("addr of label3: %d\n",
+      //         find_address_by_label (prog->instructions, "label3"));
+    }
+  else
+    {
+      fprintf (stderr, "there was an error\n");
+    }
+
+  return rc;
+}
+
 void
-dump_program (program *prog)
+generate_code (program *prog)
+{
+  // TODO pass this in?
+  FILE *out = stdout;
+  for (const instruction_list *l = prog->instructions; l; l = l->tail)
+    {
+      const instruction *inst = l->head;
+      switch (inst->op)
+        {
+        }
+    }
+}
+
+void
+dump_program (program *prog, int format)
 {
   // TODO pass this in?
   FILE *out = stdout;
   fprintf (out, ".ORIG x%X\n", prog->orig);
-  for (instruction_list *l = prog->instructions; l; l = l->tail)
+  for (const instruction_list *l = prog->instructions; l; l = l->tail)
     {
-      instruction *inst = l->head;
+      const instruction *inst = l->head;
       // PREAMBLE HERE
-      // uncomment to debug addresses!
-      // fprintf (out, "%d  ", inst->addr);
+      if (format & FORMAT_ASSEMBLY_DEBUG)
+        fprintf (out, "%d  ", inst->addr);
       switch (inst->op)
         {
         case -2:

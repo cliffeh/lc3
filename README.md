@@ -9,3 +9,6 @@ an LC-3 VM
 * https://www.jmeiners.com/lc3-vm/supplies/lc3-isa.pdf - Specs
 * [Little Computer 3](https://en.wikipedia.org/wiki/Little_Computer_3) - oblig Wikipedia article on LC-3
 * [The LC-3](https://www.cs.utexas.edu/users/fussell/courses/cs310h/lectures/Lecture_10-310h.pdf) - University of Texas at Austin lecture on LC-3
+* [Hello World example code](https://github.com/rpendleton/lc3sim-c/tree/main/tests/hello-world)
+* [lc3-2048](https://github.com/rpendleton/lc3-2048)
+* [lc3-rogue](https://github.com/justinmeiners/lc3-rogue)
