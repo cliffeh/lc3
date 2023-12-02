@@ -4,9 +4,20 @@
 #include <stdint.h> // for uint16_t
 #include <stdio.h>
 
+// print out assembled object code
+#define FORMAT_OBJECT 0
+// pretty-print the assembly back out
+#define FORMAT_ASSEMBLY (1 << 0)
+// print instructions as hex
+#define FORMAT_HEX (1 << 1)
+// print instructions as bit strings
+#define FORMAT_BITS (1 << 2)
+// include instruction addresses
+#define FORMAT_DEBUG (1 << 3)
+
 typedef struct instruction
 {
-  uint16_t addr;
+  uint16_t addr, inst;
   int op;
   // TODO these ints could probably be collapsed...
   int reg[3];
@@ -29,6 +40,8 @@ typedef struct program
   instruction_list *instructions;
 } program;
 
-void dump_program (FILE *out, program *prog, int format);
+void print_program (FILE *out, program *prog, int flags);
 void generate_code (program *program);
 int char_to_reg (char c);
+int find_address_by_label (const instruction_list *instructions,
+                           const char *label);
