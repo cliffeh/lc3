@@ -300,6 +300,9 @@ generate_code (FILE *out, program *prog, int flags)
                 sprintf (pbuf, ".FILL %s", inst->label);
               }
 
+            if(flags & FORMAT_HEX)
+              PPRINT(out, cp, "x%04X", swap16 (addr));
+
             if (!flags)
               {
                 tmp16 = swap16 (addr);
