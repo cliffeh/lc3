@@ -227,13 +227,14 @@ main (int argc, const char *argv[])
                 DR = SR1 + SEXT(imm5);
             setcc();
             */
-            uint16_t v1 = registers[inst & MASK_SR1];
-            uint16_t v2 = (inst & MASK_IMM)
-                              ? sign_extend (inst & MASK_IMM5, 16)
-                              : registers[inst & MASK_SR2];
-            uint16_t result = v1 + v2;
-            registers[inst & MASK_DR] = result;
-            SET_COND (result);
+            if (inst & MASK_BIT5)
+              registers[inst & MASK_DR]
+                  = registers[inst & MASK_SR1] + registers[inst & MASK_SR2];
+            else
+              registers[inst & MASK_DR] = registers[inst & MASK_SR1]
+                                          + sign_extend (inst & MASK_IMM5, 16);
+
+            SET_COND (registers[inst & MASK_DR]);
           }
           break;
 
@@ -246,13 +247,14 @@ main (int argc, const char *argv[])
                 DR = SR1 AND SEXT(imm5);
             setcc();
             */
-            uint16_t v1 = registers[inst & MASK_SR1];
-            uint16_t v2 = (inst & MASK_IMM)
-                              ? sign_extend (inst & MASK_IMM5, 16)
-                              : registers[inst & MASK_SR2];
-            uint16_t result = v1 & v2;
-            registers[inst & MASK_DR] = result;
-            SET_COND (result);
+            if (inst & MASK_BIT5)
+              registers[inst & MASK_DR]
+                  = registers[inst & MASK_SR1] + registers[inst & MASK_SR2];
+            else
+              registers[inst & MASK_DR] = registers[inst & MASK_SR1]
+                                          & sign_extend (inst & MASK_IMM5, 16);
+
+            SET_COND (registers[inst & MASK_DR]);
           }
           break;
 
@@ -262,12 +264,10 @@ main (int argc, const char *argv[])
             if ((n AND N) OR (z AND Z) OR (p AND P))
                 PC = PC + SEXT(PCoffset9);
             */
-            // TODO probably make sure this doesn't happen in the first
-            // place...
-            if ((inst & MASK_COND) == 0 // just in case
-                || (inst & MASK_COND) & registers[R_COND])
+            if ((inst & MASK_COND) == 0 // equivalent to nzp
+                || ((inst & MASK_COND) & registers[R_COND]))
               {
-                registers[R_PC] = sign_extend (inst & MASK_PCOFFSET9, 16);
+                registers[R_PC] += sign_extend (inst & MASK_PCOFFSET9, 16);
               }
           }
           break;
@@ -306,11 +306,10 @@ main (int argc, const char *argv[])
             DR = mem[PC + SEXT(PCoffset9)];
             setcc();
             */
-            uint16_t result
+            registers[inst & MASK_DR]
                 = memory[registers[R_PC]
                          + sign_extend (inst & MASK_PCOFFSET9, 16)];
-            registers[inst & MASK_DR] = result;
-            SET_COND (result);
+            SET_COND (registers[inst & MASK_DR]);
           }
           break;
 
