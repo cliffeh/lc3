@@ -18,6 +18,34 @@
 
 #define MEMORY_MAX (1 << 16)
 
+// 1111 0000 0000 0000
+#define OP_MASK 0xF000
+// 0000 1110 0000 0000
+#define DR_MASK 0x0E00
+// 0000 0001 1100 0000
+#define SR1_MASK 0x01C0
+#define BASER_MASK SR1_MASK
+// 0000 0000 0000 0111
+#define SR2_MASK 0x0007
+// 0000 0000 0001 0000
+#define IMM_MASK 0x0010
+// 0000 0000 0001 1111
+#define IMM5_MASK 0x001F
+// 1000 0000 0000 0000
+#define NEG_MASK 0x8000
+
+#define SET_COND(result)                                                      \
+  do                                                                          \
+    {                                                                         \
+      if (result == 0)                                                        \
+        registers[R_COND] = FL_ZRO;                                           \
+      else if (result & NEG_MASK)                                             \
+        registers[R_COND] = FL_NEG;                                           \
+      else                                                                    \
+        registers[R_COND] = FL_POS;                                           \
+    }                                                                         \
+  while (0)
+
 #define ERR_EXIT(args...)                                                     \
   do                                                                          \
     {                                                                         \
@@ -147,10 +175,36 @@ main (int argc, const char *argv[])
     {
       switch (GET_OP (inst))
         {
+        case OP_ADD:
+          {
+            uint16_t dr = inst & DR_MASK;
+            uint16_t sr1 = inst & SR1_MASK;
+            uint16_t result
+                = registers[sr1]
+                  + ((inst & IMM_MASK) ? sign_extend (inst & IMM5_MASK, 16)
+                                       : registers[inst & SR2_MASK]);
+            registers[dr] = result;
+            SET_COND (result);
+          }
+          break;
+
+        case OP_AND:
+          {
+            uint16_t dr = inst & DR_MASK;
+            uint16_t sr1 = inst & SR1_MASK;
+            uint16_t result
+                = registers[dr]
+                  & ((inst & IMM_MASK) ? sign_extend (inst & IMM5_MASK, 16)
+                                       : registers[inst & SR2_MASK]);
+            registers[dr] = result;
+            SET_COND (result);
+          }
+          break;
+
         case OP_LEA:
           {
             // 0000 1110 0000 0000
-            uint16_t dr = inst & 0x0E00;
+            uint16_t dr = inst & DR_MASK;
             // PCoffset9
             uint16_t offset = sign_extend (inst & 0x01FF, 16);
             registers[dr] = registers[R_PC] + offset;
