@@ -29,11 +29,16 @@
 // 0000 0000 0000 0111
 #define MASK_SR2 0x0007
 // 0000 0000 0001 0000
-#define MASK_IMM 0x0010
+#define MASK_BIT5 0x0010
+#define MASK_IMM MASK_BIT5
 // 0000 0000 0001 1111
 #define MASK_IMM5 0x001F
 // 0000 0001 1111 1111
 #define MASK_PCOFFSET9 0x01FF
+// 0000 0111 1111 1111
+#define MASK_PCOFFSET11 0x7FF
+// 0000 1000 0000 0000
+#define MASK_BIT11 0x0800
 
 #define SET_COND(result)                                                      \
   do                                                                          \
@@ -207,6 +212,26 @@ main (int argc, const char *argv[])
             if (inst & MASK_COND & registers[R_COND])
               {
                 registers[R_PC] = sign_extend (inst & MASK_PCOFFSET9, 16);
+              }
+          }
+          break;
+
+        case OP_JMP:
+          {
+            registers[R_PC] = registers[inst & MASK_BASER];
+          }
+          break;
+
+        case OP_JSR:
+          {
+            registers[R_R7] = registers[R_PC];
+            if (inst & MASK_BIT11)
+              {
+                registers[R_PC] += sign_extend (inst & MASK_PCOFFSET11, 16);
+              }
+            else
+              {
+                registers[R_PC] = registers[inst & MASK_BASER];
               }
           }
           break;

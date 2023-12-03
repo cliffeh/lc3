@@ -25,7 +25,7 @@ check_SCRIPTS = test/all-instructions.sh test/hello-world.sh
 
 TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
-TEST_INPUTS = test/all-instructions.asm
+TEST_INPUTS = test/all-instructions.asm test/hello-world.asm test/hello-world.obj
 
 dist_doc_DATA = LICENSE README.md TODO.md
 
