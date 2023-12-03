@@ -300,10 +300,11 @@ trap:
 imm5:
   num
 {
-  if($1 < -16 || $1 > 15) {
-    fprintf(stderr, "error: imm5 value out of range: %d\n", $1);
-    YYERROR;
-  }
+  // TODO check for no more than 5 bits
+  // if($1 < -16 || $1 > 15) {
+  //   fprintf(stderr, "error: imm5 value out of range: %d\n", $1);
+  //   YYERROR;
+  // }
   $$ = $1;
 }
 ;
@@ -311,10 +312,11 @@ imm5:
 offset6:
   num
 {
-  if($1 < -32 || $1 > 31) {
-    fprintf(stderr, "error: offset6 value out of range: %d\n", $1);
-    YYERROR;
-  }
+  // TODO check for no more than 6 bits
+  // if($1 < -32 || $1 > 31) {
+  //   fprintf(stderr, "error: offset6 value out of range: %d\n", $1);
+  //   YYERROR;
+  // }
   $$ = $1;
 }
 ;
@@ -322,10 +324,11 @@ offset6:
 trapvect8:
   num
 {
-  if($1 < 0 || $1 > 255) {
-    fprintf(stderr, "error: trapvect8 value out of range: %d\n", $1);
-    YYERROR;
-  }
+  // TODO check for no more than 8 bits
+  // if($1 < 0 || $1 > 255) {
+  //   fprintf(stderr, "error: trapvect8 value out of range: %d\n", $1);
+  //   YYERROR;
+  // }
   $$ = $1;
 }
 ;
