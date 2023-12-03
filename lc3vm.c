@@ -239,7 +239,18 @@ main (int argc, const char *argv[])
         case OP_LD:
           {
             uint16_t result
-                = registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16);
+                = memory[registers[R_PC]
+                         + sign_extend (inst & MASK_PCOFFSET9, 16)];
+            registers[inst & MASK_DR] = result;
+            SET_COND (result);
+          }
+          break;
+
+        case OP_LDI:
+          {
+            uint16_t result
+                = memory[memory[registers[R_PC]
+                                + sign_extend (inst & MASK_PCOFFSET9, 16)]];
             registers[inst & MASK_DR] = result;
             SET_COND (result);
           }
