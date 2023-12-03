@@ -358,7 +358,11 @@ generate_code (FILE *out, program *prog, int flags)
 
         case OP_BR:
           {
-            inst->inst |= (inst->cond << 9);
+            if (!inst->cond)
+              inst->inst |= (7 << 9);
+            else
+              inst->inst |= (inst->cond << 9);
+
             int dest
                 = find_position_by_label (prog->instructions, inst->label);
             if (dest < 0)
