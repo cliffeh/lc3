@@ -1,5 +1,6 @@
 %{
 #include "lc3as.h"
+#include "util.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -244,7 +245,15 @@ directive:
   $$->label[strlen($$->label)-1] = 0;
   $$->op = -2;
   $$->pos = prog->len;
-  prog->len += (strlen($$->label)+1);
+
+  char buf[strlen($$->label)+1];
+  if(unescape_string(buf, $$->label) != 0)
+  {
+    fprintf(stderr, "error: unknown escape sequence in string literal\n");
+    YYERROR;
+  } 
+
+  prog->len += (strlen(buf)+1);
 }
 ;
 

@@ -1,5 +1,6 @@
 #include "util.h"
 #include "lc3.h"
+#include <stdio.h>
 
 void
 inst_to_bits (char *dest, uint16_t inst)
@@ -24,7 +25,51 @@ sign_extend (uint16_t x, int bit_count)
   return x;
 }
 
-uint16_t swap16(uint16_t x)
+uint16_t
+swap16 (uint16_t x)
 {
-    return (x << 8) | (x >> 8);
+  return (x << 8) | (x >> 8);
+}
+
+int
+unescape_string (char *dest, const char *str)
+{
+  int err_count = 0;
+  char *d = dest;
+  for (const char *p = str; *p; p++)
+    {
+      if (*p == '\\')
+        {
+          switch (*(++p))
+            {
+              // clang-format off
+            case 'a':  *d++ = '\007';  break;
+            case 'b':  *d++ = '\b';    break;
+            case 'e':  *d++ = '\e';    break;
+            case 'f':  *d++ = '\f';    break;
+            case 'n':  *d++ = '\n';    break;
+            case 'r':  *d++ = '\r';    break;
+            case 't':  *d++ = '\t';    break;
+            case 'v':  *d++ = '\013';  break;
+            case '\\': *d++ = '\\';    break;
+            case '?':  *d++ = '?';     break;
+            case '\'': *d++ = '\'';    break;
+            case '"':  *d++ = '\"';    break;
+            default:
+              {
+                fprintf (stderr,
+                         "warning: I don't understand escape sequence \\%c\n",
+                         *p);
+                err_count++;
+              }
+              // clang-format on
+            }
+        }
+      else
+        {
+          *d++ = *p;
+        }
+    }
+  *d = 0;
+  return err_count;
 }

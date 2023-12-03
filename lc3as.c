@@ -278,7 +278,7 @@ generate_code (FILE *out, program *prog, int flags)
       // TODO need to actually print out the object code!
       switch (inst->op)
         {
-        case -3:
+        case -3: // .FILL
           {
             int addr = inst->inst;
             if (inst->immediate)
@@ -308,7 +308,7 @@ generate_code (FILE *out, program *prog, int flags)
           }
           break;
 
-        case -2:
+        case -2: // .STRINGZ
           {
             if (!flags)
               {

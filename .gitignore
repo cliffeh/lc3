@@ -80,3 +80,4 @@ lc3-*.tar.gz
 # test binaries
 test/inst_to_bits
 test/operations
+test/unescape_string
