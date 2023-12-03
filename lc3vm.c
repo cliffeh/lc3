@@ -319,33 +319,35 @@ main (int argc, const char *argv[])
             DR = mem[BaseR + SEXT(offset6)];
             setcc();
             */
-            uint16_t result
-                = memory[memory[registers[R_PC]
-                                + sign_extend (inst & MASK_PCOFFSET9, 16)]];
-            registers[inst & MASK_DR] = result;
-            SET_COND (result);
+            registers[inst & MASK_DR]
+                = memory[registers[inst & MASK_BASER]
+                         + sign_extend (inst & MASK_OFFSET6, 16)];
+            SET_COND (registers[inst & MASK_DR]);
           }
           break;
 
         case OP_LDR:
           {
             /*
-            DR = PC + SEXT(PCoffset9);
+            DR = mem[BaseR + SEXT(offset6)];
             setcc();
             */
-            uint16_t result = memory[registers[inst & MASK_BASER]
-                                     + sign_extend (inst & MASK_OFFSET6, 16)];
-            registers[inst & MASK_DR] = result;
-            SET_COND (result);
+            registers[inst & MASK_DR]
+                = registers[inst & MASK_BASER]
+                  + sign_extend (inst & MASK_OFFSET6, 16);
+            SET_COND (registers[inst & MASK_DR]);
           }
           break;
 
         case OP_LEA:
           {
-            uint16_t result
+            /*
+            DR = PC + SEXT(PCoffset9);
+            setcc();
+            */
+            registers[inst & MASK_DR]
                 = registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16);
-            registers[inst & MASK_DR] = result;
-            SET_COND (result);
+            SET_COND (registers[inst & MASK_DR]);
           }
           break;
 
@@ -355,9 +357,8 @@ main (int argc, const char *argv[])
             DR = NOT(SR);
             setcc();
             */
-            uint16_t result = ~registers[inst & MASK_SR];
-            registers[inst & MASK_DR] = result;
-            SET_COND (result);
+            registers[inst & MASK_DR] = ~registers[inst & MASK_SR];
+            SET_COND (registers[inst & MASK_DR]);
           }
           break;
 
