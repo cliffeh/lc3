@@ -312,8 +312,11 @@ generate_code (FILE *out, program *prog, int flags)
           {
             if (!flags)
               {
+                char buf[strlen(inst->label)+1];
+                unescape_string(buf, inst->label);
+
                 uint16_t c;
-                for (char *p = inst->label; *p; p++)
+                for (char *p = buf; *p; p++)
                   {
                     c = (uint16_t)*p;
                     tmp16 = swap16 (c);
@@ -629,7 +632,7 @@ generate_code (FILE *out, program *prog, int flags)
       if (inst->op >= 0)
         {
           if (flags & FORMAT_HEX)
-            PPRINT (out, cp, "x%04X", inst->inst);
+            PPRINT (out, cp, "x%04X", swap16(inst->inst));
 
           if (flags & FORMAT_BITS)
             {
