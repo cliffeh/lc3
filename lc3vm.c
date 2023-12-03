@@ -203,9 +203,19 @@ main (int argc, const char *argv[])
 
   int running = 1;
 
+  FILE *logfile = fopen ("test.out", "w");
+
   for (uint16_t inst = memory[registers[R_PC]++]; running;
        inst = memory[registers[R_PC]++])
     {
+      fprintf (logfile, "PC: %04X; executing: %04X", registers[R_PC],
+               swap16 (inst));
+      for (int i = 0; i < 8; i++)
+        {
+          fprintf (logfile, " R%i: %04X", i, registers[i]);
+        }
+      fprintf (logfile, "\n");
+
       switch (GET_OP (inst))
         {
         case OP_ADD:
@@ -252,7 +262,8 @@ main (int argc, const char *argv[])
             if ((n AND N) OR (z AND Z) OR (p AND P))
                 PC = PC + SEXT(PCoffset9);
             */
-           // TODO probably make sure this doesn't happen in the first place...
+            // TODO probably make sure this doesn't happen in the first
+            // place...
             if ((inst & MASK_COND) == 0 // just in case
                 || (inst & MASK_COND) & registers[R_COND])
               {
@@ -406,7 +417,8 @@ main (int argc, const char *argv[])
                 break;
               case TRAP_OUT:
                 {
-                  printf ("%c", registers[R_R0]);
+                  putc ((char)registers[R_R0], stdout);
+                  fflush (stdout);
                 }
                 break;
               case TRAP_PUTS:
@@ -459,6 +471,11 @@ main (int argc, const char *argv[])
               }
           }
           break;
+
+        default:
+          {
+            fprintf (stderr, "unknown/unimplemented op code!\n");
+          }
         }
     }
 
