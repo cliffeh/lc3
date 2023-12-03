@@ -11,10 +11,17 @@
 #include "popt/popt.h"
 #include "util.h"
 #include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/termios.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define MEMORY_MAX (1 << 16)
 uint16_t memory[MEMORY_MAX];
@@ -43,6 +50,44 @@ uint16_t registers[R_COUNT];
       exit (1);                                                               \
     }                                                                         \
   while (0)
+
+struct termios original_tio;
+
+void
+disable_input_buffering ()
+{
+  tcgetattr (STDIN_FILENO, &original_tio);
+  struct termios new_tio = original_tio;
+  new_tio.c_lflag &= ~ICANON & ~ECHO;
+  tcsetattr (STDIN_FILENO, TCSANOW, &new_tio);
+}
+
+void
+restore_input_buffering ()
+{
+  tcsetattr (STDIN_FILENO, TCSANOW, &original_tio);
+}
+
+uint16_t
+check_key ()
+{
+  fd_set readfds;
+  FD_ZERO (&readfds);
+  FD_SET (STDIN_FILENO, &readfds);
+
+  struct timeval timeout;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 0;
+  return select (1, &readfds, NULL, NULL, &timeout) != 0;
+}
+
+void
+handle_interrupt (int signal)
+{
+  restore_input_buffering ();
+  printf ("\n");
+  exit (-2);
+}
 
 int
 main (int argc, const char *argv[])
@@ -151,9 +196,14 @@ main (int argc, const char *argv[])
       ++p;
     }
 
+  signal (SIGINT, handle_interrupt);
+  disable_input_buffering ();
+
   registers[R_PC] = origin;
 
-  for (uint16_t inst = memory[registers[R_PC]++]; /* anything to check? */;
+  int running = 1;
+
+  for (uint16_t inst = memory[registers[R_PC]++]; running;
        inst = memory[registers[R_PC]++])
     {
       switch (GET_OP (inst))
@@ -346,6 +396,17 @@ main (int argc, const char *argv[])
             uint16_t trapvect8 = sign_extend (inst & 0x00FF, 16);
             switch (trapvect8)
               {
+              case TRAP_GETC:
+                {
+                  registers[R_R0] = getchar ();
+                  SET_COND (registers[R_R0]);
+                }
+                break;
+              case TRAP_OUT:
+                {
+                  printf ("%c", registers[R_R0]);
+                }
+                break;
               case TRAP_PUTS:
                 {
                   uint16_t addr = registers[R_R0];
@@ -355,16 +416,51 @@ main (int argc, const char *argv[])
                     }
                 }
                 break;
-              case TRAP_HALT:
+              case TRAP_IN:
                 {
-                  // TODO probably something a little more sophisticated than
-                  // just exiting
-                  exit (0);
+                  printf ("Enter a character: ");
+                  char c = getchar ();
+                  putc (c, stdout);
+                  fflush (stdout);
+                  registers[R_R0] = (uint16_t)c;
+                  SET_COND (registers[R_R0]);
                 }
                 break;
+              case TRAP_PUTSP:
+                {
+                  /* one char per byte (two bytes per word)
+                     here we need to swap back to
+                     big endian format */
+                  uint16_t *c = memory + registers[R_R0];
+                  while (*c)
+                    {
+                      char char1 = (*c) & 0xFF;
+                      putc (char1, stdout);
+                      char char2 = (*c) >> 8;
+                      if (char2)
+                        putc (char2, stdout);
+                      ++c;
+                    }
+                  fflush (stdout);
+                }
+                break;
+              case TRAP_HALT:
+                {
+                  // TODO any other cleanup?
+                  running = 0;
+                }
+                break;
+              default:
+                {
+                  fprintf (stderr, "unknown trap code: %X\n", trapvect8);
+                }
               }
           }
           break;
         }
     }
+
+  restore_input_buffering ();
+
+  exit (0);
 }
