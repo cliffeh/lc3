@@ -278,6 +278,20 @@ generate_code (FILE *out, program *prog, int flags)
       // TODO need to actually print out the object code!
       switch (inst->op)
         {
+        case -3:
+          {
+            if (flags & FORMAT_PRETTY)
+              {
+                sprintf (pbuf, ".FILL x%X", inst->inst);
+                if (!flags)
+                  {
+                    tmp16 = swap16 (inst->inst);
+                    fwrite (&tmp16, sizeof (uint16_t), 1, out);
+                  }
+              }
+          }
+          break;
+
         case -2:
           {
             if (flags & FORMAT_PRETTY)

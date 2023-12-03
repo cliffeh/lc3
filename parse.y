@@ -6,6 +6,7 @@
 int yylex();    // from our scanner
 void yyerror();
 extern char *yytext;
+extern int yylineno;
 
 // some convenience macros for operations
 #define OP_NARG(dest, code) \
@@ -45,7 +46,7 @@ extern char *yytext;
 %token REG
 
 // assembler directives
-%token ORIG END STRINGZ
+%token ORIG END FILL STRINGZ
 
 // literals
 %token DECLIT HEXLIT STRLIT LABEL
@@ -202,6 +203,14 @@ instruction:
 ;
 
 directive:
+  FILL num
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->inst = $2;
+  $$->op = -3;
+  $$->pos = prog->len++;
+}
+|
   STRINGZ STRLIT
 {
   $$ = calloc(1, sizeof(instruction));
@@ -212,6 +221,7 @@ directive:
   $$->pos = prog->len;
   prog->len += (strlen($$->label)+1);
 }
+;
 
 label: LABEL
 {
@@ -315,5 +325,5 @@ branch: BR
 void
 yyerror (char const *s)
 {
-  fprintf (stderr, "%s\n", s);
+  fprintf(stderr, "parse error on line %d: %s : %s\n", yylineno, s, yytext);
 }

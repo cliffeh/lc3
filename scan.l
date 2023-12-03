@@ -40,6 +40,7 @@
  /* assembler directives */
 \.[oO][rR][iI][gG]       { return(ORIG);      }
 \.[eE][nN][dD]           { return(END);       }
+\.[fF][iI][lL][lL]       { return(FILL);      }
 \.[sS][tT][rR][iI][nN][gG][zZ]                {
                            return(STRINGZ);
                                               }
@@ -55,7 +56,8 @@
 
 ,                        { return(',');       }
 
-[ \t\n]* // ignore whitespace
+[ \t]* // ignore whitespace
+\n { yylineno++; } // ignore newlines, but count lines
 ;.* // ignore comments
 
-. { printf("unexpected input: %s\n", yytext); }
+. { fprintf(stderr, "unexpected input on line %d\n", yylineno); }

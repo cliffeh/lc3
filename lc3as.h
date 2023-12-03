@@ -26,6 +26,7 @@ typedef struct instruction
   int reg[3];
   int cond, immediate;
   int imm5, offset6, trapvect8;
+  uint16_t fill_value;
   char *label;
 } instruction;
 
