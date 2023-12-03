@@ -22,11 +22,11 @@ test_inst_to_bits_SOURCES = test/inst_to_bits.c util.c util.h
 test_operations_SOURCES = test/operations.c util.c util.h
 test_unescape_string_SOURCES = test/unescape_string.c util.c util.h
 
-check_SCRIPTS = test/all-instructions.sh test/hello-world.sh
+check_SCRIPTS = test/2048.sh test/all-instructions.sh test/hello-world.sh
 
 TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
-TEST_INPUTS = test/all-instructions.asm test/hello-world.asm test/hello-world.obj
+TEST_INPUTS = test/2048.asm test/2048.obj test/all-instructions.asm test/hello-world.asm test/hello-world.obj
 
 dist_doc_DATA = LICENSE README.md TODO.md
 
