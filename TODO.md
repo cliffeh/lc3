@@ -2,6 +2,7 @@
 * consolidate shared code
   * move mask macros into lc3.h
     * replace bare masks with macros
+* automated `make distcheck` on merge
 
 ## lc3as (assembler)
 * more/better test cases
