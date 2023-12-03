@@ -22,7 +22,7 @@
 #define MASK_OP 0xF000
 // 0000 1110 0000 0000
 #define MASK_DR 0x0E00
-#define MASK_BR MASK_DR
+#define MASK_COND MASK_DR
 // 0000 0001 1100 0000
 #define MASK_SR1 0x01C0
 #define MASK_BASER MASK_SR1
@@ -199,6 +199,15 @@ main (int argc, const char *argv[])
             uint16_t result = v1 & v2;
             registers[dr] = result;
             SET_COND (result);
+          }
+          break;
+
+        case OP_BR:
+          {
+            if (inst & MASK_COND & registers[R_COND])
+              {
+                registers[R_PC] = sign_extend (inst & MASK_PCOFFSET9, 16);
+              }
           }
           break;
 
