@@ -1,7 +1,5 @@
 #pragma once
 
-#define MEMORY_MAX (1 << 16)
-
 // registers
 enum
 {

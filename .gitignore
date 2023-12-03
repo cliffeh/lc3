@@ -68,6 +68,7 @@ Makefile
 
 # generated binaries
 lc3as
+lc3vm
 
 # generated dist files
 lc3-*.tar.gz
