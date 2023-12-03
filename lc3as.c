@@ -280,25 +280,36 @@ generate_code (FILE *out, program *prog, int flags)
         {
         case -3:
           {
-            if (flags & FORMAT_PRETTY)
+            int addr = inst->inst;
+            if (inst->immediate)
               {
-                sprintf (pbuf, ".FILL x%X", inst->inst);
-                if (!flags)
+                sprintf (pbuf, ".FILL x%X", addr);
+              }
+            else
+              {
+                // TODO is this right?
+                addr = find_position_by_label (prog->instructions, inst->label)
+                       * 16;
+                if (addr < 0)
                   {
-                    tmp16 = swap16 (inst->inst);
-                    fwrite (&tmp16, sizeof (uint16_t), 1, out);
+                    fprintf (stderr,
+                             "error: could not find position for label '%s'\n",
+                             inst->label);
+                    err_count++;
                   }
+                sprintf (pbuf, ".FILL %s", inst->label);
+              }
+
+            if (!flags)
+              {
+                tmp16 = swap16 (addr);
+                fwrite (&tmp16, sizeof (uint16_t), 1, out);
               }
           }
           break;
 
         case -2:
           {
-            if (flags & FORMAT_PRETTY)
-              {
-                sprintf (pbuf, ".STRINGZ \"%s\"", inst->label);
-              }
-
             if (!flags)
               {
                 uint16_t c;
@@ -312,6 +323,7 @@ generate_code (FILE *out, program *prog, int flags)
                 tmp16 = 0;
                 fwrite (&tmp16, sizeof (uint16_t), 1, out);
               }
+            sprintf (pbuf, ".STRINGZ \"%s\"", inst->label);
           }
           break;
 

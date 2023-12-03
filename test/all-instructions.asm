@@ -13,6 +13,7 @@ TARGET
   BRnzp label1
   JMP R4
 label3
+  .FILL HERE
   JSR label3
   JSRR R5
   LD R6, label2
@@ -29,6 +30,7 @@ THERE
   STI R5, THERE
   STR R4, R2, #5
 _test_longer_label_
+  .FILL x5
   TRAP x27
   GETC
   OUT

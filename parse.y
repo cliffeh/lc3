@@ -208,6 +208,15 @@ directive:
   $$ = calloc(1, sizeof(instruction));
   $$->inst = $2;
   $$->op = -3;
+  $$->immediate = 1;
+  $$->pos = prog->len++;
+}
+| FILL LABEL
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->label = strdup(yytext);
+  $$->op = -3;
+  $$->immediate = 0;
   $$->pos = prog->len++;
 }
 |
