@@ -250,9 +250,11 @@ main (int argc, const char *argv[])
           {
             /*
             if ((n AND N) OR (z AND Z) OR (p AND P))
-                PC = PC‡ + SEXT(PCoffset9);
+                PC = PC + SEXT(PCoffset9);
             */
-            if (inst & MASK_COND & registers[R_COND])
+           // TODO probably make sure this doesn't happen in the first place...
+            if ((inst & MASK_COND) == 0 // just in case
+                || (inst & MASK_COND) & registers[R_COND])
               {
                 registers[R_PC] = sign_extend (inst & MASK_PCOFFSET9, 16);
               }
