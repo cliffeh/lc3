@@ -123,6 +123,22 @@ instruction:
 | branch LABEL
 {
   OP_1ARG($$, OP_BR, label, strdup(yytext));
+  $$->immediate = 0;
+  for(char *p = $1+2; *p; p++) {
+    switch(*p) {
+      case 'n':
+      case 'N': $$->cond |= FL_NEG; break;
+      case 'z':
+      case 'Z': $$->cond |= FL_ZRO; break;
+      case 'p':
+      case 'P': $$->cond |= FL_POS; break;
+    }
+  }
+}
+| branch num
+{
+  OP_1ARG($$, OP_BR, pcoffset9, $2);
+  $$->immediate = 1;
   for(char *p = $1+2; *p; p++) {
     switch(*p) {
       case 'n':

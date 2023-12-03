@@ -5,7 +5,7 @@ label2
   ADD R2, R3, #7
   BR label1
   BRn label2
-  BRz label1
+  BRz #1
 TARGET
   BRzp label2
   BRnp label1

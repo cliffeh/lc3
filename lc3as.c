@@ -389,21 +389,6 @@ generate_code (FILE *out, program *prog, int flags)
             else
               inst->inst |= (inst->cond << 9);
 
-            int dest
-                = find_position_by_label (prog->instructions, inst->label);
-            if (dest < 0)
-              {
-                fprintf (stderr,
-                         "error: could not find position for label '%s'\n",
-                         inst->label);
-                err_count++;
-              }
-            else
-              {
-                // PCoffset9
-                inst->inst |= PCOFFSET (inst->pos, dest, 0x000001FF);
-              }
-
             sprintf (pbuf, "BR");
             char *p = pbuf + 2;
             if (inst->cond & FL_NEG)
@@ -415,7 +400,31 @@ generate_code (FILE *out, program *prog, int flags)
             if (inst->cond & FL_POS)
               *p++ = 'p';
 
-            sprintf (p, " %s", inst->label);
+            if (inst->immediate)
+              {
+                sprintf (p, " #%d", inst->pcoffset9);
+                // PCoffset9
+                inst->inst
+                    |= PCOFFSET (inst->pos, inst->pcoffset9, 0x000001FF);
+              }
+            else
+              {
+                sprintf (p, " %s", inst->label);
+                int dest
+                    = find_position_by_label (prog->instructions, inst->label);
+                if (dest < 0)
+                  {
+                    fprintf (stderr,
+                             "error: could not find position for label '%s'\n",
+                             inst->label);
+                    err_count++;
+                  }
+                else
+                  {
+                    // PCoffset9
+                    inst->inst |= PCOFFSET (inst->pos, dest, 0x000001FF);
+                  }
+              }
           }
           break;
 

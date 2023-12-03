@@ -25,8 +25,7 @@ typedef struct instruction
   // TODO these ints could probably be collapsed...
   int reg[3];
   int cond, immediate;
-  int imm5, offset6, trapvect8;
-  uint16_t fill_value;
+  int imm5, offset6, pcoffset9, trapvect8;
   char *label;
 } instruction;
 
