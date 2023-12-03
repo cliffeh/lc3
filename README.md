@@ -4,6 +4,9 @@ an LC-3 VM
 ## What is this?
 [Write your Own Virtual Machine](https://www.jmeiners.com/lc3-vm/) inspired me to try my hand at writing my own LC-3 VM.
 
+## Tips
+For dumping object files in a diffable way (one instruction per line): `od -x -w2`
+
 ## References
 * [Write your Own Virtual Machine](https://www.jmeiners.com/lc3-vm/) - original inspiration for this project
 * https://www.jmeiners.com/lc3-vm/supplies/lc3-isa.pdf - Specs
