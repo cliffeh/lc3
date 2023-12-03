@@ -289,7 +289,7 @@ generate_code (FILE *out, program *prog, int flags)
               {
                 // TODO is this right?
                 addr = find_position_by_label (prog->instructions, inst->label)
-                       * 16;
+                       + prog->orig;
                 if (addr < 0)
                   {
                     fprintf (stderr,
@@ -297,11 +297,15 @@ generate_code (FILE *out, program *prog, int flags)
                              inst->label);
                     err_count++;
                   }
+                else
+                  {
+                    inst->inst = addr;
+                  }
                 sprintf (pbuf, ".FILL %s", inst->label);
               }
 
-            if(flags & FORMAT_HEX)
-              PPRINT(out, cp, "x%04X", swap16 (addr));
+            if (flags & FORMAT_HEX)
+              PPRINT (out, cp, "x%04X", swap16 (addr));
 
             if (!flags)
               {
@@ -315,8 +319,8 @@ generate_code (FILE *out, program *prog, int flags)
           {
             if (!flags)
               {
-                char buf[strlen(inst->label)+1];
-                unescape_string(buf, inst->label);
+                char buf[strlen (inst->label) + 1];
+                unescape_string (buf, inst->label);
 
                 uint16_t c;
                 for (char *p = buf; *p; p++)
@@ -635,7 +639,7 @@ generate_code (FILE *out, program *prog, int flags)
       if (inst->op >= 0)
         {
           if (flags & FORMAT_HEX)
-            PPRINT (out, cp, "x%04X", swap16(inst->inst));
+            PPRINT (out, cp, "x%04X", swap16 (inst->inst));
 
           if (flags & FORMAT_BITS)
             {
