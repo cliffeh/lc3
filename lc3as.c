@@ -413,9 +413,8 @@ generate_code (FILE *out, program *prog, int flags)
             if (inst->immediate)
               {
                 sprintf (p, " #%d", inst->pcoffset9);
-                // PCoffset9
-                inst->inst
-                    |= PCOFFSET (inst->pos, inst->pcoffset9, 0x000001FF);
+                // PCoffset9 (literal)
+                inst->inst |= (inst->pcoffset9 & 0x000001FF);
               }
             else
               {
