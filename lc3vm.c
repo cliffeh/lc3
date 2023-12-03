@@ -17,6 +17,8 @@
 #include <string.h>
 
 #define MEMORY_MAX (1 << 16)
+uint16_t memory[MEMORY_MAX];
+uint16_t registers[R_COUNT];
 
 // 1111 0000 0000 0000
 #define MASK_OP 0xF000
@@ -29,9 +31,6 @@
 #define MASK_BASER MASK_SR1
 // 0000 0000 0000 0111
 #define MASK_SR2 0x0007
-// 0000 0000 0001 0000
-#define MASK_BIT5 0x0010
-#define MASK_IMM MASK_BIT5
 // 0000 0000 0001 1111
 #define MASK_IMM5 0x001F
 // 0000 0000 0011 1111
@@ -40,6 +39,9 @@
 #define MASK_PCOFFSET9 0x01FF
 // 0000 0111 1111 1111
 #define MASK_PCOFFSET11 0x7FF
+// 0000 0000 0001 0000
+#define MASK_BIT5 0x0010
+#define MASK_IMM MASK_BIT5
 // 0000 1000 0000 0000
 #define MASK_BIT11 0x0800
 
@@ -66,9 +68,6 @@
       exit (1);                                                               \
     }                                                                         \
   while (0)
-
-uint16_t memory[MEMORY_MAX];
-uint16_t registers[R_COUNT];
 
 int
 main (int argc, const char *argv[])
