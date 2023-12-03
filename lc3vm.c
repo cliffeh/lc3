@@ -279,6 +279,10 @@ main (int argc, const char *argv[])
 
         case OP_LDI:
           {
+            /*
+            DR = mem[BaseR + SEXT(offset6)];
+            setcc();
+            */
             uint16_t result
                 = memory[memory[registers[R_PC]
                                 + sign_extend (inst & MASK_PCOFFSET9, 16)]];
@@ -289,6 +293,10 @@ main (int argc, const char *argv[])
 
         case OP_LDR:
           {
+            /*
+            DR = PC + SEXT(PCoffset9);
+            setcc();
+            */
             uint16_t result = memory[registers[inst & MASK_BASER]
                                      + sign_extend (inst & MASK_OFFSET6, 16)];
             registers[inst & MASK_DR] = result;
@@ -307,6 +315,10 @@ main (int argc, const char *argv[])
 
         case OP_NOT:
           {
+            /*
+            DR = NOT(SR);
+            setcc();
+            */
             uint16_t result = ~registers[inst & MASK_SR];
             registers[inst & MASK_DR] = result;
             SET_COND (result);
@@ -314,13 +326,24 @@ main (int argc, const char *argv[])
           break;
 
         case OP_RTI:
-          {
-            /* unused */
+          { /* unused */
+            /*
+            if (PSR[15] == 0)
+                PC = mem[R6]; R6 is the SSP
+                R6 = R6+1;
+                TEMP = mem[R6];
+                R6 = R6+1;
+                PSR = TEMP; the privilege mode and condition codes of
+                the interrupted process are restored
+            else
+                Initiate a privilege mode exception;
+            */
           }
           break;
 
         case OP_ST:
           {
+            /* mem[PC + SEXT(PCoffset9)] = SR; */
             memory[registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16)]
                 = registers[inst & MASK_SR];
           }
@@ -328,8 +351,18 @@ main (int argc, const char *argv[])
 
         case OP_STI:
           {
+            /* mem[mem[PC + SEXT(PCoffset9)]] = SR; */
             memory[memory[registers[R_PC]
                           + sign_extend (inst & MASK_PCOFFSET9, 16)]]
+                = registers[inst & MASK_SR];
+          }
+          break;
+
+        case OP_STR:
+          {
+            /* mem[BaseR + SEXT(offset6)] = SR; */
+            memory[registers[inst & MASK_BASER]
+                   + sign_extend (inst & MASK_OFFSET6, 16)]
                 = registers[inst & MASK_SR];
           }
           break;

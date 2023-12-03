@@ -2,9 +2,9 @@
 * consolidate shared code
   * move mask macros into lc3.h
     * replace bare masks with macros
+* add'l assembler directives (.FILL?)
 
 ## lc3as (assembler)
-* add'l command line options
 * more/better test cases
 
 ## lc3vm (virtual machine)
