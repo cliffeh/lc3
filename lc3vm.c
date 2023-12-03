@@ -1,18 +1,127 @@
-#define MEMORY_MAX (1 << 16)
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#define VERSION_STRING "lc3vm " PACKAGE_VERSION
+#endif
+
+#ifndef VERSION_STRING
+#define VERSION_STRING "lc3vm unknown"
+#endif
 
 #include "lc3.h"
+#include "popt/popt.h"
 #include "util.h"
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define MEMORY_MAX (1 << 16)
+
+#define ERR_EXIT(args...)                                                     \
+  do                                                                          \
+    {                                                                         \
+      fprintf (stderr, "error: ");                                            \
+      fprintf (stderr, args);                                                 \
+      fprintf (stderr, "\n");                                                 \
+      poptPrintHelp (optCon, stderr, 0);                                      \
+      poptFreeContext (optCon);                                               \
+      exit (1);                                                               \
+    }                                                                         \
+  while (0)
 
 uint16_t memory[MEMORY_MAX];
 uint16_t registers[R_COUNT];
 
 int
-main (int argc, char *argv)
+main (int argc, const char *argv[])
 {
-  FILE *in = stdin;
+  int rc;
+  char *infile = "-", *outfile = "-";
+  FILE *in, *out = 0;
+
+  poptContext optCon;
+
+  struct poptOption options[]
+      = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          { "input", 'i', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &infile,
+            'i', "read input from FILE", "FILE" },
+          { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
+            &outfile, 'o', "write output to FILE", "FILE" },
+          { "version", 0, POPT_ARG_NONE, 0, 'Z',
+            "show version information and exit", 0 },
+          POPT_AUTOHELP POPT_TABLEEND
+        };
+
+  optCon = poptGetContext (0, argc, argv, options, 0);
+
+  while ((rc = poptGetNextOpt (optCon)) > 0)
+    {
+      switch (rc)
+        {
+        case 'i':
+          {
+            // TODO support >1 input file?
+            if (in)
+              {
+                ERR_EXIT ("more than one input file specified");
+              }
+            else if (strcmp (infile, "-") == 0)
+              {
+                in = stdin;
+              }
+            else
+              {
+                if (!(in = fopen (infile, "r")))
+                  {
+                    ERR_EXIT ("couldn't open input file '%s': %s", infile,
+                              strerror (errno));
+                  }
+              }
+          }
+          break;
+
+        case 'o':
+          {
+            if (out)
+              {
+                ERR_EXIT ("more than one output file specified");
+              }
+            else if (strcmp (outfile, "-") == 0)
+              {
+                out = stdout;
+              }
+            else
+              {
+                if (!(out = fopen (outfile, "w")))
+                  {
+                    ERR_EXIT ("couldn't open output file '%s': %s", outfile,
+                              strerror (errno));
+                  }
+              }
+          }
+          break;
+
+        case 'Z':
+          {
+            printf (VERSION_STRING);
+            poptFreeContext (optCon);
+            exit (0);
+          }
+          break;
+        }
+    }
+
+  if (rc != -1)
+    {
+      ERR_EXIT ("%s: %s\n", poptBadOption (optCon, POPT_BADOPTION_NOALIAS),
+                poptStrerror (rc));
+    }
+
+  if (!in)
+    in = stdin;
+  if (!out)
+    out = stdout;
 
   /* the origin tells us where in memory to place the image */
   uint16_t origin;
@@ -58,7 +167,7 @@ main (int argc, char *argv)
                   uint16_t addr = registers[R_R0];
                   for (char c = memory[addr]; c; c = memory[++addr])
                     {
-                        printf("%c", c);
+                      printf ("%c", c);
                     }
                 }
                 break;

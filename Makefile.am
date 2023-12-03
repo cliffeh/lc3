@@ -1,8 +1,9 @@
 bin_PROGRAMS = lc3as lc3vm
-lc3as_SOURCES = lc3as.c lc3as.h util.c parse.y scan.l popt/popt.h
+lc3as_SOURCES = lc3as.c lc3as.h util.c util.h parse.y scan.l popt/popt.h
 lc3as_LDADD = popt/libpopt.a
 
-lc3vm_SOURCES = lc3vm.c util.c
+lc3vm_SOURCES = lc3vm.c util.c util.h popt/popt.h
+lc3vm_LDADD = popt/libpopt.a
 
 include_HEADERS = lc3.h
 noinst_HEADERS = lc3as.h util.h

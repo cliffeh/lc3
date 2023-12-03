@@ -6,4 +6,8 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-"$BUILDDIR/lc3as" -Fpretty -i "$SRCDIR/test/all-instructions.asm" -o- | diff "$SRCDIR/test/all-instructions.asm" -
+result=$("$BUILDDIR/lc3vm" -i "$SRCDIR/test/hello-world.obj" -o-)
+
+if [ "$result" != "hello world!" ] ; then
+    exit 1
+fi
