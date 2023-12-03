@@ -186,6 +186,13 @@ main (int argc, const char *argv[])
         {
         case OP_ADD:
           {
+            /*
+            if (bit[5] == 0)
+                DR = SR1 + SR2;
+            else
+                DR = SR1 + SEXT(imm5);
+            setcc();
+            */
             uint16_t v1 = registers[inst & MASK_SR1];
             uint16_t v2 = (inst & MASK_IMM)
                               ? sign_extend (inst & MASK_IMM5, 16)
@@ -198,6 +205,13 @@ main (int argc, const char *argv[])
 
         case OP_AND:
           {
+            /*
+            if (bit[5] == 0)
+                DR = SR1 AND SR2;
+            else
+                DR = SR1 AND SEXT(imm5);
+            setcc();
+            */
             uint16_t v1 = registers[inst & MASK_SR1];
             uint16_t v2 = (inst & MASK_IMM)
                               ? sign_extend (inst & MASK_IMM5, 16)
@@ -210,6 +224,10 @@ main (int argc, const char *argv[])
 
         case OP_BR:
           {
+            /*
+            if ((n AND N) OR (z AND Z) OR (p AND P))
+                PC = PC‡ + SEXT(PCoffset9);
+            */
             if (inst & MASK_COND & registers[R_COND])
               {
                 registers[R_PC] = sign_extend (inst & MASK_PCOFFSET9, 16);
@@ -219,12 +237,20 @@ main (int argc, const char *argv[])
 
         case OP_JMP:
           {
+            /* PC = BaseR; */
             registers[R_PC] = registers[inst & MASK_BASER];
           }
           break;
 
         case OP_JSR:
           {
+            /*
+            R7 = PC;
+            if (bit[11] == 0)
+                PC = BaseR;
+            else
+                PC = PC + SEXT(PCoffset11);
+            */
             registers[R_R7] = registers[R_PC];
             if (inst & MASK_BIT11)
               {
@@ -239,6 +265,10 @@ main (int argc, const char *argv[])
 
         case OP_LD:
           {
+            /*
+            DR = mem[PC + SEXT(PCoffset9)];
+            setcc();
+            */
             uint16_t result
                 = memory[registers[R_PC]
                          + sign_extend (inst & MASK_PCOFFSET9, 16)];
