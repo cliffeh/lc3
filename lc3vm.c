@@ -25,6 +25,7 @@
 #define MASK_COND MASK_DR
 // 0000 0001 1100 0000
 #define MASK_SR1 0x01C0
+#define MASK_SR MASK_SR1
 #define MASK_BASER MASK_SR1
 // 0000 0000 0000 0111
 #define MASK_SR2 0x0007
@@ -185,26 +186,24 @@ main (int argc, const char *argv[])
         {
         case OP_ADD:
           {
-            uint16_t dr = inst & MASK_DR;
             uint16_t v1 = registers[inst & MASK_SR1];
             uint16_t v2 = (inst & MASK_IMM)
                               ? sign_extend (inst & MASK_IMM5, 16)
                               : registers[inst & MASK_SR2];
             uint16_t result = v1 + v2;
-            registers[dr] = result;
+            registers[inst & MASK_DR] = result;
             SET_COND (result);
           }
           break;
 
         case OP_AND:
           {
-            uint16_t dr = inst & MASK_DR;
             uint16_t v1 = registers[inst & MASK_SR1];
             uint16_t v2 = (inst & MASK_IMM)
                               ? sign_extend (inst & MASK_IMM5, 16)
                               : registers[inst & MASK_SR2];
             uint16_t result = v1 & v2;
-            registers[dr] = result;
+            registers[inst & MASK_DR] = result;
             SET_COND (result);
           }
           break;
@@ -260,8 +259,7 @@ main (int argc, const char *argv[])
 
         case OP_LDR:
           {
-            uint16_t baseR = inst & MASK_BASER;
-            uint16_t result = memory[registers[baseR]
+            uint16_t result = memory[registers[inst & MASK_BASER]
                                      + sign_extend (inst & MASK_OFFSET6, 16)];
             registers[inst & MASK_DR] = result;
             SET_COND (result);
@@ -270,10 +268,39 @@ main (int argc, const char *argv[])
 
         case OP_LEA:
           {
-            uint16_t offset = sign_extend (inst & MASK_PCOFFSET9, 16);
-            uint16_t result = registers[R_PC] + offset;
+            uint16_t result
+                = registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16);
             registers[inst & MASK_DR] = result;
             SET_COND (result);
+          }
+          break;
+
+        case OP_NOT:
+          {
+            uint16_t result = ~registers[inst & MASK_SR];
+            registers[inst & MASK_DR] = result;
+            SET_COND (result);
+          }
+          break;
+
+        case OP_RTI:
+          {
+            /* unused */
+          }
+          break;
+
+        case OP_ST:
+          {
+            memory[registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16)]
+                = registers[inst & MASK_SR];
+          }
+          break;
+
+        case OP_STI:
+          {
+            memory[memory[registers[R_PC]
+                          + sign_extend (inst & MASK_PCOFFSET9, 16)]]
+                = registers[inst & MASK_SR];
           }
           break;
 
