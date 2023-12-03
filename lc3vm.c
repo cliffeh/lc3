@@ -33,6 +33,8 @@
 #define MASK_IMM MASK_BIT5
 // 0000 0000 0001 1111
 #define MASK_IMM5 0x001F
+// 0000 0000 0011 1111
+#define MASK_OFFSET6 0x003F
 // 0000 0001 1111 1111
 #define MASK_PCOFFSET9 0x01FF
 // 0000 0111 1111 1111
@@ -256,13 +258,22 @@ main (int argc, const char *argv[])
           }
           break;
 
+        case OP_LDR:
+          {
+            uint16_t baseR = inst & MASK_BASER;
+            uint16_t result = memory[registers[baseR]
+                                     + sign_extend (inst & MASK_OFFSET6, 16)];
+            registers[inst & MASK_DR] = result;
+            SET_COND (result);
+          }
+          break;
+
         case OP_LEA:
           {
-            // 0000 1110 0000 0000
-            uint16_t dr = inst & MASK_DR;
-            // PCoffset9
             uint16_t offset = sign_extend (inst & MASK_PCOFFSET9, 16);
-            registers[dr] = registers[R_PC] + offset;
+            uint16_t result = registers[R_PC] + offset;
+            registers[inst & MASK_DR] = result;
+            SET_COND (result);
           }
           break;
 
