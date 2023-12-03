@@ -20,7 +20,7 @@ check_PROGRAMS = test/inst_to_bits test/operations
 test_inst_to_bits_SOURCES = test/inst_to_bits.c util.c util.h
 test_operations_SOURCES = test/operations.c util.c util.h
 
-check_SCRIPTS = test/all-instructions.sh
+check_SCRIPTS = test/all-instructions.sh test/hello-world.sh
 
 TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)

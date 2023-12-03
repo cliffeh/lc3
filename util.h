@@ -3,4 +3,5 @@
 #include <stdint.h> // for uint16_t
 
 void inst_to_bits (char *dest, uint16_t inst);
-uint16_t swap16(uint16_t x);
+uint16_t sign_extend (uint16_t x, int bit_count);
+uint16_t swap16 (uint16_t x);
