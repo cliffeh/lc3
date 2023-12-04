@@ -23,3 +23,5 @@ jobs:
       run: make check
     - name: make distcheck
       run: make distcheck
+    - name: try hello?
+      run: test/hello-world.sh
