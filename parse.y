@@ -320,8 +320,16 @@ directive:
     YYERROR;
   }
 
-  // TODO actually generate code for each character!
-  prog->len += (strlen(buf)+1);
+  instruction *inst = $1;
+  for(char *p = buf; *p; p++) {
+    inst->inst = *p;
+    inst->pos = prog->len++;
+    inst->next = calloc(1, sizeof(instruction));
+    inst = inst->next;
+  }
+  inst->inst = 0;
+  inst->pos = prog->len++;
+
   if(flags & FORMAT_PRETTY)
     fprintf(out, "  .STRINGZ %s\n", yytext);
   $$ = $1;
