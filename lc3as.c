@@ -163,7 +163,6 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program *prog = calloc (1, sizeof (program));
-  // prog->len = 1;
 
   rc = yyparse (prog);
 
@@ -306,11 +305,11 @@ generate_code (FILE *out, program *prog, int flags)
               }
 
             if (flags & FORMAT_HEX)
-              PPRINT (out, cp, "x%04X", swap16 (addr));
+              PPRINT (out, cp, "x%04X", swap16 (inst->inst));
 
             if (!flags)
               {
-                tmp16 = swap16 (addr);
+                tmp16 = swap16 (inst->inst);
                 fwrite (&tmp16, sizeof (uint16_t), 1, out);
               }
           }

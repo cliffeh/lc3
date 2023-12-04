@@ -78,11 +78,27 @@ program:
 instruction_list:
   /* empty */
 { $$ = 0; }
+| label instruction_list
+{ // TODO separate out the symbol table
+  $$ = calloc(1, sizeof(instruction_list));
+  $$->head = $1;
+  $$->tail = $2;
+}
 | instruction instruction_list
 {
   $$ = calloc(1, sizeof(instruction_list));
   $$->head = $1;
   $$->tail = $2;
+}
+;
+
+// TODO keep symbol table separate from instructions
+label: LABEL
+{
+  $$ = calloc(1, sizeof(instruction));
+  $$->label = strdup(yytext);
+  $$->op = -1;
+  $$->pos = prog->len;
 }
 ;
 
@@ -202,7 +218,6 @@ instruction:
 }
 | directive
 | trap
-| label
 ;
 
 directive:
@@ -240,15 +255,6 @@ directive:
   } 
 
   prog->len += (strlen(buf)+1);
-}
-;
-
-label: LABEL
-{
-  $$ = calloc(1, sizeof(instruction));
-  $$->label = strdup(yytext);
-  $$->op = -1;
-  $$->pos = prog->len;
 }
 ;
 
