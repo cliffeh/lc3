@@ -414,12 +414,14 @@ main (int argc, const char *argv[])
                   SET_COND (registers[R_R0]);
                 }
                 break;
+
               case TRAP_OUT:
                 {
                   putc ((char)registers[R_R0], stdout);
                   fflush (stdout);
                 }
                 break;
+
               case TRAP_PUTS:
                 {
                   uint16_t addr = registers[R_R0];
@@ -429,6 +431,7 @@ main (int argc, const char *argv[])
                     }
                 }
                 break;
+
               case TRAP_IN:
                 {
                   printf ("Enter a character: ");
@@ -439,6 +442,7 @@ main (int argc, const char *argv[])
                   SET_COND (registers[R_R0]);
                 }
                 break;
+
               case TRAP_PUTSP:
                 {
                   /* one char per byte (two bytes per word)
@@ -457,12 +461,14 @@ main (int argc, const char *argv[])
                   fflush (stdout);
                 }
                 break;
+
               case TRAP_HALT:
                 {
                   // TODO any other cleanup?
                   running = 0;
                 }
                 break;
+
               default:
                 {
                   fprintf (stderr, "unknown trap code: %X\n", trapvect8);
