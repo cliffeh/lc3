@@ -94,7 +94,7 @@ main (int argc, const char *argv[])
 {
   int rc;
   char *infile = "-", *outfile = "-";
-  FILE *in, *out = 0;
+  FILE *in = 0, *out = 0;
 
   poptContext optCon;
 
