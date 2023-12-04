@@ -28,7 +28,7 @@
   while (0)
 
 extern FILE *yyin;
-extern int yyparse (program *prog);
+extern int yyparse (program *prog, int flags, FILE *out);
 
 int
 main (int argc, const char *argv[])
@@ -164,14 +164,14 @@ main (int argc, const char *argv[])
 
   program *prog = calloc (1, sizeof (program));
 
-  rc = yyparse (prog);
+  rc = yyparse (prog, flags, out);
 
   if (rc == 0)
     {
-      if ((rc = generate_code (out, prog, flags)) != 0)
-        {
-          fprintf (stderr, "%i errors found\n", rc);
-        }
+      // if ((rc = generate_code (out, prog, flags)) != 0)
+      //   {
+      //     fprintf (stderr, "%i errors found\n", rc);
+      //   }
       // TODO free_program()
     }
   else
@@ -257,9 +257,6 @@ generate_code (FILE *out, program *prog, int flags)
       fwrite (&tmp16, sizeof (uint16_t), 1, out);
     }
 
-  if (flags & FORMAT_PRETTY)
-    PPRINT (out, cp, ".ORIG x%04X\n", prog->orig);
-
   for (instruction_list *l = &prog->instructions; l && l->head; l = l->tail)
     {
       char buf[32] = "", pbuf[4096] = "";
@@ -288,8 +285,9 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // TODO is this right?
-                addr = find_position_by_label (&prog->instructions, inst->label)
-                       + prog->orig;
+                addr
+                    = find_position_by_label (&prog->instructions, inst->label)
+                      + prog->orig;
                 if (addr < 0)
                   {
                     fprintf (stderr,
@@ -419,8 +417,8 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 sprintf (p, " %s", inst->label);
-                int dest
-                    = find_position_by_label (&prog->instructions, inst->label);
+                int dest = find_position_by_label (&prog->instructions,
+                                                   inst->label);
                 if (dest < 0)
                   {
                     fprintf (stderr,
@@ -458,8 +456,8 @@ generate_code (FILE *out, program *prog, int flags)
             if (inst->immediate)
               {
                 inst->inst |= (1 << 11);
-                int dest
-                    = find_position_by_label (&prog->instructions, inst->label);
+                int dest = find_position_by_label (&prog->instructions,
+                                                   inst->label);
                 if (dest < 0)
                   {
                     fprintf (stderr,

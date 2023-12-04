@@ -9,6 +9,19 @@ void yyerror();
 extern char *yytext;
 extern int yylineno;
 
+#define PRETTY_PRINT(out, inst, flags, fmt, ...) \
+do{ \
+  if(flags & FORMAT_HEX) \
+    fprintf(out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "", inst); \
+  if(flags & FORMAT_BITS) { \
+    char buf[32]; \
+    inst_to_bits(buf, inst); \
+    fprintf(out, "%s%s", (flags & (FORMAT_ADDR|FORMAT_HEX)) ? "  " : "", buf); \
+  } \
+  if(flags & FORMAT_PRETTY) \
+    fprintf(out, "  " fmt "\n" __VA_OPT__(,) __VA_ARGS__); \
+ }while(0)
+
 // some convenience macros for operations
 #define OP_NARG(dest, code) \
   dest = calloc(1, sizeof(instruction)); \
@@ -25,7 +38,7 @@ extern int yylineno;
   dest->d3 = a3
 %}
 
-%parse-param    { program *prog }
+%parse-param    { program *prog }{ int flags }{ FILE *out }
 
 %union {
   program *prog;
@@ -52,9 +65,9 @@ extern int yylineno;
 // literals
 %token DECLIT HEXLIT STRLIT LABEL
 
-%type program
+%type program preamble
 %type <inst_list> instruction_list
-%type <inst> instruction
+%type <inst> instruction alloc
 // special cases of instruction
 %type <inst> directive label trap
 %type <num> num imm5 offset6 trapvect8
@@ -66,13 +79,22 @@ extern int yylineno;
 %%
 
 program:
-  ORIG num
+  preamble
   instruction_list
   END
 {
+  prog->instructions.head = $2->head;
+  prog->instructions.tail = $2->tail;
+  if (flags & FORMAT_PRETTY)
+    fprintf(out, ".END\n");
+}
+;
+
+preamble: ORIG num
+{
+  if (flags & FORMAT_PRETTY)
+    fprintf(out, ".ORIG x%04X\n", $2);
   prog->orig = $2;
-  prog->instructions.head = $3->head;
-  prog->instructions.tail = $3->tail;
 }
 ;
 
@@ -94,128 +116,179 @@ instruction_list:
 ;
 
 // TODO keep symbol table separate from instructions
-label: LABEL
+label: alloc LABEL
+{
+  $1->label = strdup(yytext);
+  $1->op = -1;
+  $1->pos = prog->len;
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "%s%s\n", (flags & FORMAT_ADDR) ? "  ": "", yytext);
+  $$ = $1;
+}
+;
+
+alloc: // hack: allocate instruction storage
+  /* empty */
 {
   $$ = calloc(1, sizeof(instruction));
-  $$->label = strdup(yytext);
-  $$->op = -1;
-  $$->pos = prog->len;
+  $$->pos = prog->len++;
+  if(flags & FORMAT_ADDR)
+    // NB the assembler expects addresses starting at 0,
+    // but for pretty-printing it's nicer to index them at
+    // 1 to account for ORIG at the top of the program
+    fprintf(out, "%04x", prog->len);
 }
 ;
 
 instruction:
-  ADD reg ',' reg ',' reg
+  alloc ADD reg ',' reg ',' reg
 {
-  OP_3ARG($$, OP_ADD, reg[0], $2, reg[1], $4, reg[2], $6);
-  $$->immediate = 0;
+  $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
+  PRETTY_PRINT(out, $1->inst, flags, "ADD R%d, R%d, %s", $3, $5, yytext);
+  $$ = $1;
 }
-| ADD reg ',' reg ',' imm5
+| alloc ADD reg ',' reg ',' imm5
 {
-  OP_3ARG($$, OP_ADD, reg[0], $2, reg[1], $4, imm5, $6);
-  $$->immediate = 1;
+  $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 << 0);
+  PRETTY_PRINT(out, $1->inst, flags, "ADD R%d, R%d, %s", $3, $5, yytext);
+  $$ = $1;
 }
-| AND reg ',' reg ',' reg
+| alloc AND reg ',' reg ',' reg
 {
-  OP_3ARG($$, OP_AND, reg[0], $2, reg[1], $4, reg[2], $6);
-  $$->immediate = 0;
+  $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
+  PRETTY_PRINT(out, $1->inst, flags, "AND R%d, R%d, R%d", $3, $5, $7);
+  $$ = $1;
 }
-| AND reg ',' reg ',' imm5
+| alloc AND reg ',' reg ',' imm5
 {
-  OP_3ARG($$, OP_AND, reg[0], $2, reg[1], $4, imm5, $6);
-  $$->immediate = 1;
+  $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 << 0);
+  PRETTY_PRINT(out, $1->inst, flags, "AND R%d, R%d, %s", $3, $5, yytext);
+  $$ = $1;
 }
-| branch LABEL
+| alloc branch LABEL
 {
-  OP_1ARG($$, OP_BR, label, strdup(yytext));
-  $$->immediate = 0;
-  for(char *p = $1+2; *p; p++) {
+  $1->inst = (OP_BR << 12);
+  for(char *p = $2+2; *p; p++) {
     switch(*p) {
       case 'n':
-      case 'N': $$->cond |= FL_NEG; break;
+      case 'N': $1->inst |= (1 << 11); break;
       case 'z':
-      case 'Z': $$->cond |= FL_ZRO; break;
+      case 'Z': $1->inst |= (1 << 10); break;
       case 'p':
-      case 'P': $$->cond |= FL_POS; break;
+      case 'P': $1->inst |= (1 << 9); break;
     }
   }
+  $1->label = strdup(yytext);
+  PRETTY_PRINT(out, $1->inst, flags, "%s %s", $2, yytext);
+  $$ = $1;
 }
-| branch num
+| alloc branch num
 {
-  OP_1ARG($$, OP_BR, pcoffset9, $2);
-  $$->immediate = 1;
-  for(char *p = $1+2; *p; p++) {
+  $1->inst = (OP_BR << 12);
+  for(char *p = $2+2; *p; p++) {
     switch(*p) {
       case 'n':
-      case 'N': $$->cond |= FL_NEG; break;
+      case 'N': $1->inst |= (1 << 11); break;
       case 'z':
-      case 'Z': $$->cond |= FL_ZRO; break;
+      case 'Z': $1->inst |= (1 << 10); break;
       case 'p':
-      case 'P': $$->cond |= FL_POS; break;
+      case 'P': $1->inst |= (1 << 9); break;
     }
   }
+  $1->inst |= ($3 & 0x01FF); // TODO is this correct? maybe we should fail if $3 is more than 9 bits wide?
+  PRETTY_PRINT(out, $1->inst, flags, "%s %s", $2, yytext);
+  $$ = $1;
 }
-| JMP reg
+| alloc JMP reg
 {
-  OP_1ARG($$, OP_JMP, reg[0], $2);
-  // as a convention, we'll use the immediate flag
-  // to distinguish between JMP and RET
-  $$->immediate = 1;
+  $1->inst = (OP_JMP << 12) | ($3 << 6);
+  PRETTY_PRINT(out, $1->inst, flags, "JMP R%d", $3);
+  $$ = $1;
 }
-| JSR LABEL
+| alloc JSR LABEL
 {
-  OP_1ARG($$, OP_JSR, label, strdup(yytext));
-  $$->immediate = 1;
+  $1->inst = (OP_JSR << 12) | (1 << 11);
+  $$->label = strdup(yytext);
+  PRETTY_PRINT(out, $1->inst, flags, "JSR %s", yytext);
+  $$ = $1;
 }
-| JSRR reg
+| alloc JSRR reg
 {
-  OP_1ARG($$, OP_JSR, reg[0], $2);
-  $$->immediate = 0;
+  $1->inst = (OP_JSR << 12) | ($3 << 6);
+  PRETTY_PRINT(out, $1->inst, flags, "JSRR R%d", $3);
+  $$ = $1;
 }
-| LD reg ',' LABEL
+| alloc LD reg ',' LABEL
 {
-  OP_2ARG($$, OP_LD, reg[0], $2, label, strdup(yytext));
+  $1->inst = (OP_LD << 12) | ($3 << 9);
+  $$->label = strdup(yytext);
+  PRETTY_PRINT(out, $1->inst, flags, "LD R%d, %s", $3, yytext);
+  $$ = $1;
 }
-| LDI reg ',' LABEL
+| alloc LDI reg ',' LABEL
 {
-  OP_2ARG($$, OP_LDI, reg[0], $2, label, strdup(yytext));
+  $1->inst = (OP_LDI << 12) | ($3 << 9);
+  $$->label = strdup(yytext);
+  PRETTY_PRINT(out, $1->inst, flags, "LDI R%d, %s", $3, yytext);
+  $$ = $1;
 }
-| LDR reg ',' reg ',' offset6
+| alloc LDR reg ',' reg ',' offset6
 {
-  OP_3ARG($$, OP_LDR, reg[0], $2, reg[1], $4, offset6, $6);
+  $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x002F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
+  PRETTY_PRINT(out, $1->inst, flags, "LDR R%d, R%d, %s", $3, $5, yytext);
+  $$ = $1;
 }
-| LEA reg ',' LABEL
+| alloc LEA reg ',' LABEL
 {
-  OP_2ARG($$, OP_LEA, reg[0], $2, label, strdup(yytext));
+  $1->inst = (OP_LEA << 12) | ($3 << 9);
+  $$->label = strdup(yytext);
+  PRETTY_PRINT(out, $1->inst, flags, "LEA R%d, %s", $3, yytext);
+  $$ = $1;
 }
-| NOT reg ',' reg
+| alloc NOT reg ',' reg
 {
-  OP_2ARG($$, OP_NOT, reg[0], $2, reg[1], $4);
+  $1->inst = (OP_NOT << 12) | ($3 << 9) | ($5 << 6) | (0x002F << 0);
+  PRETTY_PRINT(out, $1->inst, flags, "NOT R%d, R%d", $3, $5);
+  $$ = $1;
 }
-| RET
+| alloc RET
 {
   // special case of JMP, where R7 is implied as DR
-  OP_1ARG($$, OP_JMP, reg[0], char_to_reg('7'));
+  $1->inst = (OP_JMP << 12) | (R_R7 << 6);
+  PRETTY_PRINT(out, $1->inst, flags, "RET");
+  $$ = $1;
 }
-| RTI
+| alloc RTI
 {
-  OP_NARG($$, OP_RTI);
+  $1->inst = (OP_RTI << 12);
+  PRETTY_PRINT(out, $1->inst, flags, "RTI");
+  $$ = $1;
 }
-| ST reg ',' LABEL
+| alloc ST reg ',' LABEL
 {
-  OP_2ARG($$, OP_ST, reg[0], $2, label, strdup(yytext));
+  $1->inst = (OP_ST << 12) | ($3 << 9);
+  $$->label = strdup(yytext);
+  PRETTY_PRINT(out, $1->inst, flags, "ST R%d, %s", $3, yytext);
+  $$ = $1;
 }
-| STI reg ',' LABEL
+| alloc STI reg ',' LABEL
 {
-  OP_2ARG($$, OP_STI, reg[0], $2, label, strdup(yytext));
+  $1->inst = (OP_STI << 12) | ($3 << 9);
+  $$->label = strdup(yytext);
+  PRETTY_PRINT(out, $1->inst, flags, "STI R%d, %s", $3, yytext);
+  $$ = $1;
 }
-| STR reg ',' reg ',' offset6
+| alloc STR reg ',' reg ',' offset6
 {
-  OP_3ARG($$, OP_STR, reg[0], $2, reg[1], $4, offset6, $6);
+  $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x002F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
+  PRETTY_PRINT(out, $1->inst, flags, "STR R%d, R%d, %s", $3, $5, yytext);
+  $$ = $1;
 }
-| TRAP trapvect8
+| alloc TRAP trapvect8
 {
-  OP_1ARG($$, OP_TRAP, trapvect8, $2);
-  $$->immediate = 1;
+  $1->inst = (OP_TRAP << 12) | ($3 << 0);
+  PRETTY_PRINT(out, $1->inst, flags, "TRAP %s", yytext);
+  $$ = $1;
 }
 | directive
 | trap
