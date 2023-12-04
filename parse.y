@@ -295,40 +295,39 @@ instruction:
 ;
 
 directive:
-  FILL num
+  alloc FILL num
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->inst = $2;
-  $$->op = -3;
-  $$->immediate = 1;
-  $$->pos = prog->len++;
+  $1->inst = $3;
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  .FILL %s\n", yytext);
+  $$ = $1;
 }
-| FILL LABEL
+| alloc FILL LABEL
 {
-  $$ = calloc(1, sizeof(instruction));
-  $$->label = strdup(yytext);
-  $$->op = -3;
-  $$->immediate = 0;
-  $$->pos = prog->len++;
+  $1->label = strdup(yytext);
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  .FILL %s\n", yytext);
+  $$ = $1;
 }
 |
-  STRINGZ STRLIT
+  alloc STRINGZ STRLIT
 {
-  $$ = calloc(1, sizeof(instruction));
-  // TODO a more sophisticated way of trimming quotes
-  $$->label = strdup(yytext+1);
-  $$->label[strlen($$->label)-1] = 0;
-  $$->op = -2;
-  $$->pos = prog->len;
+  // TODO trim quotes in the lexer
+  char *str = strdup(yytext+1);
+  str[strlen(str)-1] = 0;
 
-  char buf[strlen($$->label)+1];
-  if(unescape_string(buf, $$->label) != 0)
+  char buf[strlen(str)+1];
+  if(unescape_string(buf, str) != 0)
   {
     fprintf(stderr, "error: unknown escape sequence in string literal\n");
     YYERROR;
-  } 
+  }
 
+  // TODO actually generate code for each character!
   prog->len += (strlen(buf)+1);
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  .STRINGZ %s\n", yytext);
+  $$ = $1;
 }
 ;
 
@@ -337,29 +336,47 @@ directive:
    these and TRAP 0xnn
 */
 trap:
-  GETC
+  alloc GETC
 {
-  OP_1ARG($$, OP_TRAP, trapvect8, 0x20);
+  $1->inst = (OP_TRAP << 12) | (TRAP_GETC << 0);
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  GETC\n");
+  $$ = $1;
 }
-| OUT
+| alloc OUT
 {
-  OP_1ARG($$, OP_TRAP, trapvect8, 0x21);
+  $1->inst = (OP_TRAP << 12) | (TRAP_OUT << 0);
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  OUT\n");
+  $$ = $1;
 }
-| PUTS
+| alloc PUTS
 {
-  OP_1ARG($$, OP_TRAP, trapvect8, 0x22);
+  $1->inst = (OP_TRAP << 12) | (TRAP_PUTS << 0);
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  PUTS\n");
+  $$ = $1;
 }
-| IN
+| alloc IN
 {
-  OP_1ARG($$, OP_TRAP, trapvect8, 0x23);
+  $1->inst = (OP_TRAP << 12) | (TRAP_IN << 0);
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  IN\n");
+  $$ = $1;
 }
-| PUTSP
+| alloc PUTSP
 {
-  OP_1ARG($$, OP_TRAP, trapvect8, 0x24);
+  $1->inst = (OP_TRAP << 12) | (TRAP_PUTSP << 0);
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  PUTSP\n");
+  $$ = $1;
 }
-| HALT
+| alloc HALT
 {
-  OP_1ARG($$, OP_TRAP, trapvect8, 0x25);
+  $1->inst = (OP_TRAP << 12) | (TRAP_HALT << 0);
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  HALT\n");
+  $$ = $1;
 }
 ;
 
