@@ -275,7 +275,7 @@ main (int argc, const char *argv[])
         case OP_JMP:
           {
             /* PC = BaseR; */
-            registers[R_PC] = registers[inst & MASK_BASER];
+            registers[R_PC] = registers[GET_BASER(inst)];
           }
           break;
 
@@ -295,7 +295,7 @@ main (int argc, const char *argv[])
               }
             else
               {
-                registers[R_PC] = registers[inst & MASK_BASER];
+                registers[R_PC] = registers[GET_BASER(inst)];
               }
           }
           break;
