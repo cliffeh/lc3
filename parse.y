@@ -42,8 +42,8 @@ do{ \
 
 %union {
   program *prog;
-  instruction_list *inst_list;
   instruction *inst;
+  symbol *sym;
   int num;
   int reg;
   char *str;
@@ -66,10 +66,10 @@ do{ \
 %token DECLIT HEXLIT STRLIT LABEL
 
 %type program preamble
-%type <inst_list> instruction_list
-%type <inst> instruction alloc
+%type <inst> instruction instruction_list
 // special cases of instruction
-%type <inst> directive label trap
+%type <inst> alloc directive trap
+%type <sym> label
 %type <num> num imm5 offset6 trapvect8
 %type <reg> reg
 %type <str> branch
@@ -83,8 +83,8 @@ program:
   instruction_list
   END
 {
-  prog->instructions.head = $2->head;
-  prog->instructions.tail = $2->tail;
+  // prog->instructions.head = $2->head;
+  // prog->instructions.tail = $2->tail;
   if (flags & FORMAT_PRETTY)
     fprintf(out, ".END\n");
 }
@@ -102,28 +102,25 @@ instruction_list:
   /* empty */
 { $$ = 0; }
 | label instruction_list
-{ // TODO separate out the symbol table
-  $$ = calloc(1, sizeof(instruction_list));
-  $$->head = $1;
-  $$->tail = $2;
+{
+  $1->next = prog->symbols;
+  prog->symbols = $1;
+  $$ = $2;
 }
 | instruction instruction_list
 {
-  $$ = calloc(1, sizeof(instruction_list));
-  $$->head = $1;
-  $$->tail = $2;
+  $1->next = $2;
+  $$ = $1;
 }
 ;
 
 // TODO keep symbol table separate from instructions
-label: alloc LABEL
+label: LABEL
 {
-  $1->label = strdup(yytext);
-  $1->op = -1;
-  $1->pos = prog->len;
+  $$ = calloc(1, sizeof(symbol));
+  $$->pos = prog->len;
   if(flags & FORMAT_PRETTY)
     fprintf(out, "%s%s\n", (flags & FORMAT_ADDR) ? "  ": "", yytext);
-  $$ = $1;
 }
 ;
 

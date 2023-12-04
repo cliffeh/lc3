@@ -185,14 +185,13 @@ main (int argc, const char *argv[])
 
 // TODO a more efficient way of looking up label positions
 int
-find_position_by_label (const instruction_list *instructions,
-                        const char *label)
+find_position_by_label (const symbol *symbols, const char *label)
 {
-  for (const instruction_list *l = instructions; l->head; l = l->tail)
+  for (const symbol *sym = symbols; sym; sym = sym->next)
     {
-      const instruction *inst = l->head;
-      if (inst->op == -1 && strcmp (label, inst->label) == 0)
-        return inst->pos;
+      // TODO rejigger this to use the symbol table!
+      if (strcmp (label, sym->label) == 0)
+        return sym->pos;
     }
   return -1;
 }
@@ -248,7 +247,9 @@ trapvec8_to_str (int trapvec8)
 int
 generate_code (FILE *out, program *prog, int flags)
 {
+
   int err_count = 0, cp = 0;
+  /*
   uint16_t tmp16;
 
   if (!flags)
@@ -666,6 +667,6 @@ generate_code (FILE *out, program *prog, int flags)
 
   if (flags & FORMAT_PRETTY)
     fprintf (out, ".END\n");
-
+*/
   return err_count;
 }
