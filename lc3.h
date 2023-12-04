@@ -95,3 +95,4 @@ enum
 #define GET_SR(inst) ((inst & MASK_SR) >> 6)
 #define GET_SR1(inst) ((inst & MASK_SR1) >> 6)
 #define GET_SR2(inst) ((inst & MASK_SR2))
+#define GET_BASER(inst) ((inst & MASK_BASER) >> 6)
