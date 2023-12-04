@@ -19,9 +19,10 @@ jobs:
       run: ./configure
     - name: make
       run: make
+    - name: try hello?
+      run: test/hello-world.sh
     - name: make check
       run: make check
     - name: make distcheck
       run: make distcheck
-    - name: try hello?
-      run: test/hello-world.sh
+
