@@ -38,7 +38,7 @@ typedef struct program
   symbol *symbols;
 } program;
 
-int generate_code (FILE *out, program *prog, int flags);
+int resolve_symbols (instruction *instructions, symbol *symbols);
 int print_instruction (FILE *out, instruction *inst, int flags);
 int char_to_reg (char c);
-int find_position_by_label (const symbol *symbols, const char *label);
+uint16_t find_position_by_label (const symbol *symbols, const char *label);

@@ -83,8 +83,7 @@ program:
   instruction_list
   END
 {
-  // prog->instructions.head = $2->head;
-  // prog->instructions.tail = $2->tail;
+  prog->instructions = $2;
   if (flags & FORMAT_PRETTY)
     fprintf(out, ".END\n");
 }

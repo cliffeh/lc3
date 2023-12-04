@@ -168,6 +168,20 @@ main (int argc, const char *argv[])
 
   if (rc == 0)
     {
+      rc = resolve_symbols (prog->instructions, prog->symbols);
+      if (rc)
+        exit (rc); // TODO error message?
+
+      if (!flags) // we're supposed to output code
+        {
+          if(fwrite (&prog->orig, sizeof (uint16_t), 1, out) != 1)
+            exit(1); // TODO error message
+          for (instruction *inst = prog->instructions; inst; inst = inst->next)
+            {
+              if (fwrite (&inst->inst, sizeof (uint16_t), 1, out) != 1)
+                exit (1); // TODO error message?
+            }
+        }
       // if ((rc = generate_code (out, prog, flags)) != 0)
       //   {
       //     fprintf (stderr, "%i errors found\n", rc);
@@ -180,11 +194,11 @@ main (int argc, const char *argv[])
       fprintf (stderr, "there was an error\n");
     }
 
-  return rc;
+  exit (rc);
 }
 
 // TODO a more efficient way of looking up label positions
-int
+uint16_t
 find_position_by_label (const symbol *symbols, const char *label)
 {
   for (const symbol *sym = symbols; sym; sym = sym->next)
@@ -193,7 +207,7 @@ find_position_by_label (const symbol *symbols, const char *label)
       if (strcmp (label, sym->label) == 0)
         return sym->pos;
     }
-  return -1;
+  return 0xFFFF;
 }
 
 int
@@ -243,6 +257,28 @@ trapvec8_to_str (int trapvec8)
 
 // TODO put this somewhere else?
 #define PCOFFSET(curr, dest, bitmask) ((dest - curr - 1) & bitmask)
+
+int
+resolve_symbols (instruction *instructions, symbol *symbols)
+{
+  int error_count = 0;
+  for (instruction *inst = instructions; inst; inst = inst->next)
+    {
+      if (inst->label) // we have a symbol that needs resolving!
+        {
+          uint16_t addr = find_position_by_label (symbols, inst->label);
+          if (addr & 0xFFFF)
+            {
+              fprintf (stderr, "error: unresolved symbol: %s\n", inst->label);
+              error_count++;
+            }
+          // TODO we need to check bounds on these somewhere...maybe in the
+          // parser?
+          inst->inst |= addr;
+        }
+    }
+  return error_count;
+}
 
 int
 generate_code (FILE *out, program *prog, int flags)
