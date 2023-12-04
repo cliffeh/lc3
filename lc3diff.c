@@ -29,7 +29,11 @@ main (int argc, char *argv[])
       exit (1);
     }
 
-  if (!(f2 = fopen (argv[2], "r")))
+  if (strcmp (argv[2], "-") == 0)
+    {
+      f2 = stdin;
+    }
+  else if (!(f2 = fopen (argv[2], "r")))
     {
       fprintf (stderr, "error opening %s: %s\n", argv[2], strerror (errno));
       exit (1);
