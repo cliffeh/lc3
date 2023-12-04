@@ -316,11 +316,11 @@ main (int argc, const char *argv[])
         case OP_LDI:
           {
             /*
-            DR = mem[BaseR + SEXT(offset6)];
+            DR = mem[mem[PC + SEXT(PCoffset9)]];
             setcc();
             */
             registers[GET_DR (inst)]
-                = memory[registers[GET_BASER (inst)]
+                = memory[memory[registers[R_PC]]
                          + sign_extend (inst & MASK_OFFSET6, 16)];
             SET_COND (registers[GET_DR (inst)]);
           }
@@ -332,10 +332,9 @@ main (int argc, const char *argv[])
             DR = mem[BaseR + SEXT(offset6)];
             setcc();
             */
-            registers[inst & MASK_DR]
-                = registers[inst & MASK_BASER]
-                  + sign_extend (inst & MASK_OFFSET6, 16);
-            SET_COND (registers[inst & MASK_DR]);
+            registers[GET_DR (inst)] = memory[registers[GET_BASER (inst)]]
+                                       + sign_extend (inst & MASK_OFFSET6, 16);
+            SET_COND (registers[GET_DR (inst)]);
           }
           break;
 
@@ -345,9 +344,9 @@ main (int argc, const char *argv[])
             DR = PC + SEXT(PCoffset9);
             setcc();
             */
-            registers[inst & MASK_DR]
+            registers[GET_DR (inst)]
                 = registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16);
-            SET_COND (registers[inst & MASK_DR]);
+            SET_COND (registers[GET_DR (inst)]);
           }
           break;
 
@@ -357,8 +356,8 @@ main (int argc, const char *argv[])
             DR = NOT(SR);
             setcc();
             */
-            registers[inst & MASK_DR] = ~registers[inst & MASK_SR];
-            SET_COND (registers[inst & MASK_DR]);
+            registers[GET_DR (inst)] = ~registers[GET_SR (inst)];
+            SET_COND (registers[GET_DR (inst)]);
           }
           break;
 
