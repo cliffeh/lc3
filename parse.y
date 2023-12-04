@@ -75,28 +75,14 @@ program:
 }
 ;
 
-/*
-  this would be simpler with right recursion, but:
-    1) we want to be able to capture address instructions, and
-    2) we want to protect against blowing out our stack if
-       the input program is large
-*/
 instruction_list:
   /* empty */
 { $$ = 0; }
-| instruction
+| instruction instruction_list
 {
   $$ = calloc(1, sizeof(instruction_list));
   $$->head = $1;
-  $$->tail = 0;
-  $$->last = $$;
-}
-| instruction_list instruction
-{
-  $1->last->tail = calloc(1, sizeof(instruction_list));
-  $1->last->tail->head = $2;
-  $1->last = $1->last->tail;
-  $$ = $1;
+  $$->tail = $2;
 }
 ;
 
