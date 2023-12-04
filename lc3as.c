@@ -163,6 +163,7 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program *prog = calloc (1, sizeof (program));
+  // prog->len = 1;
 
   rc = yyparse (prog);
 
@@ -273,7 +274,7 @@ generate_code (FILE *out, program *prog, int flags)
         }
 
       if (flags & FORMAT_ADDR)
-        PPRINT (out, cp, "x%04X", (inst->pos * 16));
+        PPRINT (out, cp, "x%04X", inst->pos);
 
       // TODO need to actually print out the object code!
       switch (inst->op)
