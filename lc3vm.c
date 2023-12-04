@@ -203,18 +203,18 @@ main (int argc, const char *argv[])
 
   int running = 1;
 
-  // FILE *logfile = fopen ("test.out", "w");
+  FILE *logfile = fopen ("test.out", "w");
 
   for (uint16_t inst = memory[registers[R_PC]++]; running;
        inst = memory[registers[R_PC]++])
     {
-      // fprintf (logfile, "PC: %04X; executing: %04X", registers[R_PC],
-      //          swap16 (inst));
-      // for (int i = 0; i < 8; i++)
-      //   {
-      //     fprintf (logfile, " R%i: %04X", i, registers[i]);
-      //   }
-      // fprintf (logfile, "\n");
+      fprintf (logfile, "PC: %04X; executing: %04X", registers[R_PC],
+               swap16 (inst));
+      for (int i = 0; i < 8; i++)
+        {
+          fprintf (logfile, " R%i: %04X", i, registers[i]);
+        }
+      fprintf (logfile, "\n");
 
       switch (GET_OP (inst))
         {
@@ -275,7 +275,7 @@ main (int argc, const char *argv[])
         case OP_JMP:
           {
             /* PC = BaseR; */
-            registers[R_PC] = registers[GET_BASER(inst)];
+            registers[R_PC] = registers[GET_BASER (inst)];
           }
           break;
 
@@ -295,7 +295,7 @@ main (int argc, const char *argv[])
               }
             else
               {
-                registers[R_PC] = registers[GET_BASER(inst)];
+                registers[R_PC] = registers[GET_BASER (inst)];
               }
           }
           break;

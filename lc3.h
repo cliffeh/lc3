@@ -91,8 +91,8 @@ enum
 // 0000 1000 0000 0000
 #define MASK_BIT11 0x0800
 
-#define GET_DR(inst) ((inst & MASK_DR) >> 9)
-#define GET_SR(inst) ((inst & MASK_SR) >> 6)
-#define GET_SR1(inst) ((inst & MASK_SR1) >> 6)
-#define GET_SR2(inst) ((inst & MASK_SR2))
-#define GET_BASER(inst) ((inst & MASK_BASER) >> 6)
+#define GET_DR(inst) (((inst) >> 9) & 7)
+#define GET_SR(inst) (((inst) >> 6) & 7)
+#define GET_SR1(inst) GET_SR (inst)
+#define GET_BASER(inst) GET_SR (inst)
+#define GET_SR2(inst) ((inst)&7)
