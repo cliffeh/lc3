@@ -381,7 +381,7 @@ main (int argc, const char *argv[])
           {
             /* mem[PC + SEXT(PCoffset9)] = SR; */
             memory[registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16)]
-                = registers[inst & MASK_SR];
+                = registers[GET_SR (inst)];
           }
           break;
 
@@ -390,16 +390,16 @@ main (int argc, const char *argv[])
             /* mem[mem[PC + SEXT(PCoffset9)]] = SR; */
             memory[memory[registers[R_PC]
                           + sign_extend (inst & MASK_PCOFFSET9, 16)]]
-                = registers[inst & MASK_SR];
+                = registers[GET_SR (inst)];
           }
           break;
 
         case OP_STR:
           {
             /* mem[BaseR + SEXT(offset6)] = SR; */
-            memory[registers[inst & MASK_BASER]
+            memory[registers[GET_BASER (inst)]
                    + sign_extend (inst & MASK_OFFSET6, 16)]
-                = registers[inst & MASK_SR];
+                = registers[GET_SR (inst)];
           }
           break;
 
