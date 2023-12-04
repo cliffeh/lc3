@@ -90,3 +90,8 @@ enum
 #define MASK_IMM MASK_BIT5
 // 0000 1000 0000 0000
 #define MASK_BIT11 0x0800
+
+#define GET_DR(inst) ((inst & MASK_DR) >> 9)
+#define GET_SR(inst) ((inst & MASK_SR) >> 6)
+#define GET_SR1(inst) ((inst & MASK_SR1) >> 6)
+#define GET_SR2(inst) ((inst & MASK_SR2))

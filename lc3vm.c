@@ -228,13 +228,13 @@ main (int argc, const char *argv[])
             setcc();
             */
             if (inst & MASK_BIT5)
-              registers[inst & MASK_DR]
-                  = registers[inst & MASK_SR1] + registers[inst & MASK_SR2];
+              registers[GET_DR (inst)]
+                  = registers[GET_SR1 (inst)] + registers[GET_SR2 (inst)];
             else
-              registers[inst & MASK_DR] = registers[inst & MASK_SR1]
-                                          + sign_extend (inst & MASK_IMM5, 16);
+              registers[GET_DR (inst)] = registers[GET_SR1 (inst)]
+                                         + sign_extend (inst & MASK_IMM5, 16);
 
-            SET_COND (registers[inst & MASK_DR]);
+            SET_COND (registers[GET_DR (inst)]);
           }
           break;
 
@@ -248,13 +248,13 @@ main (int argc, const char *argv[])
             setcc();
             */
             if (inst & MASK_BIT5)
-              registers[inst & MASK_DR]
-                  = registers[inst & MASK_SR1] + registers[inst & MASK_SR2];
+              registers[GET_DR (inst)]
+                  = registers[GET_SR1 (inst)] + registers[GET_SR2 (inst)];
             else
-              registers[inst & MASK_DR] = registers[inst & MASK_SR1]
-                                          & sign_extend (inst & MASK_IMM5, 16);
+              registers[GET_DR (inst)] = registers[GET_SR1 (inst)]
+                                         & sign_extend (inst & MASK_IMM5, 16);
 
-            SET_COND (registers[inst & MASK_DR]);
+            SET_COND (registers[GET_DR (inst)]);
           }
           break;
 
