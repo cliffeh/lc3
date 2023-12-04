@@ -67,6 +67,7 @@ Makefile
 *.o
 
 # generated binaries
+lc3diff
 lc3as
 lc3vm
 
