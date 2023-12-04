@@ -203,18 +203,18 @@ main (int argc, const char *argv[])
 
   int running = 1;
 
-  FILE *logfile = fopen ("test.out", "w");
+  // FILE *logfile = fopen ("test.out", "w");
 
   for (uint16_t inst = memory[registers[R_PC]++]; running;
        inst = memory[registers[R_PC]++])
     {
-      fprintf (logfile, "PC: %04X; executing: %04X", registers[R_PC],
-               swap16 (inst));
-      for (int i = 0; i < 8; i++)
-        {
-          fprintf (logfile, " R%i: %04X", i, registers[i]);
-        }
-      fprintf (logfile, "\n");
+      // fprintf (logfile, "PC: %04X; executing: %04X", registers[R_PC],
+      //          swap16 (inst));
+      // for (int i = 0; i < 8; i++)
+      //   {
+      //     fprintf (logfile, " R%i: %04X", i, registers[i]);
+      //   }
+      // fprintf (logfile, "\n");
 
       switch (GET_OP (inst))
         {
@@ -424,11 +424,14 @@ main (int argc, const char *argv[])
 
               case TRAP_PUTS:
                 {
-                  uint16_t addr = registers[R_R0];
-                  for (char c = memory[addr]; c; c = memory[++addr])
+                  /* one char per word */
+                  uint16_t *c = memory + registers[R_R0];
+                  while (*c)
                     {
-                      printf ("%c", c);
+                      putc ((char)*c, stdout);
+                      ++c;
                     }
+                  fflush (stdout);
                 }
                 break;
 
