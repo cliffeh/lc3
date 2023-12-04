@@ -188,7 +188,7 @@ int
 find_position_by_label (const instruction_list *instructions,
                         const char *label)
 {
-  for (const instruction_list *l = instructions; l; l = l->tail)
+  for (const instruction_list *l = instructions; l->head; l = l->tail)
     {
       const instruction *inst = l->head;
       if (inst->op == -1 && strcmp (label, inst->label) == 0)
@@ -260,7 +260,7 @@ generate_code (FILE *out, program *prog, int flags)
   if (flags & FORMAT_PRETTY)
     PPRINT (out, cp, ".ORIG x%04X\n", prog->orig);
 
-  for (instruction_list *l = prog->instructions; l; l = l->tail)
+  for (instruction_list *l = &prog->instructions; l && l->head; l = l->tail)
     {
       char buf[32] = "", pbuf[4096] = "";
       cp = 0;
@@ -288,7 +288,7 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // TODO is this right?
-                addr = find_position_by_label (prog->instructions, inst->label)
+                addr = find_position_by_label (&prog->instructions, inst->label)
                        + prog->orig;
                 if (addr < 0)
                   {
@@ -420,7 +420,7 @@ generate_code (FILE *out, program *prog, int flags)
               {
                 sprintf (p, " %s", inst->label);
                 int dest
-                    = find_position_by_label (prog->instructions, inst->label);
+                    = find_position_by_label (&prog->instructions, inst->label);
                 if (dest < 0)
                   {
                     fprintf (stderr,
@@ -459,7 +459,7 @@ generate_code (FILE *out, program *prog, int flags)
               {
                 inst->inst |= (1 << 11);
                 int dest
-                    = find_position_by_label (prog->instructions, inst->label);
+                    = find_position_by_label (&prog->instructions, inst->label);
                 if (dest < 0)
                   {
                     fprintf (stderr,
@@ -486,7 +486,7 @@ generate_code (FILE *out, program *prog, int flags)
           {
             inst->inst |= (inst->reg[0] << 9);
             int dest
-                = find_position_by_label (prog->instructions, inst->label);
+                = find_position_by_label (&prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -507,7 +507,7 @@ generate_code (FILE *out, program *prog, int flags)
           {
             inst->inst |= (inst->reg[0] << 9);
             int dest
-                = find_position_by_label (prog->instructions, inst->label);
+                = find_position_by_label (&prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -539,7 +539,7 @@ generate_code (FILE *out, program *prog, int flags)
           {
             inst->inst |= (inst->reg[0] << 9);
             int dest
-                = find_position_by_label (prog->instructions, inst->label);
+                = find_position_by_label (&prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -575,7 +575,7 @@ generate_code (FILE *out, program *prog, int flags)
           {
             inst->inst |= (inst->reg[0] << 9);
             int dest
-                = find_position_by_label (prog->instructions, inst->label);
+                = find_position_by_label (&prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,
@@ -596,7 +596,7 @@ generate_code (FILE *out, program *prog, int flags)
           {
             inst->inst |= (inst->reg[0] << 9);
             int dest
-                = find_position_by_label (prog->instructions, inst->label);
+                = find_position_by_label (&prog->instructions, inst->label);
             if (dest < 0)
               {
                 fprintf (stderr,

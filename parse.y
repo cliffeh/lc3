@@ -71,7 +71,8 @@ program:
   END
 {
   prog->orig = $2;
-  prog->instructions = $3;
+  prog->instructions.head = $3->head;
+  prog->instructions.tail = $3->tail;
 }
 ;
 
