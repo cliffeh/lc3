@@ -168,19 +168,12 @@ main (int argc, const char *argv[])
 
   if (rc == 0)
     {
-      rc = resolve_symbols (prog);
-      if (rc)
-        {
-          fprintf (stderr, "%d symbols unresolved; bailing...\n", rc);
-          exit (rc);
-        }
-
       char buf[32];
 
-      uint16_t tmp16 = swap16 (prog->orig);
+      uint16_t bytecode = swap16 (prog->orig);
       if (!flags)
         {
-          if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
+          if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
             {
               fprintf (stderr, "write error; bailing...\n");
               exit (1);
@@ -192,13 +185,33 @@ main (int argc, const char *argv[])
             fprintf (out, ".ORIG x%04x\n", prog->orig);
         }
 
+      // ensure our symbols are in address order (for pretty-printing below)
+      sort_symbols_by_addr (prog);
       symbol *current_symbol = prog->symbols;
+
       for (instruction *inst = prog->instructions; inst; inst = inst->next)
         {
-          tmp16 = swap16 (inst->inst);
+          // resolve symbols
+          if (inst->sym)
+            {
+              if (!inst->sym->is_set)
+                {
+                  fprintf (stderr, "error: unresolved symbol: %s\n",
+                           inst->sym->label);
+                  exit (1);
+                }
+
+              if (inst->flags)
+                inst->inst
+                    |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
+              else
+                inst->inst = inst->sym->addr + prog->orig;
+            }
+
+          bytecode = swap16 (inst->inst);
           if (!flags)
             {
-              if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
+              if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
                 {
                   fprintf (stderr, "write error; bailing...\n");
                   exit (1);
@@ -208,6 +221,8 @@ main (int argc, const char *argv[])
             {
               if (flags & FORMAT_PRETTY)
                 {
+                  // NB if our symbols aren't sorted in address order this
+                  // won't work the way we expect it to
                   while (current_symbol && current_symbol->addr == inst->addr)
                     {
                       fprintf (out, "%s\n", current_symbol->label);
@@ -226,7 +241,7 @@ main (int argc, const char *argv[])
 
                   if (flags & FORMAT_HEX)
                     fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
-                             tmp16);
+                             bytecode);
 
                   if (flags & FORMAT_BITS)
                     {
@@ -258,38 +273,79 @@ main (int argc, const char *argv[])
   exit (rc);
 }
 
-int
-resolve_symbols (program *prog)
+symbol *
+find_symbol_by_label (symbol *symbols, const char *label)
 {
-  int error_count = 0;
-  for (instruction *inst = prog->instructions; inst; inst = inst->next)
-    {
-      if (inst->label) // we have a symbol that needs resolving!
-        {
-          uint16_t addr = find_addr_by_label (prog->symbols, inst->label);
-          if (addr == 0xFFFF)
-            {
-              fprintf (stderr, "error: unresolved symbol: %s\n", inst->label);
-              error_count++;
-            }
-          // TODO we need to check bounds on these somewhere...maybe in the
-          // parser?
-          if (inst->flags)
-            inst->inst |= (((addr - inst->addr) - 1) & inst->flags);
-          else
-            inst->inst = addr + prog->orig;
-        }
-    }
-  return error_count;
-}
-
-uint16_t
-find_addr_by_label (const symbol *symbols, const char *label)
-{
-  for (const symbol *sym = symbols; sym; sym = sym->next)
+  for (symbol *sym = symbols; sym; sym = sym->next)
     {
       if (strcmp (label, sym->label) == 0)
-        return sym->addr;
+        return sym;
     }
-  return 0xFFFF;
+  return 0;
+}
+
+symbol *
+find_or_create_symbol (program *prog, const char *label, uint16_t addr,
+                       uint16_t set)
+{
+  symbol *sym = find_symbol_by_label (prog->symbols, label);
+
+  if (!sym)
+    {
+      sym = calloc (1, sizeof (symbol));
+      sym->label = strdup (label);
+      sym->next = prog->symbols;
+      prog->symbols = sym;
+    }
+
+  if (set)
+    {
+      if (sym->is_set)
+        {
+          fprintf (stderr, "error: duplicate symbol found: %s\n", label);
+          exit (1);
+        }
+      else
+        {
+          sym->addr = addr;
+          sym->is_set = 1;
+        }
+    }
+
+  return sym;
+}
+
+static int
+compare_symbol_addrs (const void *a, const void *b)
+{
+  int addr1 = (*(symbol **)a)->addr;
+  int addr2 = (*(symbol **)b)->addr;
+
+  return addr1 - addr2;
+}
+
+void // TODO there is probably a cleaner way to do this
+sort_symbols_by_addr (program *prog)
+{
+  // figure out how many symbols we have
+  int len = 0;
+  for (symbol *sym = prog->symbols; sym; sym = sym->next)
+    len++;
+
+  // ...pack them all into an array so we can sort it using qsort()
+  symbol **symbols = malloc (len * sizeof (symbol *) + sizeof (symbol **));
+  len = 0;
+  for (symbol *sym = prog->symbols; sym; sym = sym->next)
+    symbols[len++] = sym;
+
+  // ...sort it
+  qsort (symbols, len, sizeof (symbol *), compare_symbol_addrs);
+
+  // ...and then pack them all back into a linked list
+  symbol *sym = prog->symbols = symbols[0];
+  for (int i = 1; i < len; i++)
+    {
+      sym->next = symbols[i];
+      sym = sym->next;
+    }
 }

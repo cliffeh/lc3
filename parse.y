@@ -18,7 +18,6 @@ extern int yylineno;
 %union {
   program *prog;
   instruction *inst;
-  symbol *sym;
   int num;
   int reg;
   char *str;
@@ -44,10 +43,9 @@ extern int yylineno;
 %type <inst> instruction instruction_list
 // special cases of instruction
 %type <inst> alloc directive trap
-%type <sym> label
 %type <num> number imm5 offset6 trapvect8
 %type <reg> reg
-%type <str> branch string
+%type <str> branch label string
 
 %start program
 
@@ -66,10 +64,11 @@ program:
 instruction_list:
   /* empty */
 { $$ = 0; }
-| label instruction_list
+  // note: this means no labels after the last instruction
+| label instruction instruction_list
 {
-  $1->next = prog->symbols;
-  prog->symbols = $1;
+  find_or_create_symbol(prog, $1, $2->addr, 1);
+  $2->last->next = $3;
   $$ = $2;
 }
 | instruction instruction_list
@@ -81,9 +80,7 @@ instruction_list:
 
 label: LABEL
 {
-  $$ = calloc(1, sizeof(symbol));
-  $$->label = strdup(yytext);
-  $$->addr = prog->len;
+  $$ = strdup(yytext);
 }
 ;
 
@@ -135,7 +132,7 @@ instruction:
       case 'P': $1->inst |= (1 << 9); break;
     }
   }
-  $1->label = strdup(yytext);
+  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
   sprintf($1->pretty, "%s %s", $2, yytext);
   $$ = $1;
@@ -166,7 +163,7 @@ instruction:
 | alloc JSR LABEL
 {
   $1->inst = (OP_JSR << 12) | (1 << 11);
-  $1->label = strdup(yytext);
+  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x07FF;
   sprintf($1->pretty, "JSR %s", yytext);
   $$ = $1;
@@ -180,7 +177,7 @@ instruction:
 | alloc LD reg ',' LABEL
 {
   $1->inst = (OP_LD << 12) | ($3 << 9);
-  $1->label = strdup(yytext);
+  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
   sprintf($1->pretty, "LD R%d, %s", $3, yytext);
   $$ = $1;
@@ -188,7 +185,7 @@ instruction:
 | alloc LDI reg ',' LABEL
 {
   $1->inst = (OP_LDI << 12) | ($3 << 9);
-  $1->label = strdup(yytext);
+  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
   sprintf($1->pretty, "LDI R%d, %s", $3, yytext);
   $$ = $1;
@@ -202,7 +199,7 @@ instruction:
 | alloc LEA reg ',' LABEL
 {
   $1->inst = (OP_LEA << 12) | ($3 << 9);
-  $1->label = strdup(yytext);
+  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
   sprintf($1->pretty, "LEA R%d, %s", $3, yytext);
   $$ = $1;
@@ -229,7 +226,7 @@ instruction:
 | alloc ST reg ',' LABEL
 {
   $1->inst = (OP_ST << 12) | ($3 << 9);
-  $1->label = strdup(yytext);
+  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
   sprintf($1->pretty, "ST R%d, %s", $3, yytext);
   $$ = $1;
@@ -237,7 +234,7 @@ instruction:
 | alloc STI reg ',' LABEL
 {
   $1->inst = (OP_STI << 12) | ($3 << 9);
-  $1->label = strdup(yytext);
+  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
   sprintf($1->pretty, "STI R%d, %s", $3, yytext);
   $$ = $1;
@@ -267,7 +264,7 @@ directive:
 }
 | alloc FILL LABEL
 {
-  $1->label = strdup(yytext);
+  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   sprintf($1->pretty, ".FILL %s", yytext);
   $$ = $1;
 }
