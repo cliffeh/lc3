@@ -44,7 +44,7 @@ main (int argc, const char *argv[])
     /* longName, shortName, argInfo, arg, val, descrip, argDescript */
     { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &format, 'F',
       "output format; can be one of a[ddress], b[its], d[ebug], h[ex], "
-      "o[bject], p[retty] (note: debug is shorthand for -Fa -Fb -Fh -Fp)",
+      "o[bject], p[retty] (note: debug is shorthand for -Fa -Fh -Fp)",
       "FORMAT" },
     { "input", 'i', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &infile, 'i',
       "read input from FILE", "FILE" },

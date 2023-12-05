@@ -353,37 +353,37 @@ trap:
   alloc GETC
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_GETC << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "GETC\n");
+  PRETTY_PRINT(out, $1->inst, flags, "GETC");
   $$ = $1;
 }
 | alloc OUT
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_OUT << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "OUT\n");
+  PRETTY_PRINT(out, $1->inst, flags, "OUT");
   $$ = $1;
 }
 | alloc PUTS
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_PUTS << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "PUTS\n");
+  PRETTY_PRINT(out, $1->inst, flags, "PUTS");
   $$ = $1;
 }
 | alloc IN
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_IN << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "IN\n");
+  PRETTY_PRINT(out, $1->inst, flags, "IN");
   $$ = $1;
 }
 | alloc PUTSP
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_PUTSP << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "PUTSP\n");
+  PRETTY_PRINT(out, $1->inst, flags, "PUTSP");
   $$ = $1;
 }
 | alloc HALT
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_HALT << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "HALT\n");
+  PRETTY_PRINT(out, $1->inst, flags, "HALT");
   $$ = $1;
 }
 ;
