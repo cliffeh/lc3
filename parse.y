@@ -153,7 +153,7 @@ instruction:
 }
 | alloc ADD reg ',' reg ',' imm5
 {
-  $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 << 0);
+  $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
   PRETTY_PRINT(out, $1->inst, flags, "ADD R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
@@ -165,7 +165,7 @@ instruction:
 }
 | alloc AND reg ',' reg ',' imm5
 {
-  $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 << 0);
+  $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
   PRETTY_PRINT(out, $1->inst, flags, "AND R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
@@ -333,6 +333,8 @@ directive:
     fprintf(stderr, "error: unknown escape sequence in string literal\n");
     YYERROR;
   }
+
+  // fprintf(stderr, "str: %s (before: %ld after: %ld)\n", str, strlen(str), strlen(buf));
 
   instruction *inst = $1;
   for(char *p = buf; *p; p++) {

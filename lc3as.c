@@ -171,7 +171,7 @@ main (int argc, const char *argv[])
       // TODO put this into a function
       // for (symbol *sym = prog->symbols; sym; sym = sym->next)
       //   {
-      //     printf ("%s: %d\n", sym->label, sym->pos);
+      //     printf ("%s: %04x\n", sym->label, sym->pos);
       //   }
       rc = resolve_symbols (prog->instructions, prog->symbols);
       if (rc)
@@ -179,12 +179,12 @@ main (int argc, const char *argv[])
 
       if (!flags) // we're supposed to output code
         {
-          uint16_t tmp16 = swap16(prog->orig);
+          uint16_t tmp16 = swap16 (prog->orig);
           if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
             exit (1); // TODO error message
           for (instruction *inst = prog->instructions; inst; inst = inst->next)
             {
-              tmp16 = swap16(inst->inst);
+              tmp16 = swap16 (inst->inst);
               if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
                 exit (1); // TODO error message?
             }
@@ -280,7 +280,7 @@ resolve_symbols (instruction *instructions, symbol *symbols)
             }
           // TODO we need to check bounds on these somewhere...maybe in the
           // parser?
-          if(inst->flags)
+          if (inst->flags)
             inst->inst |= (((addr - inst->pos) - 1) & inst->flags);
           else
             inst->inst = addr;
