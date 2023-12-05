@@ -196,15 +196,11 @@ main (int argc, const char *argv[])
                   exit (1);
                 }
 
-              // NB subtract 1 to account for either:
-              //    (1) R_PC being already incremented, or
-              //    (2) .ORIG being the first "instruction" (with
-              //        all other bytes being relative to .ORIG)
               if (inst->flags)
                 inst->inst
                     |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
               else
-                inst->inst = inst->sym->addr + prog->orig - 1;
+                inst->inst = inst->sym->addr + prog->orig;
             }
 
           bytecode = swap16 (inst->inst);
@@ -224,8 +220,11 @@ main (int argc, const char *argv[])
                   // won't work the way we expect it to
                   while (current_symbol && current_symbol->addr == inst->addr)
                     {
+                      // NB for the purposes of debugging it's generally more
+                      // convenient to output addresses relative to .ORIG
+                      // rather than indexed at zero
                       if (flags & FORMAT_ADDR)
-                        fprintf (out, "%04x  ", inst->addr);
+                        fprintf (out, "%04x  ", inst->addr + 1);
 
                       fprintf (out, "%s\n", current_symbol->label);
                       current_symbol = current_symbol->next;
@@ -235,8 +234,11 @@ main (int argc, const char *argv[])
               if (inst->pretty) // only print the printable things (not, for
                                 // instance, raw string data)
                 {
+                  // NB for the purposes of debugging it's generally more
+                  // convenient to output addresses relative to .ORIG rather
+                  // than indexed at zero
                   if (flags & FORMAT_ADDR)
-                    fprintf (out, "%04x", inst->addr);
+                    fprintf (out, "%04x", inst->addr + 1);
 
                   if (flags & FORMAT_HEX)
                     fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
