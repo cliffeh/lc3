@@ -114,7 +114,7 @@ instruction_list:
 }
 | instruction instruction_list
 {
-  $1->next = $2;
+  $1->last->next = $2;
   $$ = $1;
 }
 ;
@@ -135,6 +135,7 @@ alloc: // hack: allocate instruction storage
 {
   $$ = calloc(1, sizeof(instruction));
   $$->pos = prog->len++;
+  $$->last = $$;
   if(flags & FORMAT_ADDR)
     // NB the assembler expects addresses starting at 0,
     // but for pretty-printing it's nicer to index them at
@@ -350,6 +351,7 @@ directive:
   if(flags & FORMAT_PRETTY)
     fprintf(out, "  .STRINGZ \"%s\"\n", str);
 
+  $1->last = inst;
   $$ = $1;
 }
 ;

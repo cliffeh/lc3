@@ -22,7 +22,7 @@ typedef struct instruction
 {
   uint16_t inst, pos, flags;
   char *label;
-  struct instruction *next;
+  struct instruction *next, *last;
 } instruction;
 
 typedef struct symbol
