@@ -12,7 +12,7 @@ extern int yylineno;
 #define PRETTY_PRINT(out, inst, flags, fmt, ...) \
 do{ \
   if(flags & FORMAT_HEX) \
-    fprintf(out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "", inst); \
+    fprintf(out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "", swap16(inst)); \
   if(flags & FORMAT_BITS) { \
     char buf[32]; \
     inst_to_bits(buf, inst); \
@@ -353,43 +353,37 @@ trap:
   alloc GETC
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_GETC << 0);
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  GETC\n");
+  PRETTY_PRINT(out, $1->inst, flags, "GETC\n");
   $$ = $1;
 }
 | alloc OUT
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_OUT << 0);
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  OUT\n");
+  PRETTY_PRINT(out, $1->inst, flags, "OUT\n");
   $$ = $1;
 }
 | alloc PUTS
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_PUTS << 0);
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  PUTS\n");
+  PRETTY_PRINT(out, $1->inst, flags, "PUTS\n");
   $$ = $1;
 }
 | alloc IN
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_IN << 0);
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  IN\n");
+  PRETTY_PRINT(out, $1->inst, flags, "IN\n");
   $$ = $1;
 }
 | alloc PUTSP
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_PUTSP << 0);
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  PUTSP\n");
+  PRETTY_PRINT(out, $1->inst, flags, "PUTSP\n");
   $$ = $1;
 }
 | alloc HALT
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_HALT << 0);
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  HALT\n");
+  PRETTY_PRINT(out, $1->inst, flags, "HALT\n");
   $$ = $1;
 }
 ;
