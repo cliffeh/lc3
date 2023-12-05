@@ -323,18 +323,12 @@ directive:
 }
 | alloc STRINGZ string
 {
-  // TODO trim quotes in the lexer
-  char *str = $3+1;
-  str[strlen(str)-1] = 0;
-
-  char *buf = calloc(strlen(str)+1, sizeof(char));
-  if(unescape_string(buf, str) != 0)
+  char *buf = calloc(strlen($3)+1, sizeof(char));
+  if(unescape_string(buf, $3) != 0)
   {
     fprintf(stderr, "error: unknown escape sequence in string literal\n");
     YYERROR;
   }
-
-  // fprintf(stderr, "str: %s (before: %ld after: %ld)\n", str, strlen(str), strlen(buf));
 
   instruction *inst = $1;
   for(char *p = buf; *p; p++) {
@@ -347,11 +341,8 @@ directive:
   inst->inst = 0;
   free(buf);
 
-  // for(inst = $1; inst; inst = inst->next)
-  //  printf("reading back: %c\n", inst->inst);
-
   if(flags & FORMAT_PRETTY)
-    fprintf(out, "  .STRINGZ \"%s\"\n", str);
+    fprintf(out, "  .STRINGZ \"%s\"\n", $3);
 
   $1->last = inst;
   $$ = $1;
@@ -447,7 +438,8 @@ number:
 string:
   STRLIT
 {
-  $$ = strdup(yytext);
+  $$ = strdup(yytext+1);
+  $$[strlen($$)-1] = 0;
 }
 ;
 
