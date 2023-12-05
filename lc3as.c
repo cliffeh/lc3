@@ -28,7 +28,7 @@
   while (0)
 
 extern FILE *yyin;
-extern int yyparse (program *prog);
+extern int yyparse (program *prog, int flags, FILE *out);
 
 int
 main (int argc, const char *argv[])
@@ -44,7 +44,7 @@ main (int argc, const char *argv[])
     /* longName, shortName, argInfo, arg, val, descrip, argDescript */
     { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &format, 'F',
       "output format; can be one of a[ddress], b[its], d[ebug], h[ex], "
-      "o[bject], p[retty] (note: debug is shorthand for -Fa -Fb -Fh -Fp)",
+      "o[bject], p[retty] (note: debug is shorthand for -Fa -Fh -Fp)",
       "FORMAT" },
     { "input", 'i', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &infile, 'i',
       "read input from FILE", "FILE" },
@@ -164,14 +164,35 @@ main (int argc, const char *argv[])
 
   program *prog = calloc (1, sizeof (program));
 
-  rc = yyparse (prog);
+  rc = yyparse (prog, flags, out);
 
   if (rc == 0)
     {
-      if ((rc = generate_code (out, prog, flags)) != 0)
+      // TODO put this into a function
+      // for (symbol *sym = prog->symbols; sym; sym = sym->next)
+      //   {
+      //     printf ("%s: %04x\n", sym->label, sym->pos);
+      //   }
+      rc = resolve_symbols (prog);
+      if (rc)
+        exit (rc); // TODO error message?
+
+      if (!flags) // we're supposed to output code
         {
-          fprintf (stderr, "%i errors found\n", rc);
+          uint16_t tmp16 = swap16 (prog->orig);
+          if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
+            exit (1); // TODO error message
+          for (instruction *inst = prog->instructions; inst; inst = inst->next)
+            {
+              tmp16 = swap16 (inst->inst);
+              if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
+                exit (1); // TODO error message?
+            }
         }
+      // if ((rc = generate_code (out, prog, flags)) != 0)
+      //   {
+      //     fprintf (stderr, "%i errors found\n", rc);
+      //   }
       // TODO free_program()
     }
   else
@@ -180,21 +201,19 @@ main (int argc, const char *argv[])
       fprintf (stderr, "there was an error\n");
     }
 
-  return rc;
+  exit (rc);
 }
 
 // TODO a more efficient way of looking up label positions
-int
-find_position_by_label (const instruction_list *instructions,
-                        const char *label)
+uint16_t
+find_position_by_label (const symbol *symbols, const char *label)
 {
-  for (const instruction_list *l = instructions; l->head; l = l->tail)
+  for (const symbol *sym = symbols; sym; sym = sym->next)
     {
-      const instruction *inst = l->head;
-      if (inst->op == -1 && strcmp (label, inst->label) == 0)
-        return inst->pos;
+      if (strcmp (label, sym->label) == 0)
+        return sym->pos;
     }
-  return -1;
+  return 0xFFFF;
 }
 
 int
@@ -246,9 +265,36 @@ trapvec8_to_str (int trapvec8)
 #define PCOFFSET(curr, dest, bitmask) ((dest - curr - 1) & bitmask)
 
 int
+resolve_symbols (program *prog)
+{
+  int error_count = 0;
+  for (instruction *inst = prog->instructions; inst; inst = inst->next)
+    {
+      if (inst->label) // we have a symbol that needs resolving!
+        {
+          uint16_t addr = find_position_by_label (prog->symbols, inst->label);
+          if (addr == 0xFFFF)
+            {
+              fprintf (stderr, "error: unresolved symbol: %s\n", inst->label);
+              error_count++;
+            }
+          // TODO we need to check bounds on these somewhere...maybe in the
+          // parser?
+          if (inst->flags)
+            inst->inst |= (((addr - inst->pos) - 1) & inst->flags);
+          else
+            inst->inst = addr + prog->orig;
+        }
+    }
+  return error_count;
+}
+
+int
 generate_code (FILE *out, program *prog, int flags)
 {
+
   int err_count = 0, cp = 0;
+  /*
   uint16_t tmp16;
 
   if (!flags)
@@ -256,9 +302,6 @@ generate_code (FILE *out, program *prog, int flags)
       tmp16 = swap16 (prog->orig);
       fwrite (&tmp16, sizeof (uint16_t), 1, out);
     }
-
-  if (flags & FORMAT_PRETTY)
-    PPRINT (out, cp, ".ORIG x%04X\n", prog->orig);
 
   for (instruction_list *l = &prog->instructions; l && l->head; l = l->tail)
     {
@@ -288,8 +331,9 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 // TODO is this right?
-                addr = find_position_by_label (&prog->instructions, inst->label)
-                       + prog->orig;
+                addr
+                    = find_position_by_label (&prog->instructions, inst->label)
+                      + prog->orig;
                 if (addr < 0)
                   {
                     fprintf (stderr,
@@ -419,8 +463,8 @@ generate_code (FILE *out, program *prog, int flags)
             else
               {
                 sprintf (p, " %s", inst->label);
-                int dest
-                    = find_position_by_label (&prog->instructions, inst->label);
+                int dest = find_position_by_label (&prog->instructions,
+                                                   inst->label);
                 if (dest < 0)
                   {
                     fprintf (stderr,
@@ -458,8 +502,8 @@ generate_code (FILE *out, program *prog, int flags)
             if (inst->immediate)
               {
                 inst->inst |= (1 << 11);
-                int dest
-                    = find_position_by_label (&prog->instructions, inst->label);
+                int dest = find_position_by_label (&prog->instructions,
+                                                   inst->label);
                 if (dest < 0)
                   {
                     fprintf (stderr,
@@ -668,6 +712,6 @@ generate_code (FILE *out, program *prog, int flags)
 
   if (flags & FORMAT_PRETTY)
     fprintf (out, ".END\n");
-
+*/
   return err_count;
 }
