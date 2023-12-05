@@ -8,6 +8,7 @@
 * push more of the instruction building logic into the parser
   * pretty much everything but labels should be doable in the parser
   * ...but it will mean changing the way pretty-printing works
+* enable debug output *after* symbol resolution?
 
 ## lc3vm (virtual machine)
 * get the fucker working!
