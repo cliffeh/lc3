@@ -168,17 +168,24 @@ main (int argc, const char *argv[])
 
   if (rc == 0)
     {
+      // TODO put this into a function
+      // for (symbol *sym = prog->symbols; sym; sym = sym->next)
+      //   {
+      //     printf ("%s: %d\n", sym->label, sym->pos);
+      //   }
       rc = resolve_symbols (prog->instructions, prog->symbols);
       if (rc)
         exit (rc); // TODO error message?
 
       if (!flags) // we're supposed to output code
         {
-          if(fwrite (&prog->orig, sizeof (uint16_t), 1, out) != 1)
-            exit(1); // TODO error message
+          uint16_t tmp16 = swap16(prog->orig);
+          if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
+            exit (1); // TODO error message
           for (instruction *inst = prog->instructions; inst; inst = inst->next)
             {
-              if (fwrite (&inst->inst, sizeof (uint16_t), 1, out) != 1)
+              tmp16 = swap16(inst->inst);
+              if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
                 exit (1); // TODO error message?
             }
         }
@@ -203,7 +210,6 @@ find_position_by_label (const symbol *symbols, const char *label)
 {
   for (const symbol *sym = symbols; sym; sym = sym->next)
     {
-      // TODO rejigger this to use the symbol table!
       if (strcmp (label, sym->label) == 0)
         return sym->pos;
     }
@@ -267,14 +273,17 @@ resolve_symbols (instruction *instructions, symbol *symbols)
       if (inst->label) // we have a symbol that needs resolving!
         {
           uint16_t addr = find_position_by_label (symbols, inst->label);
-          if (addr & 0xFFFF)
+          if (addr == 0xFFFF)
             {
               fprintf (stderr, "error: unresolved symbol: %s\n", inst->label);
               error_count++;
             }
           // TODO we need to check bounds on these somewhere...maybe in the
           // parser?
-          inst->inst |= addr;
+          if(inst->flags)
+            inst->inst |= (((addr - inst->pos) - 1) & inst->flags);
+          else
+            inst->inst = addr;
         }
     }
   return error_count;

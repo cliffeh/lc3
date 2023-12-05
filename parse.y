@@ -72,7 +72,7 @@ do{ \
 %type <sym> label
 %type <num> num imm5 offset6 trapvect8
 %type <reg> reg
-%type <str> branch
+%type <str> branch string
 
 %start program
 
@@ -106,6 +106,40 @@ instruction_list:
   prog->symbols = $1;
   $$ = $2;
 }
+|
+  alloc STRINGZ string instruction_list
+{
+  // TODO trim quotes in the lexer
+  char *str = $3+1;
+  str[strlen(str)-1] = 0;
+
+  char *buf = calloc(strlen(str)+1, sizeof(char));
+  if(unescape_string(buf, str) != 0)
+  {
+    fprintf(stderr, "error: unknown escape sequence in string literal\n");
+    YYERROR;
+  }
+
+  instruction *inst = $1;
+  for(char *p = buf; *p; p++) {
+    // printf("appending %c\n", *p);
+    inst->inst = *p;
+    inst->next = calloc(1, sizeof(instruction));
+    inst = inst->next;
+    inst->pos = prog->len++;
+  }
+  inst->inst = 0;
+  free(buf);
+
+  // for(inst = $1; inst; inst = inst->next)
+  //  printf("reading back: %c\n", inst->inst);
+
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  .STRINGZ %s\n", yytext);
+
+  inst->next = $4;
+  $$ = $1;
+}
 | instruction instruction_list
 {
   $1->next = $2;
@@ -117,6 +151,7 @@ instruction_list:
 label: LABEL
 {
   $$ = calloc(1, sizeof(symbol));
+  $$->label = strdup(yytext);
   $$->pos = prog->len;
   if(flags & FORMAT_PRETTY)
     fprintf(out, "%s%s\n", (flags & FORMAT_ADDR) ? "  ": "", yytext);
@@ -175,6 +210,7 @@ instruction:
     }
   }
   $1->label = strdup(yytext);
+  $1->flags = 0x01FF;
   PRETTY_PRINT(out, $1->inst, flags, "%s %s", $2, yytext);
   $$ = $1;
 }
@@ -204,7 +240,8 @@ instruction:
 | alloc JSR LABEL
 {
   $1->inst = (OP_JSR << 12) | (1 << 11);
-  $$->label = strdup(yytext);
+  $1->label = strdup(yytext);
+  $1->flags = 0x07FF;
   PRETTY_PRINT(out, $1->inst, flags, "JSR %s", yytext);
   $$ = $1;
 }
@@ -217,14 +254,17 @@ instruction:
 | alloc LD reg ',' LABEL
 {
   $1->inst = (OP_LD << 12) | ($3 << 9);
-  $$->label = strdup(yytext);
+  $1->label = strdup(yytext);
+  $1->flags = 0x01FF;
+
   PRETTY_PRINT(out, $1->inst, flags, "LD R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc LDI reg ',' LABEL
 {
   $1->inst = (OP_LDI << 12) | ($3 << 9);
-  $$->label = strdup(yytext);
+  $1->label = strdup(yytext);
+  $1->flags = 0x01FF;
   PRETTY_PRINT(out, $1->inst, flags, "LDI R%d, %s", $3, yytext);
   $$ = $1;
 }
@@ -237,7 +277,8 @@ instruction:
 | alloc LEA reg ',' LABEL
 {
   $1->inst = (OP_LEA << 12) | ($3 << 9);
-  $$->label = strdup(yytext);
+  $1->label = strdup(yytext);
+  $1->flags = 0x01FF;
   PRETTY_PRINT(out, $1->inst, flags, "LEA R%d, %s", $3, yytext);
   $$ = $1;
 }
@@ -263,14 +304,16 @@ instruction:
 | alloc ST reg ',' LABEL
 {
   $1->inst = (OP_ST << 12) | ($3 << 9);
-  $$->label = strdup(yytext);
+  $1->label = strdup(yytext);
+  $1->flags = 0x01FF;
   PRETTY_PRINT(out, $1->inst, flags, "ST R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc STI reg ',' LABEL
 {
   $1->inst = (OP_STI << 12) | ($3 << 9);
-  $$->label = strdup(yytext);
+  $1->label = strdup(yytext);
+  $1->flags = 0x01FF;
   PRETTY_PRINT(out, $1->inst, flags, "STI R%d, %s", $3, yytext);
   $$ = $1;
 }
@@ -286,8 +329,8 @@ instruction:
   PRETTY_PRINT(out, $1->inst, flags, "TRAP %s", yytext);
   $$ = $1;
 }
-| directive
-| trap
+| directive {$$=$1;}
+| trap {$$=$1;}
 ;
 
 directive:
@@ -305,40 +348,8 @@ directive:
     fprintf(out, "  .FILL %s\n", yytext);
   $$ = $1;
 }
-|
-  alloc STRINGZ STRLIT
-{
-  // TODO trim quotes in the lexer
-  char *str = strdup(yytext+1);
-  str[strlen(str)-1] = 0;
-
-  char buf[strlen(str)+1];
-  if(unescape_string(buf, str) != 0)
-  {
-    fprintf(stderr, "error: unknown escape sequence in string literal\n");
-    YYERROR;
-  }
-
-  instruction *inst = $1;
-  for(char *p = buf; *p; p++) {
-    inst->inst = *p;
-    inst->pos = prog->len++;
-    inst->next = calloc(1, sizeof(instruction));
-    inst = inst->next;
-  }
-  inst->inst = 0;
-  inst->pos = prog->len++;
-
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  .STRINGZ %s\n", yytext);
-  $$ = $1;
-}
 ;
 
-/*
-   convention: set the immediate flag to distinguish between
-   these and TRAP 0xnn
-*/
 trap:
   alloc GETC
 {
@@ -428,6 +439,13 @@ num:
 | DECLIT
 {
   $$ = strtol(yytext+1, 0, 10);
+}
+;
+
+string:
+  STRLIT
+{
+  $$ = strdup(yytext);
 }
 ;
 

@@ -19,7 +19,7 @@
 
 typedef struct instruction
 {
-  uint16_t inst, pos;
+  uint16_t inst, pos, flags;
   char *label;
   struct instruction *next;
 } instruction;
