@@ -65,7 +65,7 @@ do{ \
 // literals
 %token DECLIT HEXLIT STRLIT LABEL
 
-%type program preamble
+%type program preamble postamble
 %type <inst> instruction instruction_list
 // special cases of instruction
 %type <inst> alloc directive trap
@@ -81,11 +81,9 @@ do{ \
 program:
   preamble
   instruction_list
-  END
+  postamble
 {
   prog->instructions = $2;
-  if (flags & FORMAT_PRETTY)
-    fprintf(out, ".END\n");
 }
 ;
 
@@ -97,6 +95,14 @@ preamble: ORIG number
 }
 ;
 
+postamble:
+  END
+{
+  if (flags & FORMAT_PRETTY)
+    fprintf(out, ".END\n");
+}
+;
+
 instruction_list:
   /* empty */
 { $$ = 0; }
@@ -105,39 +111,6 @@ instruction_list:
   $1->next = prog->symbols;
   prog->symbols = $1;
   $$ = $2;
-}
-| alloc STRINGZ string instruction_list
-{
-  // TODO trim quotes in the lexer
-  char *str = $3+1;
-  str[strlen(str)-1] = 0;
-
-  char *buf = calloc(strlen(str)+1, sizeof(char));
-  if(unescape_string(buf, str) != 0)
-  {
-    fprintf(stderr, "error: unknown escape sequence in string literal\n");
-    YYERROR;
-  }
-
-  instruction *inst = $1;
-  for(char *p = buf; *p; p++) {
-    // printf("appending %c\n", *p);
-    inst->inst = *p;
-    inst->next = calloc(1, sizeof(instruction));
-    inst = inst->next;
-    inst->pos = prog->len++;
-  }
-  inst->inst = 0;
-  free(buf);
-
-  // for(inst = $1; inst; inst = inst->next)
-  //  printf("reading back: %c\n", inst->inst);
-
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  .STRINGZ %s\n", $3);
-
-  inst->next = $4;
-  $$ = $1;
 }
 | instruction instruction_list
 {
@@ -345,6 +318,38 @@ directive:
   $1->label = strdup(yytext);
   if(flags & FORMAT_PRETTY)
     fprintf(out, "  .FILL %s\n", yytext);
+  $$ = $1;
+}
+| alloc STRINGZ string
+{
+  // TODO trim quotes in the lexer
+  char *str = $3+1;
+  str[strlen(str)-1] = 0;
+
+  char *buf = calloc(strlen(str)+1, sizeof(char));
+  if(unescape_string(buf, str) != 0)
+  {
+    fprintf(stderr, "error: unknown escape sequence in string literal\n");
+    YYERROR;
+  }
+
+  instruction *inst = $1;
+  for(char *p = buf; *p; p++) {
+    // printf("appending %c\n", *p);
+    inst->inst = *p;
+    inst->next = calloc(1, sizeof(instruction));
+    inst = inst->next;
+    inst->pos = prog->len++;
+  }
+  inst->inst = 0;
+  free(buf);
+
+  // for(inst = $1; inst; inst = inst->next)
+  //  printf("reading back: %c\n", inst->inst);
+
+  if(flags & FORMAT_PRETTY)
+    fprintf(out, "  .STRINGZ \"%s\"\n", str);
+
   $$ = $1;
 }
 ;
