@@ -17,19 +17,20 @@
 // debugging output
 #define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_HEX | FORMAT_PRETTY)
 
-typedef struct instruction
-{
-  uint16_t inst, pos, flags;
-  char *label;
-  struct instruction *next, *last;
-} instruction;
-
 typedef struct symbol
 {
-  uint16_t pos;
+  uint16_t addr, is_set;
   char *label;
   struct symbol *next;
 } symbol;
+
+typedef struct instruction
+{
+  uint16_t inst, addr, flags;
+  symbol *sym;
+  char *pretty;
+  struct instruction *next, *last;
+} instruction;
 
 typedef struct program
 {
@@ -38,5 +39,7 @@ typedef struct program
   symbol *symbols;
 } program;
 
-int resolve_symbols (program *prog);
-uint16_t find_position_by_label (const symbol *symbols, const char *label);
+symbol *find_or_create_symbol (program *prog, const char *label, uint16_t addr,
+                               uint16_t set);
+symbol *find_symbol_by_label (symbol *symbols, const char *label);
+void sort_symbols_by_addr (program *prog);

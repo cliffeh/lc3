@@ -15,6 +15,6 @@ main ()
   SET_OP (inst, OP_JSR);
   inst_to_bits (buf, inst);
   printf ("%X: %s\n", inst, buf);
-  assert (strcmp ("0100000000000000", buf) == 0);
+  assert (strcmp ("0100 0000 0000 0000", buf) == 0);
   assert (GET_OP (inst) == OP_JSR);
 }

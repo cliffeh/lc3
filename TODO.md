@@ -5,7 +5,6 @@
 
 ## lc3as (assembler)
 * more/better test cases
-* enable debug output *after* symbol resolution
 
 ## lc3vm (virtual machine)
 * get the fucker working!
