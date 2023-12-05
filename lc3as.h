@@ -42,5 +42,4 @@ typedef struct program
 
 int resolve_symbols (program *prog);
 int print_instruction (FILE *out, instruction *inst, int flags);
-int char_to_reg (char c);
 uint16_t find_position_by_label (const symbol *symbols, const char *label);

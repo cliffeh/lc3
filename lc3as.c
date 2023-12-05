@@ -211,25 +211,6 @@ find_position_by_label (const symbol *symbols, const char *label)
   return 0xFFFF;
 }
 
-int
-char_to_reg (char c)
-{
-  // clang-format off
-  switch(c)
-    {
-    case '0': return R_R0;
-    case '1': return R_R1;
-    case '2': return R_R2;
-    case '3': return R_R3;
-    case '4': return R_R4;
-    case '5': return R_R5;
-    case '6': return R_R6;
-    case '7': return R_R7;
-    default:  return R_COUNT;
-    }
-  // clang-format on
-}
-
 // TODO move to util?
 static const char *
 trapvec8_to_str (int trapvec8)

@@ -453,7 +453,7 @@ string:
 
 reg: REG
 {
-  $$ = char_to_reg(*(yytext+1));
+  $$ = *(yytext+1) - '0';
 }
 ;
 
