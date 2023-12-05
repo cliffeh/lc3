@@ -19,7 +19,6 @@ extern int yylineno;
   program *prog;
   instruction *inst;
   int num;
-  int reg;
   char *str;
 }
 
@@ -43,8 +42,7 @@ extern int yylineno;
 %type <inst> instruction instruction_list
 // special cases of instruction
 %type <inst> alloc directive trap
-%type <num> number imm5 offset6 trapvect8
-%type <reg> reg
+%type <num> imm5 number offset6 reg trapvect8
 %type <str> branch label string
 
 %start program
