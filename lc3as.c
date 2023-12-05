@@ -225,6 +225,12 @@ main (int argc, const char *argv[])
                   // won't work the way we expect it to
                   while (current_symbol && current_symbol->addr == inst->addr)
                     {
+                      // NB for the purposes of debugging it's generally more
+                      // convenient to output addresses relative to .ORIG
+                      // rather than indexed at zero
+                      if (flags & FORMAT_ADDR)
+                        fprintf (out, "%04x  ", inst->addr + 1);
+
                       fprintf (out, "%s\n", current_symbol->label);
                       current_symbol = current_symbol->next;
                     }
