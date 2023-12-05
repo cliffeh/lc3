@@ -38,7 +38,7 @@ extern int yylineno;
 // literals
 %token DECLIT HEXLIT STRLIT LABEL
 
-%type program
+%type preamble program
 %type <inst> instruction instruction_list
 // special cases of instruction
 %type <inst> alloc directive trap
@@ -50,12 +50,19 @@ extern int yylineno;
 %%
 
 program:
-  ORIG number
+  preamble
   instruction_list
   END
 {
+  prog->instructions = $2;
+}
+;
+
+preamble:
+  ORIG number
+{
   prog->orig = $2;
-  prog->instructions = $3;
+  prog->len++;
 }
 ;
 
