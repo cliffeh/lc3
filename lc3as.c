@@ -34,7 +34,7 @@ int
 main (int argc, const char *argv[])
 {
   int rc, flags = FORMAT_OBJECT;
-  char *infile = "-", *outfile = "-", *format = "object";
+  char *outfile = "-", *format = "object";
   FILE *out = 0;
   yyin = 0;
 
@@ -46,8 +46,6 @@ main (int argc, const char *argv[])
       "output format; can be one of a[ddress], b[its], d[ebug], h[ex], "
       "o[bject], p[retty] (note: debug is shorthand for -Fa -Fh -Fp)",
       "FORMAT" },
-    { "input", 'i', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &infile, 'i',
-      "read input from FILE", "FILE" },
     { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &outfile,
       'o', "write output to FILE", "FILE" },
     { "version", 0, POPT_ARG_NONE, 0, 'Z', "show version information and exit",
@@ -56,6 +54,8 @@ main (int argc, const char *argv[])
   };
 
   optCon = poptGetContext (0, argc, argv, options, 0);
+  poptSetOtherOptionHelp (optCon, "[OPTION...] [FILE]\nWill read from "
+                                  "stdin if no FILE is provided.\nOptions:");
 
   while ((rc = poptGetNextOpt (optCon)) > 0)
     {
@@ -98,28 +98,6 @@ main (int argc, const char *argv[])
           }
           break;
 
-        case 'i':
-          {
-            // TODO support >1 input file?
-            if (yyin)
-              {
-                ERR_EXIT ("more than one input file specified");
-              }
-            else if (strcmp (infile, "-") == 0)
-              {
-                yyin = stdin;
-              }
-            else
-              {
-                if (!(yyin = fopen (infile, "r")))
-                  {
-                    ERR_EXIT ("couldn't open input file '%s': %s", infile,
-                              strerror (errno));
-                  }
-              }
-          }
-          break;
-
         case 'o':
           {
             if (out)
@@ -157,8 +135,25 @@ main (int argc, const char *argv[])
                 poptStrerror (rc));
     }
 
-  if (!yyin)
-    yyin = stdin;
+  const char *infile = poptGetArg (optCon);
+  if (poptGetArg (optCon))
+    {
+      // TODO maybe support more than one input file
+      ERR_EXIT ("more than one input file specified");
+    }
+  else if (!infile || strcmp (infile, "-") == 0)
+    {
+      yyin = stdin;
+    }
+  else
+    {
+      if (!(yyin = fopen (infile, "r")))
+        {
+          ERR_EXIT ("couldn't open input file '%s': %s", infile,
+                    strerror (errno));
+        }
+    }
+
   if (!out)
     out = stdout;
 

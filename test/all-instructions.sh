@@ -6,4 +6,4 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-"$BUILDDIR/lc3as" -Fpretty -i "$SRCDIR/test/all-instructions.asm" -o- | diff "$SRCDIR/test/all-instructions.asm" -
+"$BUILDDIR/lc3as" -Fpretty "$SRCDIR/test/all-instructions.asm" -o- | diff "$SRCDIR/test/all-instructions.asm" -
