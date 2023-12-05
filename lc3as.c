@@ -173,7 +173,7 @@ main (int argc, const char *argv[])
       //   {
       //     printf ("%s: %04x\n", sym->label, sym->pos);
       //   }
-      rc = resolve_symbols (prog->instructions, prog->symbols);
+      rc = resolve_symbols (prog);
       if (rc)
         exit (rc); // TODO error message?
 
@@ -265,14 +265,14 @@ trapvec8_to_str (int trapvec8)
 #define PCOFFSET(curr, dest, bitmask) ((dest - curr - 1) & bitmask)
 
 int
-resolve_symbols (instruction *instructions, symbol *symbols)
+resolve_symbols (program *prog)
 {
   int error_count = 0;
-  for (instruction *inst = instructions; inst; inst = inst->next)
+  for (instruction *inst = prog->instructions; inst; inst = inst->next)
     {
       if (inst->label) // we have a symbol that needs resolving!
         {
-          uint16_t addr = find_position_by_label (symbols, inst->label);
+          uint16_t addr = find_position_by_label (prog->symbols, inst->label);
           if (addr == 0xFFFF)
             {
               fprintf (stderr, "error: unresolved symbol: %s\n", inst->label);
@@ -283,7 +283,7 @@ resolve_symbols (instruction *instructions, symbol *symbols)
           if (inst->flags)
             inst->inst |= (((addr - inst->pos) - 1) & inst->flags);
           else
-            inst->inst = addr;
+            inst->inst = addr + prog->orig;
         }
     }
   return error_count;

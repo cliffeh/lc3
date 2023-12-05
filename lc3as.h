@@ -15,7 +15,8 @@
 // pretty-print the assembly back out
 #define FORMAT_PRETTY (1 << 3)
 // debugging output
-// #define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_BITS | FORMAT_HEX | FORMAT_PRETTY)
+// #define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_BITS | FORMAT_HEX |
+// FORMAT_PRETTY)
 #define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_HEX | FORMAT_PRETTY)
 
 typedef struct instruction
@@ -39,7 +40,7 @@ typedef struct program
   symbol *symbols;
 } program;
 
-int resolve_symbols (instruction *instructions, symbol *symbols);
+int resolve_symbols (program *prog);
 int print_instruction (FILE *out, instruction *inst, int flags);
 int char_to_reg (char c);
 uint16_t find_position_by_label (const symbol *symbols, const char *label);
