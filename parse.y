@@ -243,7 +243,7 @@ instruction:
 }
 | alloc LDR reg ',' reg ',' offset6
 {
-  $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x002F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
+  $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
   PRETTY_PRINT(out, $1->inst, flags, "LDR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
@@ -257,7 +257,7 @@ instruction:
 }
 | alloc NOT reg ',' reg
 {
-  $1->inst = (OP_NOT << 12) | ($3 << 9) | ($5 << 6) | (0x002F << 0);
+  $1->inst = (OP_NOT << 12) | ($3 << 9) | ($5 << 6) | (0x003F << 0);
   PRETTY_PRINT(out, $1->inst, flags, "NOT R%d, R%d", $3, $5);
   $$ = $1;
 }
