@@ -70,7 +70,7 @@ do{ \
 // special cases of instruction
 %type <inst> alloc directive trap
 %type <sym> label
-%type <num> num imm5 offset6 trapvect8
+%type <num> number imm5 offset6 trapvect8
 %type <reg> reg
 %type <str> branch string
 
@@ -89,7 +89,7 @@ program:
 }
 ;
 
-preamble: ORIG num
+preamble: ORIG number
 {
   if (flags & FORMAT_PRETTY)
     fprintf(out, ".ORIG x%04X\n", $2);
@@ -106,8 +106,7 @@ instruction_list:
   prog->symbols = $1;
   $$ = $2;
 }
-|
-  alloc STRINGZ string instruction_list
+| alloc STRINGZ string instruction_list
 {
   // TODO trim quotes in the lexer
   char *str = $3+1;
@@ -135,7 +134,7 @@ instruction_list:
   //  printf("reading back: %c\n", inst->inst);
 
   if(flags & FORMAT_PRETTY)
-    fprintf(out, "  .STRINGZ %s\n", yytext);
+    fprintf(out, "  .STRINGZ %s\n", $3);
 
   inst->next = $4;
   $$ = $1;
@@ -214,7 +213,7 @@ instruction:
   PRETTY_PRINT(out, $1->inst, flags, "%s %s", $2, yytext);
   $$ = $1;
 }
-| alloc branch num
+| alloc branch number
 {
   $1->inst = (OP_BR << 12);
   for(char *p = $2+2; *p; p++) {
@@ -334,7 +333,7 @@ instruction:
 ;
 
 directive:
-  alloc FILL num
+  alloc FILL number
 {
   $1->inst = $3;
   if(flags & FORMAT_PRETTY)
@@ -396,7 +395,7 @@ trap:
 ;
 
 imm5:
-  num
+  number
 {
   // TODO check for no more than 5 bits
   // if($1 < -16 || $1 > 15) {
@@ -408,7 +407,7 @@ imm5:
 ;
 
 offset6:
-  num
+  number
 {
   // TODO check for no more than 6 bits
   // if($1 < -32 || $1 > 31) {
@@ -420,7 +419,7 @@ offset6:
 ;
 
 trapvect8:
-  num
+  number
 {
   // TODO check for no more than 8 bits
   // if($1 < 0 || $1 > 255) {
@@ -431,7 +430,7 @@ trapvect8:
 }
 ;
 
-num:
+number:
   HEXLIT
 {
   $$ = strtol(yytext+1, 0, 16);
