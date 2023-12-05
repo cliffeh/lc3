@@ -292,7 +292,7 @@ instruction:
 }
 | alloc STR reg ',' reg ',' offset6
 {
-  $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x002F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
+  $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
   PRETTY_PRINT(out, $1->inst, flags, "STR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
