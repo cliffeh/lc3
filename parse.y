@@ -4,33 +4,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-int yylex();    // from our scanner
+
+#define BUF_SIZE 32
+
+int yylex();
 void yyerror();
 extern char *yytext;
 extern int yylineno;
-
-#define PRETTY_PRINT(out, inst, flags, fmt, ...)                              \
-  do                                                                          \
-    {                                                                         \
-      if (flags & FORMAT_HEX)                                                 \
-        fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",            \
-                 swap16 (inst));                                              \
-                                                                              \
-      if (flags & FORMAT_BITS)                                                \
-        {                                                                     \
-          char buf[32];                                                       \
-          inst_to_bits (buf, inst);                                           \
-          fprintf (out, "%s%s",                                               \
-                   (flags & (FORMAT_ADDR | FORMAT_HEX)) ? "  " : "", buf);    \
-        }                                                                     \
-                                                                              \
-      if (flags & FORMAT_PRETTY)                                              \
-        fprintf (out, "  " fmt "\n" __VA_OPT__ (, ) __VA_ARGS__);             \
-    }                                                                         \
-  while (0)
 %}
 
-%parse-param    { program *prog }{ int flags }{ FILE *out }
+%parse-param    { program *prog }
 
 %union {
   program *prog;
@@ -57,7 +40,7 @@ extern int yylineno;
 // literals
 %token DECLIT HEXLIT STRLIT LABEL
 
-%type program preamble postamble
+%type program
 %type <inst> instruction instruction_list
 // special cases of instruction
 %type <inst> alloc directive trap
@@ -71,27 +54,12 @@ extern int yylineno;
 %%
 
 program:
-  preamble
+  ORIG number
   instruction_list
-  postamble
-{
-  prog->instructions = $2;
-}
-;
-
-preamble: ORIG number
-{
-  if (flags & FORMAT_PRETTY)
-    fprintf(out, ".ORIG x%04X\n", $2);
-  prog->orig = $2;
-}
-;
-
-postamble:
   END
 {
-  if (flags & FORMAT_PRETTY)
-    fprintf(out, ".END\n");
+  prog->orig = $2;
+  prog->instructions = $3;
 }
 ;
 
@@ -116,8 +84,6 @@ label: LABEL
   $$ = calloc(1, sizeof(symbol));
   $$->label = strdup(yytext);
   $$->addr = prog->len;
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "%s%s\n", (flags & FORMAT_ADDR) ? "  ": "", yytext);
 }
 ;
 
@@ -127,11 +93,7 @@ alloc: // hack: allocate instruction storage
   $$ = calloc(1, sizeof(instruction));
   $$->addr = prog->len++;
   $$->last = $$;
-  if(flags & FORMAT_ADDR)
-    // NB the assembler expects addresses starting at 0,
-    // but for pretty-printing it's nicer to index them at
-    // 1 to account for ORIG at the top of the program
-    fprintf(out, "%04x", prog->len);
+  $$->pretty = calloc(BUF_SIZE, sizeof(char));
 }
 ;
 
@@ -139,25 +101,25 @@ instruction:
   alloc ADD reg ',' reg ',' reg
 {
   $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "ADD R%d, R%d, %s", $3, $5, yytext);
+  sprintf($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc ADD reg ',' reg ',' imm5
 {
   $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
-  PRETTY_PRINT(out, $1->inst, flags, "ADD R%d, R%d, %s", $3, $5, yytext);
+  sprintf($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc AND reg ',' reg ',' reg
 {
   $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "AND R%d, R%d, R%d", $3, $5, $7);
+  sprintf($1->pretty, "AND R%d, R%d, R%d", $3, $5, $7);
   $$ = $1;
 }
 | alloc AND reg ',' reg ',' imm5
 {
   $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
-  PRETTY_PRINT(out, $1->inst, flags, "AND R%d, R%d, %s", $3, $5, yytext);
+  sprintf($1->pretty, "AND R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc branch LABEL
@@ -175,7 +137,7 @@ instruction:
   }
   $1->label = strdup(yytext);
   $1->flags = 0x01FF;
-  PRETTY_PRINT(out, $1->inst, flags, "%s %s", $2, yytext);
+  sprintf($1->pretty, "%s %s", $2, yytext);
   $$ = $1;
 }
 | alloc branch number
@@ -192,13 +154,13 @@ instruction:
     }
   }
   $1->inst |= ($3 & 0x01FF); // TODO is this correct? maybe we should fail if $3 is more than 9 bits wide?
-  PRETTY_PRINT(out, $1->inst, flags, "%s %s", $2, yytext);
+  sprintf($1->pretty, "%s %s", $2, yytext);
   $$ = $1;
 }
 | alloc JMP reg
 {
   $1->inst = (OP_JMP << 12) | ($3 << 6);
-  PRETTY_PRINT(out, $1->inst, flags, "JMP R%d", $3);
+  sprintf($1->pretty, "JMP R%d", $3);
   $$ = $1;
 }
 | alloc JSR LABEL
@@ -206,13 +168,13 @@ instruction:
   $1->inst = (OP_JSR << 12) | (1 << 11);
   $1->label = strdup(yytext);
   $1->flags = 0x07FF;
-  PRETTY_PRINT(out, $1->inst, flags, "JSR %s", yytext);
+  sprintf($1->pretty, "JSR %s", yytext);
   $$ = $1;
 }
 | alloc JSRR reg
 {
   $1->inst = (OP_JSR << 12) | ($3 << 6);
-  PRETTY_PRINT(out, $1->inst, flags, "JSRR R%d", $3);
+  sprintf($1->pretty, "JSRR R%d", $3);
   $$ = $1;
 }
 | alloc LD reg ',' LABEL
@@ -220,7 +182,7 @@ instruction:
   $1->inst = (OP_LD << 12) | ($3 << 9);
   $1->label = strdup(yytext);
   $1->flags = 0x01FF;
-  PRETTY_PRINT(out, $1->inst, flags, "LD R%d, %s", $3, yytext);
+  sprintf($1->pretty, "LD R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc LDI reg ',' LABEL
@@ -228,13 +190,13 @@ instruction:
   $1->inst = (OP_LDI << 12) | ($3 << 9);
   $1->label = strdup(yytext);
   $1->flags = 0x01FF;
-  PRETTY_PRINT(out, $1->inst, flags, "LDI R%d, %s", $3, yytext);
+  sprintf($1->pretty, "LDI R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc LDR reg ',' reg ',' offset6
 {
   $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
-  PRETTY_PRINT(out, $1->inst, flags, "LDR R%d, R%d, %s", $3, $5, yytext);
+  sprintf($1->pretty, "LDR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc LEA reg ',' LABEL
@@ -242,26 +204,26 @@ instruction:
   $1->inst = (OP_LEA << 12) | ($3 << 9);
   $1->label = strdup(yytext);
   $1->flags = 0x01FF;
-  PRETTY_PRINT(out, $1->inst, flags, "LEA R%d, %s", $3, yytext);
+  sprintf($1->pretty, "LEA R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc NOT reg ',' reg
 {
   $1->inst = (OP_NOT << 12) | ($3 << 9) | ($5 << 6) | (0x003F << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "NOT R%d, R%d", $3, $5);
+  sprintf($1->pretty, "NOT R%d, R%d", $3, $5);
   $$ = $1;
 }
 | alloc RET
 {
   // special case of JMP, where R7 is implied as DR
   $1->inst = (OP_JMP << 12) | (R_R7 << 6);
-  PRETTY_PRINT(out, $1->inst, flags, "RET");
+  sprintf($1->pretty, "RET");
   $$ = $1;
 }
 | alloc RTI
 {
   $1->inst = (OP_RTI << 12);
-  PRETTY_PRINT(out, $1->inst, flags, "RTI");
+  sprintf($1->pretty, "RTI");
   $$ = $1;
 }
 | alloc ST reg ',' LABEL
@@ -269,7 +231,7 @@ instruction:
   $1->inst = (OP_ST << 12) | ($3 << 9);
   $1->label = strdup(yytext);
   $1->flags = 0x01FF;
-  PRETTY_PRINT(out, $1->inst, flags, "ST R%d, %s", $3, yytext);
+  sprintf($1->pretty, "ST R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc STI reg ',' LABEL
@@ -277,19 +239,19 @@ instruction:
   $1->inst = (OP_STI << 12) | ($3 << 9);
   $1->label = strdup(yytext);
   $1->flags = 0x01FF;
-  PRETTY_PRINT(out, $1->inst, flags, "STI R%d, %s", $3, yytext);
+  sprintf($1->pretty, "STI R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc STR reg ',' reg ',' offset6
 {
   $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
-  PRETTY_PRINT(out, $1->inst, flags, "STR R%d, R%d, %s", $3, $5, yytext);
+  sprintf($1->pretty, "STR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc TRAP trapvect8
 {
   $1->inst = (OP_TRAP << 12) | ($3 << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "TRAP %s", yytext);
+  sprintf($1->pretty, "TRAP %s", yytext);
   $$ = $1;
 }
 | directive {$$=$1;}
@@ -300,15 +262,13 @@ directive:
   alloc FILL number
 {
   $1->inst = $3;
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  .FILL %s\n", yytext);
+  sprintf($1->pretty, ".FILL %s", yytext);
   $$ = $1;
 }
 | alloc FILL LABEL
 {
   $1->label = strdup(yytext);
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  .FILL %s\n", yytext);
+  sprintf($1->pretty, ".FILL %s", yytext);
   $$ = $1;
 }
 | alloc STRINGZ string
@@ -331,8 +291,8 @@ directive:
   inst->inst = 0;
   free(buf);
 
-  if(flags & FORMAT_PRETTY)
-    fprintf(out, "  .STRINGZ \"%s\"\n", $3);
+  $1->pretty = realloc($1->pretty, BUF_SIZE+strlen($3));
+  sprintf($1->pretty, ".STRINGZ \"%s\"", $3);
 
   $1->last = inst;
   $$ = $1;
@@ -343,37 +303,37 @@ trap:
   alloc GETC
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_GETC << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "GETC");
+  sprintf($1->pretty, "GETC");
   $$ = $1;
 }
 | alloc OUT
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_OUT << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "OUT");
+  sprintf($1->pretty, "OUT");
   $$ = $1;
 }
 | alloc PUTS
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_PUTS << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "PUTS");
+  sprintf($1->pretty, "PUTS");
   $$ = $1;
 }
 | alloc IN
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_IN << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "IN");
+  sprintf($1->pretty, "IN");
   $$ = $1;
 }
 | alloc PUTSP
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_PUTSP << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "PUTSP");
+  sprintf($1->pretty, "PUTSP");
   $$ = $1;
 }
 | alloc HALT
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_HALT << 0);
-  PRETTY_PRINT(out, $1->inst, flags, "HALT");
+  sprintf($1->pretty, "HALT");
   $$ = $1;
 }
 ;

@@ -5,14 +5,20 @@
 void
 inst_to_bits (char *dest, uint16_t inst)
 {
+  char *p = dest;
   for (int i = 15; i >= 0; i--)
     {
-      dest[i] = (inst % 2) + '0';
-      inst /= 2;
+      if (inst & (1 << i))
+        *p++ = '1';
+      else
+        *p++ = '0';
+
+      if (i && i % 4 == 0)
+        *p++ = ' ';
     }
 
   // null-terminate like a good citizen
-  dest[16] = 0;
+  *p = 0;
 }
 
 uint16_t

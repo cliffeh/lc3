@@ -28,7 +28,7 @@
   while (0)
 
 extern FILE *yyin;
-extern int yyparse (program *prog, int flags, FILE *out);
+extern int yyparse (program *prog);
 
 int
 main (int argc, const char *argv[])
@@ -164,7 +164,7 @@ main (int argc, const char *argv[])
 
   program *prog = calloc (1, sizeof (program));
 
-  rc = yyparse (prog, flags, out);
+  rc = yyparse (prog);
 
   if (rc == 0)
     {
@@ -175,24 +175,83 @@ main (int argc, const char *argv[])
           exit (rc);
         }
 
-      if (!flags) // we're supposed to output code
+      char buf[32];
+
+      uint16_t tmp16 = swap16 (prog->orig);
+      if (!flags)
         {
-          uint16_t tmp16 = swap16 (prog->orig);
           if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
             {
               fprintf (stderr, "write error; bailing...\n");
               exit (1);
             }
-          for (instruction *inst = prog->instructions; inst; inst = inst->next)
+        }
+      else
+        {
+          if (flags & FORMAT_PRETTY)
+            fprintf (out, ".ORIG x%04x\n", prog->orig);
+        }
+
+      symbol *current_symbol = prog->symbols;
+      for (instruction *inst = prog->instructions; inst; inst = inst->next)
+        {
+          tmp16 = swap16 (inst->inst);
+          if (!flags)
             {
-              tmp16 = swap16 (inst->inst);
               if (fwrite (&tmp16, sizeof (uint16_t), 1, out) != 1)
                 {
                   fprintf (stderr, "write error; bailing...\n");
                   exit (1);
                 }
             }
+          else
+            {
+              if (flags & FORMAT_PRETTY)
+                {
+                  while (current_symbol && current_symbol->addr == inst->addr)
+                    {
+                      fprintf (out, "%s\n", current_symbol->label);
+                      current_symbol = current_symbol->next;
+                    }
+                }
+
+              if (inst->pretty) // only print the printable things (not, for
+                                // instance, raw string data)
+                {
+                  // NB for the purposes of debugging it's generally more
+                  // convenient to output addresses relative to .ORIG rather
+                  // than indexed at zero
+                  if (flags & FORMAT_ADDR)
+                    fprintf (out, "%04x", inst->addr + 1);
+
+                  if (flags & FORMAT_HEX)
+                    fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
+                             tmp16);
+
+                  if (flags & FORMAT_BITS)
+                    {
+                      inst_to_bits (buf, inst->inst);
+                      fprintf (out, "%s%s",
+                               (flags & (FORMAT_ADDR | FORMAT_HEX)) ? "  "
+                                                                    : "",
+                               buf);
+                    }
+
+                  if (flags & FORMAT_PRETTY)
+                    fprintf (out, "%s  %s",
+                             (flags & (FORMAT_ADDR | FORMAT_HEX | FORMAT_BITS))
+                                 ? "  "
+                                 : "",
+                             inst->pretty);
+
+                  fprintf (out, "\n");
+                }
+            }
         }
+
+      if (flags & FORMAT_PRETTY)
+        fprintf (out, ".END\n");
+
       // TODO free_program()
     }
 
