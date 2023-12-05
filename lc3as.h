@@ -19,14 +19,14 @@
 
 typedef struct instruction
 {
-  uint16_t inst, pos, flags;
+  uint16_t inst, addr, flags;
   char *label;
   struct instruction *next, *last;
 } instruction;
 
 typedef struct symbol
 {
-  uint16_t pos;
+  uint16_t addr;
   char *label;
   struct symbol *next;
 } symbol;
@@ -39,4 +39,4 @@ typedef struct program
 } program;
 
 int resolve_symbols (program *prog);
-uint16_t find_position_by_label (const symbol *symbols, const char *label);
+uint16_t find_addr_by_label (const symbol *symbols, const char *label);

@@ -115,7 +115,7 @@ label: LABEL
 {
   $$ = calloc(1, sizeof(symbol));
   $$->label = strdup(yytext);
-  $$->pos = prog->len;
+  $$->addr = prog->len;
   if(flags & FORMAT_PRETTY)
     fprintf(out, "%s%s\n", (flags & FORMAT_ADDR) ? "  ": "", yytext);
 }
@@ -125,7 +125,7 @@ alloc: // hack: allocate instruction storage
   /* empty */
 {
   $$ = calloc(1, sizeof(instruction));
-  $$->pos = prog->len++;
+  $$->addr = prog->len++;
   $$->last = $$;
   if(flags & FORMAT_ADDR)
     // NB the assembler expects addresses starting at 0,
@@ -326,7 +326,7 @@ directive:
     inst->inst = *p;
     inst->next = calloc(1, sizeof(instruction));
     inst = inst->next;
-    inst->pos = prog->len++;
+    inst->addr = prog->len++;
   }
   inst->inst = 0;
   free(buf);

@@ -207,7 +207,7 @@ resolve_symbols (program *prog)
     {
       if (inst->label) // we have a symbol that needs resolving!
         {
-          uint16_t addr = find_position_by_label (prog->symbols, inst->label);
+          uint16_t addr = find_addr_by_label (prog->symbols, inst->label);
           if (addr == 0xFFFF)
             {
               fprintf (stderr, "error: unresolved symbol: %s\n", inst->label);
@@ -216,7 +216,7 @@ resolve_symbols (program *prog)
           // TODO we need to check bounds on these somewhere...maybe in the
           // parser?
           if (inst->flags)
-            inst->inst |= (((addr - inst->pos) - 1) & inst->flags);
+            inst->inst |= (((addr - inst->addr) - 1) & inst->flags);
           else
             inst->inst = addr + prog->orig;
         }
@@ -225,12 +225,12 @@ resolve_symbols (program *prog)
 }
 
 uint16_t
-find_position_by_label (const symbol *symbols, const char *label)
+find_addr_by_label (const symbol *symbols, const char *label)
 {
   for (const symbol *sym = symbols; sym; sym = sym->next)
     {
       if (strcmp (label, sym->label) == 0)
-        return sym->pos;
+        return sym->addr;
     }
   return 0xFFFF;
 }
