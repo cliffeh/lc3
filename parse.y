@@ -9,33 +9,25 @@ void yyerror();
 extern char *yytext;
 extern int yylineno;
 
-#define PRETTY_PRINT(out, inst, flags, fmt, ...) \
-do{ \
-  if(flags & FORMAT_HEX) \
-    fprintf(out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "", swap16(inst)); \
-  if(flags & FORMAT_BITS) { \
-    char buf[32]; \
-    inst_to_bits(buf, inst); \
-    fprintf(out, "%s%s", (flags & (FORMAT_ADDR|FORMAT_HEX)) ? "  " : "", buf); \
-  } \
-  if(flags & FORMAT_PRETTY) \
-    fprintf(out, "  " fmt "\n" __VA_OPT__(,) __VA_ARGS__); \
- }while(0)
-
-// some convenience macros for operations
-#define OP_NARG(dest, code) \
-  dest = calloc(1, sizeof(instruction)); \
-  dest->pos = prog->len++; \
-  dest->op = code
-#define OP_1ARG(dest, code, d1, a1) \
-  OP_NARG(dest, code); \
-  dest->d1 = a1
-#define OP_2ARG(dest, code, d1, a1, d2, a2) \
-  OP_1ARG(dest, code, d1, a1); \
-  dest->d2 = a2
-#define OP_3ARG(dest, code, d1, a1, d2, a2, d3, a3) \
-  OP_2ARG(dest, code, d1, a1, d2, a2); \
-  dest->d3 = a3
+#define PRETTY_PRINT(out, inst, flags, fmt, ...)                              \
+  do                                                                          \
+    {                                                                         \
+      if (flags & FORMAT_HEX)                                                 \
+        fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",            \
+                 swap16 (inst));                                              \
+                                                                              \
+      if (flags & FORMAT_BITS)                                                \
+        {                                                                     \
+          char buf[32];                                                       \
+          inst_to_bits (buf, inst);                                           \
+          fprintf (out, "%s%s",                                               \
+                   (flags & (FORMAT_ADDR | FORMAT_HEX)) ? "  " : "", buf);    \
+        }                                                                     \
+                                                                              \
+      if (flags & FORMAT_PRETTY)                                              \
+        fprintf (out, "  " fmt "\n" __VA_OPT__ (, ) __VA_ARGS__);             \
+    }                                                                         \
+  while (0)
 %}
 
 %parse-param    { program *prog }{ int flags }{ FILE *out }
@@ -119,7 +111,6 @@ instruction_list:
 }
 ;
 
-// TODO keep symbol table separate from instructions
 label: LABEL
 {
   $$ = calloc(1, sizeof(symbol));
@@ -229,7 +220,6 @@ instruction:
   $1->inst = (OP_LD << 12) | ($3 << 9);
   $1->label = strdup(yytext);
   $1->flags = 0x01FF;
-
   PRETTY_PRINT(out, $1->inst, flags, "LD R%d, %s", $3, yytext);
   $$ = $1;
 }
@@ -391,11 +381,6 @@ trap:
 imm5:
   number
 {
-  // TODO check for no more than 5 bits
-  // if($1 < -16 || $1 > 15) {
-  //   fprintf(stderr, "error: imm5 value out of range: %d\n", $1);
-  //   YYERROR;
-  // }
   $$ = $1;
 }
 ;
@@ -403,11 +388,6 @@ imm5:
 offset6:
   number
 {
-  // TODO check for no more than 6 bits
-  // if($1 < -32 || $1 > 31) {
-  //   fprintf(stderr, "error: offset6 value out of range: %d\n", $1);
-  //   YYERROR;
-  // }
   $$ = $1;
 }
 ;
@@ -415,11 +395,6 @@ offset6:
 trapvect8:
   number
 {
-  // TODO check for no more than 8 bits
-  // if($1 < 0 || $1 > 255) {
-  //   fprintf(stderr, "error: trapvect8 value out of range: %d\n", $1);
-  //   YYERROR;
-  // }
   $$ = $1;
 }
 ;

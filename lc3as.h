@@ -15,8 +15,6 @@
 // pretty-print the assembly back out
 #define FORMAT_PRETTY (1 << 3)
 // debugging output
-// #define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_BITS | FORMAT_HEX |
-// FORMAT_PRETTY)
 #define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_HEX | FORMAT_PRETTY)
 
 typedef struct instruction

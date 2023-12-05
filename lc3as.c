@@ -199,47 +199,6 @@ main (int argc, const char *argv[])
   exit (rc);
 }
 
-// TODO a more efficient way of looking up label positions
-uint16_t
-find_position_by_label (const symbol *symbols, const char *label)
-{
-  for (const symbol *sym = symbols; sym; sym = sym->next)
-    {
-      if (strcmp (label, sym->label) == 0)
-        return sym->pos;
-    }
-  return 0xFFFF;
-}
-
-// TODO move to util?
-static const char *
-trapvec8_to_str (int trapvec8)
-{
-  // clang-format off
-  switch (trapvec8)
-    {
-      case 0x20: return "GETC";
-      case 0x21: return "OUT";
-      case 0x22: return "PUTS";
-      case 0x23: return "IN";
-      case 0x24: return "PUTSP";
-      case 0x25: return "HALT";
-    }
-  // clang-format on
-}
-
-#define PPRINT(out, cp, args...)                                              \
-  do                                                                          \
-    {                                                                         \
-      if (cp)                                                                 \
-        cp += fprintf (out, "  ");                                            \
-      cp += fprintf (out, args);                                              \
-    }                                                                         \
-  while (0)
-
-// TODO put this somewhere else?
-#define PCOFFSET(curr, dest, bitmask) ((dest - curr - 1) & bitmask)
-
 int
 resolve_symbols (program *prog)
 {
@@ -263,4 +222,15 @@ resolve_symbols (program *prog)
         }
     }
   return error_count;
+}
+
+uint16_t
+find_position_by_label (const symbol *symbols, const char *label)
+{
+  for (const symbol *sym = symbols; sym; sym = sym->next)
+    {
+      if (strcmp (label, sym->label) == 0)
+        return sym->pos;
+    }
+  return 0xFFFF;
 }
