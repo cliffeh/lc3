@@ -41,5 +41,4 @@ typedef struct program
 } program;
 
 int resolve_symbols (program *prog);
-int print_instruction (FILE *out, instruction *inst, int flags);
 uint16_t find_position_by_label (const symbol *symbols, const char *label);
