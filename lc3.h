@@ -37,22 +37,19 @@ enum
   OP_TRAP    /* execute trap */
 };
 
-#define GET_OP(inst) (inst >> 12)
-#define SET_OP(inst, op)                                                      \
-  do                                                                          \
-    {                                                                         \
-      /* zero out the op code just in case */                                 \
-      inst &= 0x0FFF;                                                         \
-      inst |= (op << 12);                                                     \
-    }                                                                         \
-  while (0)
-
 // condition flags
 enum
 {
   FL_POS = 1 << 0, /* P */
   FL_ZRO = 1 << 1, /* Z */
   FL_NEG = 1 << 2, /* N */
+};
+
+// keyboard codes
+enum
+{
+    MR_KBSR = 0xFE00, /* keyboard status */
+    MR_KBDR = 0xFE02  /* keyboard data */
 };
 
 // trap codes
@@ -65,34 +62,3 @@ enum
   TRAP_PUTSP = 0x24, /* output a byte string */
   TRAP_HALT = 0x25   /* halt the program */
 };
-
-// 1111 0000 0000 0000
-#define MASK_OP 0xF000
-// 0000 1110 0000 0000
-#define MASK_DR 0x0E00
-#define MASK_COND MASK_DR
-// 0000 0001 1100 0000
-#define MASK_SR1 0x01C0
-#define MASK_SR MASK_SR1
-#define MASK_BASER MASK_SR1
-// 0000 0000 0000 0111
-#define MASK_SR2 0x0007
-// 0000 0000 0001 1111
-#define MASK_IMM5 0x001F
-// 0000 0000 0011 1111
-#define MASK_OFFSET6 0x003F
-// 0000 0001 1111 1111
-#define MASK_PCOFFSET9 0x01FF
-// 0000 0111 1111 1111
-#define MASK_PCOFFSET11 0x7FF
-// 0000 0000 0001 0000
-#define MASK_BIT5 0x0010
-#define MASK_IMM MASK_BIT5
-// 0000 1000 0000 0000
-#define MASK_BIT11 0x0800
-
-#define GET_DR(inst) (((inst) >> 9) & 7)
-#define GET_SR(inst) (((inst) >> 6) & 7)
-#define GET_SR1(inst) GET_SR (inst)
-#define GET_BASER(inst) GET_SR (inst)
-#define GET_SR2(inst) ((inst)&7)

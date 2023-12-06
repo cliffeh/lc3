@@ -31,12 +31,6 @@ sign_extend (uint16_t x, int bit_count)
   return x;
 }
 
-uint16_t
-swap16 (uint16_t x)
-{
-  return (x << 8) | (x >> 8);
-}
-
 int
 unescape_string (char *dest, const char *str)
 {

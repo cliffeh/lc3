@@ -1,22 +1,11 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#define VERSION_STRING "lc3vm " PACKAGE_VERSION
-#endif
-
-#ifndef VERSION_STRING
-#define VERSION_STRING "lc3vm unknown"
-#endif
-
-#include "lc3.h"
-#include "popt/popt.h"
-#include "util.h"
-#include <errno.h>
-#include <fcntl.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
+/* unix only */
+#include "lc3.h"
+#include "util.h"
+#include <fcntl.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <sys/termios.h>
 #include <sys/time.h>
@@ -24,32 +13,8 @@
 #include <unistd.h>
 
 #define MEMORY_MAX (1 << 16)
-uint16_t memory[MEMORY_MAX];
-uint16_t registers[R_COUNT];
-
-#define SET_COND(result)                                                      \
-  do                                                                          \
-    {                                                                         \
-      if (result == 0)                                                        \
-        registers[R_COND] = FL_ZRO;                                           \
-      else if (result >> 15)                                                  \
-        registers[R_COND] = FL_NEG;                                           \
-      else                                                                    \
-        registers[R_COND] = FL_POS;                                           \
-    }                                                                         \
-  while (0)
-
-#define ERR_EXIT(args...)                                                     \
-  do                                                                          \
-    {                                                                         \
-      fprintf (stderr, "error: ");                                            \
-      fprintf (stderr, args);                                                 \
-      fprintf (stderr, "\n");                                                 \
-      poptPrintHelp (optCon, stderr, 0);                                      \
-      poptFreeContext (optCon);                                               \
-      exit (1);                                                               \
-    }                                                                         \
-  while (0)
+uint16_t memory[MEMORY_MAX]; /* 65536 locations */
+uint16_t reg[R_COUNT];
 
 struct termios original_tio;
 
@@ -89,405 +54,333 @@ handle_interrupt (int signal)
   exit (-2);
 }
 
-int
-main (int argc, const char *argv[])
+void
+update_flags (uint16_t r)
 {
-  int rc;
-  char *infile = "-", *outfile = "-";
-  FILE *in = 0, *out = 0;
-
-  poptContext optCon;
-
-  struct poptOption options[]
-      = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
-          { "input", 'i', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &infile,
-            'i', "read input from FILE", "FILE" },
-          { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
-            &outfile, 'o', "write output to FILE", "FILE" },
-          { "version", 0, POPT_ARG_NONE, 0, 'Z',
-            "show version information and exit", 0 },
-          POPT_AUTOHELP POPT_TABLEEND
-        };
-
-  optCon = poptGetContext (0, argc, argv, options, 0);
-
-  while ((rc = poptGetNextOpt (optCon)) > 0)
+  if (reg[r] == 0)
     {
-      switch (rc)
-        {
-        case 'i':
-          {
-            // TODO support >1 input file?
-            if (in)
-              {
-                ERR_EXIT ("more than one input file specified");
-              }
-            else if (strcmp (infile, "-") == 0)
-              {
-                in = stdin;
-              }
-            else
-              {
-                if (!(in = fopen (infile, "r")))
-                  {
-                    ERR_EXIT ("couldn't open input file '%s': %s", infile,
-                              strerror (errno));
-                  }
-              }
-          }
-          break;
-
-        case 'o':
-          {
-            if (out)
-              {
-                ERR_EXIT ("more than one output file specified");
-              }
-            else if (strcmp (outfile, "-") == 0)
-              {
-                out = stdout;
-              }
-            else
-              {
-                if (!(out = fopen (outfile, "w")))
-                  {
-                    ERR_EXIT ("couldn't open output file '%s': %s", outfile,
-                              strerror (errno));
-                  }
-              }
-          }
-          break;
-
-        case 'Z':
-          {
-            printf (VERSION_STRING);
-            poptFreeContext (optCon);
-            exit (0);
-          }
-          break;
-        }
+      reg[R_COND] = FL_ZRO;
     }
-
-  if (rc != -1)
+  else if (reg[r] >> 15) /* a 1 in the left-most bit indicates negative */
     {
-      ERR_EXIT ("%s: %s\n", poptBadOption (optCon, POPT_BADOPTION_NOALIAS),
-                poptStrerror (rc));
+      reg[R_COND] = FL_NEG;
     }
+  else
+    {
+      reg[R_COND] = FL_POS;
+    }
+}
 
-  if (!in)
-    in = stdin;
-  if (!out)
-    out = stdout;
-
+void
+read_image_file (FILE *file)
+{
   /* the origin tells us where in memory to place the image */
   uint16_t origin;
-  size_t read = fread (&origin, sizeof (origin), 1, in);
-  origin = swap16 (origin);
+  fread (&origin, sizeof (origin), 1, file);
+  origin = SWAP16 (origin);
 
   /* we know the maximum file size so we only need one fread */
   uint16_t max_read = MEMORY_MAX - origin;
   uint16_t *p = memory + origin;
-  read = fread (p, sizeof (uint16_t), max_read, in);
+  size_t read = fread (p, sizeof (uint16_t), max_read, file);
 
   /* swap to little endian */
   while (read-- > 0)
     {
-      *p = swap16 (*p);
+      *p = SWAP16 (*p);
       ++p;
     }
+}
 
+int
+read_image (const char *image_path)
+{
+  FILE *file = fopen (image_path, "rb");
+  if (!file)
+    {
+      return 0;
+    };
+  read_image_file (file);
+  fclose (file);
+  return 1;
+}
+
+void
+mem_write (uint16_t address, uint16_t val)
+{
+  memory[address] = val;
+}
+
+uint16_t
+mem_read (uint16_t address)
+{
+  if (address == MR_KBSR)
+    {
+      if (check_key ())
+        {
+          memory[MR_KBSR] = (1 << 15);
+          memory[MR_KBDR] = getchar ();
+        }
+      else
+        {
+          memory[MR_KBSR] = 0;
+        }
+    }
+  return memory[address];
+}
+
+int
+main (int argc, const char *argv[])
+{
+  if (argc < 2)
+    {
+      /* show usage string */
+      printf ("lc3 [image-file1] ...\n");
+      exit (2);
+    }
+
+  for (int j = 1; j < argc; ++j)
+    {
+      if (!read_image (argv[j]))
+        {
+          printf ("failed to load image: %s\n", argv[j]);
+          exit (1);
+        }
+    }
   signal (SIGINT, handle_interrupt);
   disable_input_buffering ();
 
-  registers[R_PC] = origin;
+  /* since exactly one condition flag should be set at any given time, set the
+   * Z flag */
+  reg[R_COND] = FL_ZRO;
+
+  /* set the PC to starting position */
+  /* 0x3000 is the default */
+  enum
+  {
+    PC_START = 0x3000
+  };
+  reg[R_PC] = PC_START;
 
   int running = 1;
-
-  // FILE *logfile = fopen ("test.out", "w");
-
-  for (uint16_t inst = memory[registers[R_PC]++]; running;
-       inst = memory[registers[R_PC]++])
+  while (running)
     {
-      // fprintf (logfile, "PC: %04X; executing: %04X", registers[R_PC],
-      //          swap16 (inst));
-      // for (int i = 0; i < 8; i++)
-      //   {
-      //     fprintf (logfile, " R%i: %04X", i, registers[i]);
-      //   }
-      // fprintf (logfile, "\n");
+      /* FETCH */
+      uint16_t instr = mem_read (reg[R_PC]++);
+      uint16_t op = instr >> 12;
 
-      switch (GET_OP (inst))
+      switch (op)
         {
         case OP_ADD:
           {
-            /*
-            if (bit[5] == 0)
-                DR = SR1 + SR2;
-            else
-                DR = SR1 + SEXT(imm5);
-            setcc();
-            */
-            if (inst & MASK_BIT5)
-              registers[GET_DR (inst)]
-                  = registers[GET_SR1 (inst)] + registers[GET_SR2 (inst)];
-            else
-              registers[GET_DR (inst)] = registers[GET_SR1 (inst)]
-                                         + sign_extend (inst & MASK_IMM5, 16);
+            /* destination register (DR) */
+            uint16_t r0 = (instr >> 9) & 0x7;
+            /* first operand (SR1) */
+            uint16_t r1 = (instr >> 6) & 0x7;
+            /* whether we are in immediate mode */
+            uint16_t imm_flag = (instr >> 5) & 0x1;
 
-            SET_COND (registers[GET_DR (inst)]);
+            if (imm_flag)
+              {
+                uint16_t imm5 = sign_extend (instr & 0x1F, 5);
+                reg[r0] = reg[r1] + imm5;
+              }
+            else
+              {
+                uint16_t r2 = instr & 0x7;
+                reg[r0] = reg[r1] + reg[r2];
+              }
+
+            update_flags (r0);
           }
           break;
-
         case OP_AND:
           {
-            /*
-            if (bit[5] == 0)
-                DR = SR1 AND SR2;
-            else
-                DR = SR1 AND SEXT(imm5);
-            setcc();
-            */
-            if (inst & MASK_BIT5)
-              registers[GET_DR (inst)]
-                  = registers[GET_SR1 (inst)] + registers[GET_SR2 (inst)];
-            else
-              registers[GET_DR (inst)] = registers[GET_SR1 (inst)]
-                                         & sign_extend (inst & MASK_IMM5, 16);
+            uint16_t r0 = (instr >> 9) & 0x7;
+            uint16_t r1 = (instr >> 6) & 0x7;
+            uint16_t imm_flag = (instr >> 5) & 0x1;
 
-            SET_COND (registers[GET_DR (inst)]);
-          }
-          break;
-
-        case OP_BR:
-          {
-            /*
-            if ((n AND N) OR (z AND Z) OR (p AND P))
-                PC = PC + SEXT(PCoffset9);
-            */
-            if ((inst & MASK_COND) == 0 // equivalent to nzp
-                || ((inst & MASK_COND) & registers[R_COND]))
+            if (imm_flag)
               {
-                registers[R_PC] += sign_extend (inst & MASK_PCOFFSET9, 16);
-              }
-          }
-          break;
-
-        case OP_JMP:
-          {
-            /* PC = BaseR; */
-            registers[R_PC] = registers[GET_BASER (inst)];
-          }
-          break;
-
-        case OP_JSR:
-          {
-            /*
-            R7 = PC;
-            if (bit[11] == 0)
-                PC = BaseR;
-            else
-                PC = PC + SEXT(PCoffset11);
-            */
-            registers[R_R7] = registers[R_PC];
-            if (inst & MASK_BIT11)
-              {
-                registers[R_PC] += sign_extend (inst & MASK_PCOFFSET11, 16);
+                uint16_t imm5 = sign_extend (instr & 0x1F, 5);
+                reg[r0] = reg[r1] & imm5;
               }
             else
               {
-                registers[R_PC] = registers[GET_BASER (inst)];
+                uint16_t r2 = instr & 0x7;
+                reg[r0] = reg[r1] & reg[r2];
               }
+            update_flags (r0);
           }
           break;
-
-        case OP_LD:
-          {
-            /*
-            DR = mem[PC + SEXT(PCoffset9)];
-            setcc();
-            */
-            registers[GET_DR (inst)]
-                = memory[registers[R_PC]
-                         + sign_extend (inst & MASK_PCOFFSET9, 16)];
-            SET_COND (registers[GET_DR (inst)]);
-          }
-          break;
-
-        case OP_LDI:
-          {
-            /*
-            DR = mem[mem[PC + SEXT(PCoffset9)]];
-            setcc();
-            */
-            registers[GET_DR (inst)]
-                = memory[memory[registers[R_PC]]
-                         + sign_extend (inst & MASK_OFFSET6, 16)];
-            SET_COND (registers[GET_DR (inst)]);
-          }
-          break;
-
-        case OP_LDR:
-          {
-            /*
-            DR = mem[BaseR + SEXT(offset6)];
-            setcc();
-            */
-            registers[GET_DR (inst)] = memory[registers[GET_BASER (inst)]]
-                                       + sign_extend (inst & MASK_OFFSET6, 16);
-            SET_COND (registers[GET_DR (inst)]);
-          }
-          break;
-
-        case OP_LEA:
-          {
-            /*
-            DR = PC + SEXT(PCoffset9);
-            setcc();
-            */
-            registers[GET_DR (inst)]
-                = registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16);
-            SET_COND (registers[GET_DR (inst)]);
-          }
-          break;
-
         case OP_NOT:
           {
-            /*
-            DR = NOT(SR);
-            setcc();
-            */
-            registers[GET_DR (inst)] = ~registers[GET_SR (inst)];
-            SET_COND (registers[GET_DR (inst)]);
+            uint16_t r0 = (instr >> 9) & 0x7;
+            uint16_t r1 = (instr >> 6) & 0x7;
+
+            reg[r0] = ~reg[r1];
+            update_flags (r0);
           }
           break;
-
-        case OP_RTI:
-          { /* unused */
-            /*
-            if (PSR[15] == 0)
-                PC = mem[R6]; R6 is the SSP
-                R6 = R6+1;
-                TEMP = mem[R6];
-                R6 = R6+1;
-                PSR = TEMP; the privilege mode and condition codes of
-                the interrupted process are restored
-            else
-                Initiate a privilege mode exception;
-            */
-          }
-          break;
-
-        case OP_ST:
+        case OP_BR:
           {
-            /* mem[PC + SEXT(PCoffset9)] = SR; */
-            memory[registers[R_PC] + sign_extend (inst & MASK_PCOFFSET9, 16)]
-                = registers[GET_SR (inst)];
-          }
-          break;
-
-        case OP_STI:
-          {
-            /* mem[mem[PC + SEXT(PCoffset9)]] = SR; */
-            memory[memory[registers[R_PC]
-                          + sign_extend (inst & MASK_PCOFFSET9, 16)]]
-                = registers[GET_SR (inst)];
-          }
-          break;
-
-        case OP_STR:
-          {
-            /* mem[BaseR + SEXT(offset6)] = SR; */
-            memory[registers[GET_BASER (inst)]
-                   + sign_extend (inst & MASK_OFFSET6, 16)]
-                = registers[GET_SR (inst)];
-          }
-          break;
-
-        case OP_TRAP:
-          {
-            uint16_t trapvect8 = sign_extend (inst & 0x00FF, 16);
-            switch (trapvect8)
+            uint16_t pc_offset = sign_extend (instr & 0x1FF, 9);
+            uint16_t cond_flag = (instr >> 9) & 0x7;
+            if (cond_flag & reg[R_COND])
               {
-              case TRAP_GETC:
-                {
-                  registers[R_R0] = getchar ();
-                  SET_COND (registers[R_R0]);
-                }
-                break;
-
-              case TRAP_OUT:
-                {
-                  putc ((char)registers[R_R0], stdout);
-                  fflush (stdout);
-                }
-                break;
-
-              case TRAP_PUTS:
-                {
-                  /* one char per word */
-                  uint16_t *c = memory + registers[R_R0];
-                  while (*c)
-                    {
-                      putc ((char)*c, stdout);
-                      ++c;
-                    }
-                  fflush (stdout);
-                }
-                break;
-
-              case TRAP_IN:
-                {
-                  printf ("Enter a character: ");
-                  char c = getchar ();
-                  putc (c, stdout);
-                  fflush (stdout);
-                  registers[R_R0] = (uint16_t)c;
-                  SET_COND (registers[R_R0]);
-                }
-                break;
-
-              case TRAP_PUTSP:
-                {
-                  /* one char per byte (two bytes per word)
-                     here we need to swap back to
-                     big endian format */
-                  uint16_t *c = memory + registers[R_R0];
-                  while (*c)
-                    {
-                      char char1 = (*c) & 0xFF;
-                      putc (char1, stdout);
-                      char char2 = (*c) >> 8;
-                      if (char2)
-                        putc (char2, stdout);
-                      ++c;
-                    }
-                  fflush (stdout);
-                }
-                break;
-
-              case TRAP_HALT:
-                {
-                  // TODO any other cleanup?
-                  running = 0;
-                }
-                break;
-
-              default:
-                {
-                  fprintf (stderr, "unknown trap code: %X\n", trapvect8);
-                }
+                reg[R_PC] += pc_offset;
               }
           }
           break;
-
-        default:
+        case OP_JMP:
           {
-            fprintf (stderr, "unknown/unimplemented op code!\n");
+            /* Also handles RET */
+            uint16_t r1 = (instr >> 6) & 0x7;
+            reg[R_PC] = reg[r1];
           }
+          break;
+        case OP_JSR:
+          {
+            uint16_t long_flag = (instr >> 11) & 1;
+            reg[R_R7] = reg[R_PC];
+            if (long_flag)
+              {
+                uint16_t long_pc_offset = sign_extend (instr & 0x7FF, 11);
+                reg[R_PC] += long_pc_offset; /* JSR */
+              }
+            else
+              {
+                uint16_t r1 = (instr >> 6) & 0x7;
+                reg[R_PC] = reg[r1]; /* JSRR */
+              }
+          }
+          break;
+        case OP_LD:
+          {
+            uint16_t r0 = (instr >> 9) & 0x7;
+            uint16_t pc_offset = sign_extend (instr & 0x1FF, 9);
+            reg[r0] = mem_read (reg[R_PC] + pc_offset);
+            update_flags (r0);
+          }
+          break;
+        case OP_LDI:
+          {
+            /* destination register (DR) */
+            uint16_t r0 = (instr >> 9) & 0x7;
+            /* PCoffset 9*/
+            uint16_t pc_offset = sign_extend (instr & 0x1FF, 9);
+            /* add pc_offset to the current PC, look at that memory location to
+             * get the final address */
+            reg[r0] = mem_read (mem_read (reg[R_PC] + pc_offset));
+            update_flags (r0);
+          }
+          break;
+        case OP_LDR:
+          {
+            uint16_t r0 = (instr >> 9) & 0x7;
+            uint16_t r1 = (instr >> 6) & 0x7;
+            uint16_t offset = sign_extend (instr & 0x3F, 6);
+            reg[r0] = mem_read (reg[r1] + offset);
+            update_flags (r0);
+          }
+          break;
+        case OP_LEA:
+          {
+            uint16_t r0 = (instr >> 9) & 0x7;
+            uint16_t pc_offset = sign_extend (instr & 0x1FF, 9);
+            reg[r0] = reg[R_PC] + pc_offset;
+            update_flags (r0);
+          }
+          break;
+        case OP_ST:
+          {
+            uint16_t r0 = (instr >> 9) & 0x7;
+            uint16_t pc_offset = sign_extend (instr & 0x1FF, 9);
+            mem_write (reg[R_PC] + pc_offset, reg[r0]);
+          }
+          break;
+        case OP_STI:
+          {
+            uint16_t r0 = (instr >> 9) & 0x7;
+            uint16_t pc_offset = sign_extend (instr & 0x1FF, 9);
+            mem_write (mem_read (reg[R_PC] + pc_offset), reg[r0]);
+          }
+          break;
+        case OP_STR:
+          {
+            uint16_t r0 = (instr >> 9) & 0x7;
+            uint16_t r1 = (instr >> 6) & 0x7;
+            uint16_t offset = sign_extend (instr & 0x3F, 6);
+            mem_write (reg[r1] + offset, reg[r0]);
+          }
+          break;
+        case OP_TRAP:
+          reg[R_R7] = reg[R_PC];
+
+          switch (instr & 0xFF)
+            {
+            case TRAP_GETC:
+              /* read a single ASCII char */
+              reg[R_R0] = (uint16_t)getchar ();
+              update_flags (R_R0);
+              break;
+            case TRAP_OUT:
+              putc ((char)reg[R_R0], stdout);
+              fflush (stdout);
+              break;
+            case TRAP_PUTS:
+              {
+                /* one char per word */
+                uint16_t *c = memory + reg[R_R0];
+                while (*c)
+                  {
+                    putc ((char)*c, stdout);
+                    ++c;
+                  }
+                fflush (stdout);
+              }
+              break;
+            case TRAP_IN:
+              {
+                printf ("Enter a character: ");
+                char c = getchar ();
+                putc (c, stdout);
+                fflush (stdout);
+                reg[R_R0] = (uint16_t)c;
+                update_flags (R_R0);
+              }
+              break;
+            case TRAP_PUTSP:
+              {
+                /* one char per byte (two bytes per word)
+                   here we need to swap back to
+                   big endian format */
+                uint16_t *c = memory + reg[R_R0];
+                while (*c)
+                  {
+                    char char1 = (*c) & 0xFF;
+                    putc (char1, stdout);
+                    char char2 = (*c) >> 8;
+                    if (char2)
+                      putc (char2, stdout);
+                    ++c;
+                  }
+                fflush (stdout);
+              }
+              break;
+            case TRAP_HALT:
+              // puts ("HALT");
+              // fflush (stdout);
+              running = 0;
+              break;
+            }
+          break;
+        case OP_RES:
+        case OP_RTI:
+        default:
+          abort ();
+          break;
         }
     }
-
   restore_input_buffering ();
-
-  exit (0);
 }
