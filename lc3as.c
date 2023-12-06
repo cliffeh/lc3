@@ -268,8 +268,10 @@ main (int argc, const char *argv[])
       if (flags & FORMAT_PRETTY)
         fprintf (out, ".END\n");
 
-      // TODO free_program()
+      free_program (prog);
     }
+
+  poptFreeContext (optCon);
 
   exit (rc);
 }
@@ -317,10 +319,10 @@ find_or_create_symbol (program *prog, const char *label, uint16_t addr,
 }
 
 static int
-compare_symbol_addrs (const void *a, const void *b)
+compare_symbol_addrs (const void *sym1, const void *sym2)
 {
-  int addr1 = (*(symbol **)a)->addr;
-  int addr2 = (*(symbol **)b)->addr;
+  int addr1 = (*(symbol **)sym1)->addr;
+  int addr2 = (*(symbol **)sym2)->addr;
 
   return addr1 - addr2;
 }
@@ -349,4 +351,48 @@ sort_symbols_by_addr (program *prog)
       sym->next = symbols[i];
       sym = sym->next;
     }
+}
+
+void
+free_program (program *prog)
+{
+  if (!prog) // just in case
+    return;
+
+  free_instructions (prog->instructions);
+  free_symbols (prog->symbols);
+  free (prog);
+}
+
+void
+free_instructions (instruction *instructions)
+{
+  instruction *inst = instructions;
+
+  while (inst)
+    {
+      if (inst->pretty)
+        free (inst->pretty);
+
+      instruction *tmp = inst->next;
+      free (inst);
+      inst = tmp;
+    }
+}
+
+void
+free_symbols (symbol *symbols)
+{
+  // TODO figure out why this hangs!
+  /* symbol *sym = symbols;
+
+  while (sym)
+    {
+      if (sym->label)
+        free (sym->label);
+
+      symbol *tmp = sym->next;
+      free (sym);
+      sym = tmp;
+    } */
 }
