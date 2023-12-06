@@ -351,6 +351,8 @@ sort_symbols_by_addr (program *prog)
       sym->next = symbols[i];
       sym = sym->next;
     }
+
+  free (symbols);
 }
 
 void

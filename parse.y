@@ -60,6 +60,7 @@ program:
 ;
 
 instruction_list:
+
   /* empty */
 { $$ = 0; }
   // NB this means no labels after the last instruction
@@ -68,17 +69,12 @@ instruction_list:
   find_or_create_symbol(prog, $1, $2->addr, 1);
   $2->last->next = $3;
   $$ = $2;
+  free($1);
 }
 | instruction instruction_list
 {
   $1->last->next = $2;
   $$ = $1;
-}
-;
-
-label: LABEL
-{
-  $$ = strdup(yytext);
 }
 ;
 
@@ -134,6 +130,7 @@ instruction:
   $1->flags = 0x01FF;
   sprintf($1->pretty, "%s %s", $2, yytext);
   $$ = $1;
+  free($2);
 }
 | alloc branch number
 {
@@ -152,6 +149,7 @@ instruction:
   $1->inst |= ($3 & 0x01FF);
   sprintf($1->pretty, "%s %s", $2, yytext);
   $$ = $1;
+  free($2);
 }
 | alloc JMP reg
 {
@@ -374,6 +372,12 @@ reg: REG
 ;
 
 branch: BR
+{
+  $$ = strdup(yytext);
+}
+;
+
+label: LABEL
 {
   $$ = strdup(yytext);
 }
