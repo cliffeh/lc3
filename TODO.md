@@ -1,12 +1,12 @@
 ## lc3 (overall)
 * consolidate shared code
-* memory leak testing (right now this thing is a sieve)
 * is a basic disassembler possible?
 
 ## lc3as (assembler)
 * more/better test cases
 * tighten up duplicative rules?
 * better string literal handling
+* make it reentrant?
 
 ## lc3vm (virtual machine)
 * interactive mode?
