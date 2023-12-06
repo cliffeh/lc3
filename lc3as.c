@@ -95,6 +95,7 @@ main (int argc, const char *argv[])
               {
                 ERR_EXIT ("unknown format specified '%s'", format);
               }
+            free (format);
           }
           break;
 
@@ -116,6 +117,7 @@ main (int argc, const char *argv[])
                               strerror (errno));
                   }
               }
+            free (outfile);
           }
           break;
 
@@ -157,15 +159,15 @@ main (int argc, const char *argv[])
   if (!out)
     out = stdout;
 
-  program *prog = calloc (1, sizeof (program));
+  program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
 
-  rc = yyparse (prog);
+  rc = yyparse (&prog);
 
   if (rc == 0)
     {
       char buf[32];
 
-      uint16_t bytecode = SWAP16 (prog->orig);
+      uint16_t bytecode = SWAP16 (prog.orig);
       if (!flags)
         {
           if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
@@ -177,14 +179,14 @@ main (int argc, const char *argv[])
       else
         {
           if (flags & FORMAT_PRETTY)
-            fprintf (out, ".ORIG x%04x\n", prog->orig);
+            fprintf (out, ".ORIG x%04x\n", prog.orig);
         }
 
       // ensure our symbols are in address order (for pretty-printing below)
-      sort_symbols_by_addr (prog);
-      symbol *current_symbol = prog->symbols;
+      sort_symbols_by_addr (&prog);
+      symbol *current_symbol = prog.symbols;
 
-      for (instruction *inst = prog->instructions; inst; inst = inst->next)
+      for (instruction *inst = prog.instructions; inst; inst = inst->next)
         {
           // resolve symbols
           if (inst->sym)
@@ -200,7 +202,7 @@ main (int argc, const char *argv[])
                 inst->inst
                     |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
               else
-                inst->inst = inst->sym->addr + prog->orig;
+                inst->inst = inst->sym->addr + prog.orig;
             }
 
           bytecode = SWAP16 (inst->inst);
@@ -268,9 +270,12 @@ main (int argc, const char *argv[])
       if (flags & FORMAT_PRETTY)
         fprintf (out, ".END\n");
 
-      free_program (prog);
+      free_instructions (prog.instructions);
+      free_symbols (prog.symbols);
     }
 
+  fclose (yyin);
+  fclose (out);
   poptFreeContext (optCon);
 
   exit (rc);
@@ -351,19 +356,9 @@ sort_symbols_by_addr (program *prog)
       sym->next = symbols[i];
       sym = sym->next;
     }
+  sym->next = 0;
 
   free (symbols);
-}
-
-void
-free_program (program *prog)
-{
-  if (!prog) // just in case
-    return;
-
-  free_instructions (prog->instructions);
-  free_symbols (prog->symbols);
-  free (prog);
 }
 
 void
@@ -386,7 +381,7 @@ void
 free_symbols (symbol *symbols)
 {
   // TODO figure out why this hangs!
-  /* symbol *sym = symbols;
+  symbol *sym = symbols;
 
   while (sym)
     {
@@ -396,5 +391,5 @@ free_symbols (symbol *symbols)
       symbol *tmp = sym->next;
       free (sym);
       sym = tmp;
-    } */
+    }
 }

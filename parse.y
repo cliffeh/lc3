@@ -5,7 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#define BUF_SIZE 32
+#define PPRINT(buf, args...) \
+do { \
+  size_t needed = snprintf(0, 0, args) + 1; \
+  buf = calloc(needed, sizeof(char)); \
+  sprintf(buf, args); \
+} while(0)
 
 int yylex();
 void yyerror();
@@ -84,7 +89,6 @@ alloc: // hack: allocate instruction storage
   $$ = calloc(1, sizeof(instruction));
   $$->addr = prog->len++;
   $$->last = $$;
-  $$->pretty = calloc(BUF_SIZE, sizeof(char));
 }
 ;
 
@@ -92,25 +96,25 @@ instruction:
   alloc ADD reg ',' reg ',' reg
 {
   $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
-  sprintf($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
+  PPRINT($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc ADD reg ',' reg ',' imm5
 {
   $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
-  sprintf($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
+  PPRINT($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc AND reg ',' reg ',' reg
 {
   $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
-  sprintf($1->pretty, "AND R%d, R%d, R%d", $3, $5, $7);
+  PPRINT($1->pretty, "AND R%d, R%d, R%d", $3, $5, $7);
   $$ = $1;
 }
 | alloc AND reg ',' reg ',' imm5
 {
   $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
-  sprintf($1->pretty, "AND R%d, R%d, %s", $3, $5, yytext);
+  PPRINT($1->pretty, "AND R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc branch LABEL
@@ -128,7 +132,7 @@ instruction:
   }
   $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
-  sprintf($1->pretty, "%s %s", $2, yytext);
+  PPRINT($1->pretty, "%s %s", $2, yytext);
   $$ = $1;
   free($2);
 }
@@ -147,14 +151,14 @@ instruction:
   }
   // TODO is this correct? maybe we should fail if $3 is more than 9 bits wide?
   $1->inst |= ($3 & 0x01FF);
-  sprintf($1->pretty, "%s %s", $2, yytext);
+  PPRINT($1->pretty, "%s %s", $2, yytext);
   $$ = $1;
   free($2);
 }
 | alloc JMP reg
 {
   $1->inst = (OP_JMP << 12) | ($3 << 6);
-  sprintf($1->pretty, "JMP R%d", $3);
+  PPRINT($1->pretty, "JMP R%d", $3);
   $$ = $1;
 }
 | alloc JSR LABEL
@@ -162,13 +166,13 @@ instruction:
   $1->inst = (OP_JSR << 12) | (1 << 11);
   $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x07FF;
-  sprintf($1->pretty, "JSR %s", yytext);
+  PPRINT($1->pretty, "JSR %s", yytext);
   $$ = $1;
 }
 | alloc JSRR reg
 {
   $1->inst = (OP_JSR << 12) | ($3 << 6);
-  sprintf($1->pretty, "JSRR R%d", $3);
+  PPRINT($1->pretty, "JSRR R%d", $3);
   $$ = $1;
 }
 | alloc LD reg ',' LABEL
@@ -176,7 +180,7 @@ instruction:
   $1->inst = (OP_LD << 12) | ($3 << 9);
   $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
-  sprintf($1->pretty, "LD R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "LD R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc LDI reg ',' LABEL
@@ -184,14 +188,14 @@ instruction:
   $1->inst = (OP_LDI << 12) | ($3 << 9);
   $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
-  sprintf($1->pretty, "LDI R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "LDI R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc LDR reg ',' reg ',' offset6
 {
   // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
   $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F);
-  sprintf($1->pretty, "LDR R%d, R%d, %s", $3, $5, yytext);
+  PPRINT($1->pretty, "LDR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc LEA reg ',' LABEL
@@ -199,26 +203,26 @@ instruction:
   $1->inst = (OP_LEA << 12) | ($3 << 9);
   $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
-  sprintf($1->pretty, "LEA R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "LEA R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc NOT reg ',' reg
 {
   $1->inst = (OP_NOT << 12) | ($3 << 9) | ($5 << 6) | (0x003F << 0);
-  sprintf($1->pretty, "NOT R%d, R%d", $3, $5);
+  PPRINT($1->pretty, "NOT R%d, R%d", $3, $5);
   $$ = $1;
 }
 | alloc RET
 {
   // special case of JMP, where R7 is implied as DR
   $1->inst = (OP_JMP << 12) | (R_R7 << 6);
-  sprintf($1->pretty, "RET");
+  PPRINT($1->pretty, "RET");
   $$ = $1;
 }
 | alloc RTI
 {
   $1->inst = (OP_RTI << 12);
-  sprintf($1->pretty, "RTI");
+  PPRINT($1->pretty, "RTI");
   $$ = $1;
 }
 | alloc ST reg ',' LABEL
@@ -226,7 +230,7 @@ instruction:
   $1->inst = (OP_ST << 12) | ($3 << 9);
   $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
-  sprintf($1->pretty, "ST R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "ST R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc STI reg ',' LABEL
@@ -234,20 +238,20 @@ instruction:
   $1->inst = (OP_STI << 12) | ($3 << 9);
   $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
   $1->flags = 0x01FF;
-  sprintf($1->pretty, "STI R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "STI R%d, %s", $3, yytext);
   $$ = $1;
 }
 | alloc STR reg ',' reg ',' offset6
 {
   // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
   $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F);
-  sprintf($1->pretty, "STR R%d, R%d, %s", $3, $5, yytext);
+  PPRINT($1->pretty, "STR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
 | alloc TRAP trapvect8
 {
   $1->inst = (OP_TRAP << 12) | ($3 << 0);
-  sprintf($1->pretty, "TRAP %s", yytext);
+  PPRINT($1->pretty, "TRAP %s", yytext);
   $$ = $1;
 }
 | directive {$$=$1;}
@@ -258,13 +262,13 @@ directive:
   alloc FILL number
 {
   $1->inst = $3;
-  sprintf($1->pretty, ".FILL %s", yytext);
+  PPRINT($1->pretty, ".FILL %s", yytext);
   $$ = $1;
 }
 | alloc FILL LABEL
 {
   $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
-  sprintf($1->pretty, ".FILL %s", yytext);
+  PPRINT($1->pretty, ".FILL %s", yytext);
   $$ = $1;
 }
 | alloc STRINGZ STRLIT
@@ -286,8 +290,7 @@ directive:
   inst->inst = 0;
   free(buf);
 
-  $1->pretty = realloc($1->pretty, BUF_SIZE+strlen(yytext));
-  sprintf($1->pretty, ".STRINGZ \"%s\"", yytext);
+  PPRINT($1->pretty, ".STRINGZ \"%s\"", yytext);
 
   $1->last = inst;
   $$ = $1;
@@ -298,37 +301,37 @@ trap:
   alloc GETC
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_GETC << 0);
-  sprintf($1->pretty, "GETC");
+  PPRINT($1->pretty, "GETC");
   $$ = $1;
 }
 | alloc OUT
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_OUT << 0);
-  sprintf($1->pretty, "OUT");
+  PPRINT($1->pretty, "OUT");
   $$ = $1;
 }
 | alloc PUTS
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_PUTS << 0);
-  sprintf($1->pretty, "PUTS");
+  PPRINT($1->pretty, "PUTS");
   $$ = $1;
 }
 | alloc IN
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_IN << 0);
-  sprintf($1->pretty, "IN");
+  PPRINT($1->pretty, "IN");
   $$ = $1;
 }
 | alloc PUTSP
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_PUTSP << 0);
-  sprintf($1->pretty, "PUTSP");
+  PPRINT($1->pretty, "PUTSP");
   $$ = $1;
 }
 | alloc HALT
 {
   $1->inst = (OP_TRAP << 12) | (TRAP_HALT << 0);
-  sprintf($1->pretty, "HALT");
+  PPRINT($1->pretty, "HALT");
   $$ = $1;
 }
 ;
