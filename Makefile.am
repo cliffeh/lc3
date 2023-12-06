@@ -24,7 +24,7 @@ test_inst_to_bits_SOURCES = test/inst_to_bits.c util.c util.h
 test_unescape_string_SOURCES = test/unescape_string.c util.c util.h
 
 check_SCRIPTS = test/2048.sh test/rogue.sh test/all-instructions.sh test/hello-world.sh
-MEMCHECKS = test/valgrind-lc3as-2048.sh
+MEMCHECKS = test/valgrind-lc3as-2048.sh test/valgrind-lc3vm-hello-world.sh
 check_SCRIPTS += $(MEMCHECKS)
 
 CLEANFILES = test/*.valgrind
