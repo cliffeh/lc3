@@ -5,6 +5,7 @@
 
 %option noyywrap
 
+%x STRING
 %%
  /* op codes */
 [aA][dD][dD]             { return(ADD);       }
@@ -50,8 +51,16 @@
 #(0|-?[1-9][0-9]*) {
   return(DECLIT);
 }
-\"[^\"]*\"               { // TODO this needs entirely more rigor
-                           return(STRLIT);    }
+
+\" { // TODO this needs entirely more rigor
+  BEGIN STRING;
+}
+<STRING>(\\\"|[^\"])* { return(STRLIT); }
+<STRING>\" {
+  BEGIN INITIAL;
+}
+
+ /* labels */
 [_a-zA-Z][_\-a-zA-Z0-9]* { return(LABEL);     }
 
 ,                        { return(',');       }

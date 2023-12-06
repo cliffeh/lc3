@@ -43,7 +43,7 @@ extern int yylineno;
 // special cases of instruction
 %type <inst> alloc directive trap
 %type <num> imm5 number offset6 reg trapvect8
-%type <str> branch label string
+%type <str> branch label
 
 %start program
 
@@ -62,7 +62,7 @@ program:
 instruction_list:
   /* empty */
 { $$ = 0; }
-  // note: this means no labels after the last instruction
+  // NB this means no labels after the last instruction
 | label instruction instruction_list
 {
   find_or_create_symbol(prog, $1, $2->addr, 1);
@@ -266,10 +266,10 @@ directive:
   sprintf($1->pretty, ".FILL %s", yytext);
   $$ = $1;
 }
-| alloc STRINGZ string
+| alloc STRINGZ STRLIT
 {
-  char *buf = calloc(strlen($3)+1, sizeof(char));
-  if(unescape_string(buf, $3) != 0)
+  char *buf = calloc(strlen(yytext)+1, sizeof(char));
+  if(unescape_string(buf, yytext) != 0)
   {
     fprintf(stderr, "error: unknown escape sequence in string literal\n");
     YYERROR;
@@ -277,7 +277,6 @@ directive:
 
   instruction *inst = $1;
   for(char *p = buf; *p; p++) {
-    // printf("appending %c\n", *p);
     inst->inst = *p;
     inst->next = calloc(1, sizeof(instruction));
     inst = inst->next;
@@ -286,8 +285,8 @@ directive:
   inst->inst = 0;
   free(buf);
 
-  $1->pretty = realloc($1->pretty, BUF_SIZE+strlen($3));
-  sprintf($1->pretty, ".STRINGZ \"%s\"", $3);
+  $1->pretty = realloc($1->pretty, BUF_SIZE+strlen(yytext));
+  sprintf($1->pretty, ".STRINGZ \"%s\"", yytext);
 
   $1->last = inst;
   $$ = $1;
@@ -362,14 +361,6 @@ number:
 | DECLIT
 {
   $$ = strtol(yytext+1, 0, 10);
-}
-;
-
-string:
-  STRLIT
-{
-  $$ = strdup(yytext+1);
-  $$[strlen($$)-1] = 0;
 }
 ;
 
