@@ -148,7 +148,8 @@ instruction:
       case 'P': $1->inst |= (1 << 9); break;
     }
   }
-  $1->inst |= ($3 & 0x01FF); // TODO is this correct? maybe we should fail if $3 is more than 9 bits wide?
+  // TODO is this correct? maybe we should fail if $3 is more than 9 bits wide?
+  $1->inst |= ($3 & 0x01FF);
   sprintf($1->pretty, "%s %s", $2, yytext);
   $$ = $1;
 }
@@ -190,7 +191,8 @@ instruction:
 }
 | alloc LDR reg ',' reg ',' offset6
 {
-  $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
+  // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
+  $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F);
   sprintf($1->pretty, "LDR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
@@ -239,7 +241,8 @@ instruction:
 }
 | alloc STR reg ',' reg ',' offset6
 {
-  $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F); // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
+  // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
+  $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F);
   sprintf($1->pretty, "STR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
