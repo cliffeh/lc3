@@ -47,7 +47,7 @@ extern int yylineno;
 %type <inst> instruction instruction_list
 // special cases of instruction
 %type <inst> alloc directive trap
-%type <num> imm5 number offset6 reg trapvect8
+%type <num> num reg
 %type <str> branch label
 
 %start program
@@ -55,7 +55,7 @@ extern int yylineno;
 %%
 
 program:
-  ORIG number
+  ORIG num
   instruction_list
   END
 {
@@ -99,8 +99,9 @@ instruction:
   PPRINT($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
-| alloc ADD reg ',' reg ',' imm5
+| alloc ADD reg ',' reg ',' num /* imm5 */
 {
+  // TODO is this correct? maybe we should fail if $7 is more than 5 bits wide?
   $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
   PPRINT($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
@@ -111,8 +112,9 @@ instruction:
   PPRINT($1->pretty, "AND R%d, R%d, R%d", $3, $5, $7);
   $$ = $1;
 }
-| alloc AND reg ',' reg ',' imm5
+| alloc AND reg ',' reg ',' num /* imm5 */
 {
+  // TODO is this correct? maybe we should fail if $7 is more than 5 bits wide?
   $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
   PPRINT($1->pretty, "AND R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
@@ -136,7 +138,7 @@ instruction:
   $$ = $1;
   free($2);
 }
-| alloc branch number
+| alloc branch num
 {
   $1->inst = (OP_BR << 12);
   for(char *p = $2+2; *p; p++) {
@@ -191,7 +193,7 @@ instruction:
   PPRINT($1->pretty, "LDI R%d, %s", $3, yytext);
   $$ = $1;
 }
-| alloc LDR reg ',' reg ',' offset6
+| alloc LDR reg ',' reg ',' num /* offset6 */
 {
   // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
   $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F);
@@ -241,15 +243,16 @@ instruction:
   PPRINT($1->pretty, "STI R%d, %s", $3, yytext);
   $$ = $1;
 }
-| alloc STR reg ',' reg ',' offset6
+| alloc STR reg ',' reg ',' num /* offset6 */
 {
   // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
   $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F);
   PPRINT($1->pretty, "STR R%d, R%d, %s", $3, $5, yytext);
   $$ = $1;
 }
-| alloc TRAP trapvect8
+| alloc TRAP num /* trapvect8 */
 {
+  // TODO is this correct? maybe we should fail if $3 is more than 8 bits wide?
   $1->inst = (OP_TRAP << 12) | ($3 << 0);
   PPRINT($1->pretty, "TRAP %s", yytext);
   $$ = $1;
@@ -259,7 +262,7 @@ instruction:
 ;
 
 directive:
-  alloc FILL number
+  alloc FILL num
 {
   $1->inst = $3;
   PPRINT($1->pretty, ".FILL %s", yytext);
@@ -336,28 +339,7 @@ trap:
 }
 ;
 
-imm5:
-  number
-{
-  $$ = $1;
-}
-;
-
-offset6:
-  number
-{
-  $$ = $1;
-}
-;
-
-trapvect8:
-  number
-{
-  $$ = $1;
-}
-;
-
-number:
+num:
   HEXLIT
 {
   $$ = strtol(yytext+1, 0, 16);
