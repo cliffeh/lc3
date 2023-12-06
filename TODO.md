@@ -5,11 +5,14 @@
 
 ## lc3as (assembler)
 * more/better test cases
+* tighten up duplicative rules?
+* better string literal handling
 
 ## lc3vm (virtual machine)
-* get the fucker working!
 * interactive mode?
-* disallow stdin/stdout? (or find a better way of handling it)
+* move execution into its own function
+* support windows?
+* encapsulate setup/teardown stuff elsewhere
 
 ## lc3diff
 * make it moar prettier?
