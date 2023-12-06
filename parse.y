@@ -96,7 +96,7 @@ instruction:
   alloc ADD reg ',' reg ',' reg
 {
   $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
-  PPRINT($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
+  PPRINT($1->pretty, "ADD R%d, R%d, R%d", $3, $5, $7);
   $$ = $1;
 }
 | alloc ADD reg ',' reg ',' num /* imm5 */
