@@ -28,7 +28,7 @@
   while (0)
 
 extern FILE *yyin;
-extern int yyparse (program *prog);
+int yyparse (program *prog);
 
 int
 main (int argc, const char *argv[])
