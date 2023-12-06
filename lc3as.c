@@ -165,7 +165,7 @@ main (int argc, const char *argv[])
     {
       char buf[32];
 
-      uint16_t bytecode = swap16 (prog->orig);
+      uint16_t bytecode = SWAP16 (prog->orig);
       if (!flags)
         {
           if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
@@ -203,7 +203,7 @@ main (int argc, const char *argv[])
                 inst->inst = inst->sym->addr + prog->orig;
             }
 
-          bytecode = swap16 (inst->inst);
+          bytecode = SWAP16 (inst->inst);
           if (!flags)
             {
               if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
