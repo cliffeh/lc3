@@ -48,3 +48,6 @@ make check
 * [Hello World example code](https://github.com/rpendleton/lc3sim-c/tree/main/tests/hello-world)
 * [lc3-2048](https://github.com/rpendleton/lc3-2048)
 * [lc3-rogue](https://github.com/justinmeiners/lc3-rogue)
+* [bison manual](https://www.gnu.org/software/bison/manual/bison.html#Rules-Syntax)
+* [Practical parsing with Flex and Bison](https://begriffs.com/posts/2021-11-28-practical-parsing.html#using-a-parser-as-a-library)
+* [Thread-save / reentrant bison + flex](https://stackoverflow.com/questions/48850242/thread-safe-reentrant-bison-flex)

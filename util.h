@@ -7,4 +7,4 @@
   ((((x) >> ((bits)-1)) & 1) ? ((x) | (0xFFFF << (bits))) : (x))
 
 void inst_to_bits (char *dest, uint16_t inst);
-int unescape_string (char *dest, const char *str);
+const char *unescape_string (char *dest, const char *str);

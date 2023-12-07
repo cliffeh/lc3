@@ -1,6 +1,5 @@
 #include "util.h"
 #include "lc3.h"
-#include <stdio.h>
 
 void
 inst_to_bits (char *dest, uint16_t inst)
@@ -21,10 +20,9 @@ inst_to_bits (char *dest, uint16_t inst)
   *p = 0;
 }
 
-int
+const char *
 unescape_string (char *dest, const char *str)
 {
-  int err_count = 0;
   char *d = dest;
   for (const char *p = str; *p; p++)
     {
@@ -47,10 +45,7 @@ unescape_string (char *dest, const char *str)
             case '"':  *d++ = '\"';    break;
             default:
               {
-                fprintf (stderr,
-                         "warning: I don't understand escape sequence \\%c\n",
-                         *p);
-                err_count++;
+                return *p;
               }
               // clang-format on
             }
@@ -60,6 +55,7 @@ unescape_string (char *dest, const char *str)
           *d++ = *p;
         }
     }
+  // null terminate
   *d = 0;
-  return err_count;
+  return 0;
 }
