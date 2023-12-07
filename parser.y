@@ -78,6 +78,8 @@ instruction_list:
 }
 | instruction instruction_list
 {
+  if(!$1) fprintf(stderr, "INSTRUCTION IS NULL\n");
+  if(!$2) fprintf(stderr, "LIST IS NULL\n");
   $1->last->next = $2;
   $$ = $1;
 }

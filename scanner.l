@@ -2,7 +2,12 @@
 #include "lc3as.h"
 #include "parser.h"
 
-#define NEW_INST (calloc(1, sizeof(instruction)))
+// TODO set addr
+#define NEW_INST(yylval) \
+  do { \
+    yylval->inst = calloc(1, sizeof(instruction)); \
+    yylval->inst->last = yylval->inst; \
+  }while(0)
 %}
 
 %option noyywrap nounput noinput
@@ -11,10 +16,10 @@
 %x STRING
 %%
  /* op codes */
-[aA][dD][dD]                   { yylval->inst = NEW_INST; return(ADD);     }
-[aA][nN][dD]                   { yylval->inst = NEW_INST; return(AND);     }
+[aA][dD][dD]                   { NEW_INST(yylval); return(ADD);     }
+[aA][nN][dD]                   { NEW_INST(yylval); return(AND);     }
 [bB][rR][nN]?[zZ]?[pP]?        { 
-  yylval->inst = NEW_INST;
+  NEW_INST(yylval);
   for(char *p = yytext+2; *p; p++) {
     switch(*p) {
       case 'n': case 'N': yylval->inst->inst |= (1 << 11); break;
@@ -23,28 +28,28 @@
     }
   }
   return(BR);                  }
-[jJ][mM][pP]                   { yylval->inst = NEW_INST; return(JMP);     }
-[jJ][sS][rR]                   { yylval->inst = NEW_INST; return(JSR);     }
-[jJ][sS][rR][rR]               { yylval->inst = NEW_INST; return(JSRR);    }
-[lL][dD]                       { yylval->inst = NEW_INST; return(LD);      }
-[lL][dD][iI]                   { yylval->inst = NEW_INST; return(LDI);     }
-[lL][dD][rR]                   { yylval->inst = NEW_INST; return(LDR);     }
-[lL][eE][aA]                   { yylval->inst = NEW_INST; return(LEA);     }
-[nN][oO][tT]                   { yylval->inst = NEW_INST; return(NOT);     }
-[rR][eE][tT]                   { yylval->inst = NEW_INST; return(RET);     }
-[rR][tT][iI]                   { yylval->inst = NEW_INST; return(RTI);     }
-[sS][tT]                       { yylval->inst = NEW_INST; return(ST);      }
-[sS][tT][iI]                   { yylval->inst = NEW_INST; return(STI);     }
-[sS][tT][rR]                   { yylval->inst = NEW_INST; return(STR);     }
-[tT][rR][aA][pP]               { yylval->inst = NEW_INST; return(TRAP);    }
+[jJ][mM][pP]                   { NEW_INST(yylval); return(JMP);     }
+[jJ][sS][rR]                   { NEW_INST(yylval); return(JSR);     }
+[jJ][sS][rR][rR]               { NEW_INST(yylval); return(JSRR);    }
+[lL][dD]                       { NEW_INST(yylval); return(LD);      }
+[lL][dD][iI]                   { NEW_INST(yylval); return(LDI);     }
+[lL][dD][rR]                   { NEW_INST(yylval); return(LDR);     }
+[lL][eE][aA]                   { NEW_INST(yylval); return(LEA);     }
+[nN][oO][tT]                   { NEW_INST(yylval); return(NOT);     }
+[rR][eE][tT]                   { NEW_INST(yylval); return(RET);     }
+[rR][tT][iI]                   { NEW_INST(yylval); return(RTI);     }
+[sS][tT]                       { NEW_INST(yylval); return(ST);      }
+[sS][tT][iI]                   { NEW_INST(yylval); return(STI);     }
+[sS][tT][rR]                   { NEW_INST(yylval); return(STR);     }
+[tT][rR][aA][pP]               { NEW_INST(yylval); return(TRAP);    }
 
  /* trap routines */
-[gG][eE][tT][cC]               { yylval->inst = NEW_INST; return(GETC);    }
-[oO][uU][tT]                   { yylval->inst = NEW_INST; return(OUT);     }
-[pP][uU][tT][sS]               { yylval->inst = NEW_INST; return(PUTS);    }
-[iI][nN]                       { yylval->inst = NEW_INST; return(IN);      }
-[pP][uU][tT][sS][pP]           { yylval->inst = NEW_INST; return(PUTSP);   }
-[hH][aA][lL][tT]               { yylval->inst = NEW_INST; return(HALT);    }
+[gG][eE][tT][cC]               { NEW_INST(yylval); return(GETC);    }
+[oO][uU][tT]                   { NEW_INST(yylval); return(OUT);     }
+[pP][uU][tT][sS]               { NEW_INST(yylval); return(PUTS);    }
+[iI][nN]                       { NEW_INST(yylval); return(IN);      }
+[pP][uU][tT][sS][pP]           { NEW_INST(yylval); return(PUTSP);   }
+[hH][aA][lL][tT]               { NEW_INST(yylval); return(HALT);    }
 
 
  /* registers */
@@ -53,8 +58,8 @@
  /* assembler directives */
 \.[oO][rR][iI][gG]             { return(ORIG);    }
 \.[eE][nN][dD]                 { return(END);     }
-\.[fF][iI][lL][lL]             { yylval->inst = NEW_INST; return(FILL);    }
-\.[sS][tT][rR][iI][nN][gG][zZ] { yylval->inst = NEW_INST; return(STRINGZ); }
+\.[fF][iI][lL][lL]             { NEW_INST(yylval); return(FILL);    }
+\.[sS][tT][rR][iI][nN][gG][zZ] { NEW_INST(yylval); return(STRINGZ); }
 
  /* literals */
 [xX][0-9a-fA-F]{1,4}           { yylval->num = strtol(yytext+1, 0, 16); return(NUMLIT);  }
