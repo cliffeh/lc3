@@ -45,7 +45,7 @@ unescape_string (char *dest, const char *str)
             case '"':  *d++ = '\"';    break;
             default:
               {
-                return *p;
+                return p;
               }
               // clang-format on
             }
