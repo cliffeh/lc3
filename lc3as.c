@@ -338,6 +338,9 @@ compare_symbol_addrs (const void *sym1, const void *sym2)
 void // TODO there is probably a cleaner way to do this
 sort_symbols_by_addr (program *prog)
 {
+  if (!prog->symbols || !prog->symbols->next)
+    return;
+
   // figure out how many symbols we have
   int len = 0;
   for (symbol *sym = prog->symbols; sym; sym = sym->next)
