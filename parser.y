@@ -14,14 +14,12 @@ do { \
 
 int yylex();
 void yyerror();
-// extern char *yytext;
-// extern int yylineno;
 %}
 
 %define api.pure true
 %define parse.error verbose
-%parse-param    { program *prog }
-%param          { void *scanner }
+%param    { program *prog }
+%param    { void *scanner }
 
 %union {
   program *prog;
@@ -46,12 +44,11 @@ void yyerror();
 // literals
 %token DECLIT HEXLIT STRLIT LABEL
 
-%type program
 %type <inst> instruction instruction_list
 // special cases of instruction
 %type <inst> alloc directive trap
-%type <num> num reg
-%type <str> branch label
+%type <num> num REG
+%type <str> BR LABEL STRLIT
 
 %start program
 
@@ -68,11 +65,10 @@ program:
 ;
 
 instruction_list:
-
   /* empty */
 { $$ = 0; }
   // NB this means no labels after the last instruction
-| label instruction instruction_list
+| LABEL instruction instruction_list
 {
   find_or_create_symbol(prog, $1, $2->addr, 1);
   $2->last->next = $3;
@@ -96,33 +92,33 @@ alloc: // hack: allocate instruction storage
 ;
 
 instruction:
-  alloc ADD reg ',' reg ',' reg
+  alloc ADD REG[DR] ',' REG[SR1] ',' REG[SR2]
 {
-  $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
-  PPRINT($1->pretty, "ADD R%d, R%d, R%d", $3, $5, $7);
+  $1->inst = (OP_ADD << 12) | ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
+  PPRINT($1->pretty, "ADD R%d, R%d, R%d", $DR, $SR1, $SR2);
   $$ = $1;
 }
-| alloc ADD reg ',' reg ',' num /* imm5 */
+| alloc ADD REG[DR] ',' REG[SR1] ',' num[imm5]
 {
-  // TODO is this correct? maybe we should fail if $7 is more than 5 bits wide?
-  $1->inst = (OP_ADD << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
-  PPRINT($1->pretty, "ADD R%d, R%d, %s", $3, $5, yytext);
+  // TODO is this correct? maybe we should fail if $imm5 is more than 5 bits wide?
+  $1->inst = (OP_ADD << 12) | ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
+  PPRINT($1->pretty, "ADD R%d, R%d, #%d", $DR, $SR1, $imm5);
   $$ = $1;
 }
-| alloc AND reg ',' reg ',' reg
+| alloc AND REG[DR] ',' REG[SR1] ',' REG[SR2]
 {
-  $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | ($7 << 0);
-  PPRINT($1->pretty, "AND R%d, R%d, R%d", $3, $5, $7);
+  $1->inst = (OP_AND << 12) | ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
+  PPRINT($1->pretty, "AND R%d, R%d, R%d", $DR, $SR1, $SR2);
   $$ = $1;
 }
-| alloc AND reg ',' reg ',' num /* imm5 */
+| alloc AND REG[DR] ',' REG[SR1] ',' num[imm5]
 {
-  // TODO is this correct? maybe we should fail if $7 is more than 5 bits wide?
-  $1->inst = (OP_AND << 12) | ($3 << 9) | ($5 << 6) | (1 << 5) | ($7 & 0x001F);
-  PPRINT($1->pretty, "AND R%d, R%d, %s", $3, $5, yytext);
+  // TODO is this correct? maybe we should fail if $imm5 is more than 5 bits wide?
+  $1->inst = (OP_AND << 12) | ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
+  PPRINT($1->pretty, "AND R%d, R%d, #%d", $DR, $SR1, $imm5);
   $$ = $1;
 }
-| alloc branch LABEL
+| alloc BR LABEL
 {
   $1->inst = (OP_BR << 12);
   for(char *p = $2+2; *p; p++) {
@@ -135,13 +131,14 @@ instruction:
       case 'P': $1->inst |= (1 << 9); break;
     }
   }
-  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
+  $1->sym = find_or_create_symbol(prog, $3, 0, 0);
   $1->flags = 0x01FF;
-  PPRINT($1->pretty, "%s %s", $2, yytext);
-  $$ = $1;
+  PPRINT($1->pretty, "%s %s", $2, $3);
   free($2);
+  free($3);
+  $$ = $1;
 }
-| alloc branch num
+| alloc BR num[PCoffset9]
 {
   $1->inst = (OP_BR << 12);
   for(char *p = $2+2; *p; p++) {
@@ -154,67 +151,71 @@ instruction:
       case 'P': $1->inst |= (1 << 9); break;
     }
   }
-  // TODO is this correct? maybe we should fail if $3 is more than 9 bits wide?
-  $1->inst |= ($3 & 0x01FF);
-  PPRINT($1->pretty, "%s %s", $2, yytext);
-  $$ = $1;
+  // TODO is this correct? maybe we should fail if $PCoffset9 is more than 9 bits wide?
+  $1->inst |= ($PCoffset9 & 0x01FF);
+  PPRINT($1->pretty, "%s x%X", $2, $PCoffset9);
   free($2);
+  $$ = $1;
 }
-| alloc JMP reg
+| alloc JMP REG[BaseR]
 {
-  $1->inst = (OP_JMP << 12) | ($3 << 6);
-  PPRINT($1->pretty, "JMP R%d", $3);
+  $1->inst = (OP_JMP << 12) | ($BaseR << 6);
+  PPRINT($1->pretty, "JMP R%d", $BaseR);
   $$ = $1;
 }
 | alloc JSR LABEL
 {
   $1->inst = (OP_JSR << 12) | (1 << 11);
-  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
+  $1->sym = find_or_create_symbol(prog, $3, 0, 0);
   $1->flags = 0x07FF;
-  PPRINT($1->pretty, "JSR %s", yytext);
+  PPRINT($1->pretty, "JSR %s", $3);
+  free($3);
   $$ = $1;
 }
-| alloc JSRR reg
+| alloc JSRR REG[BaseR]
 {
-  $1->inst = (OP_JSR << 12) | ($3 << 6);
-  PPRINT($1->pretty, "JSRR R%d", $3);
+  $1->inst = (OP_JSR << 12) | ($BaseR << 6);
+  PPRINT($1->pretty, "JSRR R%d", $BaseR);
   $$ = $1;
 }
-| alloc LD reg ',' LABEL
+| alloc LD REG[DR] ',' LABEL
 {
-  $1->inst = (OP_LD << 12) | ($3 << 9);
-  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
+  $1->inst = (OP_LD << 12) | ($DR << 9);
+  $1->sym = find_or_create_symbol(prog, $5, 0, 0);
   $1->flags = 0x01FF;
-  PPRINT($1->pretty, "LD R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "LD R%d, %s", $DR, $5);
+  free($5);
   $$ = $1;
 }
-| alloc LDI reg ',' LABEL
+| alloc LDI REG[DR] ',' LABEL
 {
-  $1->inst = (OP_LDI << 12) | ($3 << 9);
-  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
+  $1->inst = (OP_LDI << 12) | ($DR << 9);
+  $1->sym = find_or_create_symbol(prog, $5, 0, 0);
   $1->flags = 0x01FF;
-  PPRINT($1->pretty, "LDI R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "LDI R%d, %s", $DR, $5);
+  free($5);
   $$ = $1;
 }
-| alloc LDR reg ',' reg ',' num /* offset6 */
+| alloc LDR REG[DR] ',' REG[BaseR] ',' num[offset6]
 {
-  // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
-  $1->inst = (OP_LDR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F);
-  PPRINT($1->pretty, "LDR R%d, R%d, %s", $3, $5, yytext);
+  // TODO is this correct? maybe we should fail if $offset6 is more than 6 bits wide?
+  $1->inst = (OP_LDR << 12) | ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
+  PPRINT($1->pretty, "LDR R%d, R%d, #%d", $DR, $BaseR, $offset6);
   $$ = $1;
 }
-| alloc LEA reg ',' LABEL
+| alloc LEA REG[DR] ',' LABEL
 {
-  $1->inst = (OP_LEA << 12) | ($3 << 9);
-  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
+  $1->inst = (OP_LEA << 12) | ($DR << 9);
+  $1->sym = find_or_create_symbol(prog, $5, 0, 0);
   $1->flags = 0x01FF;
-  PPRINT($1->pretty, "LEA R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "LEA R%d, %s", $DR, $5);
+  free($5);
   $$ = $1;
 }
-| alloc NOT reg ',' reg
+| alloc NOT REG[DR] ',' REG[SR]
 {
-  $1->inst = (OP_NOT << 12) | ($3 << 9) | ($5 << 6) | (0x003F << 0);
-  PPRINT($1->pretty, "NOT R%d, R%d", $3, $5);
+  $1->inst = (OP_NOT << 12) | ($DR << 9) | ($SR << 6) | (0x003F << 0);
+  PPRINT($1->pretty, "NOT R%d, R%d", $DR, $SR);
   $$ = $1;
 }
 | alloc RET
@@ -230,34 +231,36 @@ instruction:
   PPRINT($1->pretty, "RTI");
   $$ = $1;
 }
-| alloc ST reg ',' LABEL
+| alloc ST REG[SR] ',' LABEL
 {
-  $1->inst = (OP_ST << 12) | ($3 << 9);
-  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
+  $1->inst = (OP_ST << 12) | ($SR << 9);
+  $1->sym = find_or_create_symbol(prog, $5, 0, 0);
   $1->flags = 0x01FF;
-  PPRINT($1->pretty, "ST R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "ST R%d, %s", $SR, $5);
+  free($5);
   $$ = $1;
 }
-| alloc STI reg ',' LABEL
+| alloc STI REG[SR] ',' LABEL
 {
-  $1->inst = (OP_STI << 12) | ($3 << 9);
-  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
+  $1->inst = (OP_STI << 12) | ($SR << 9);
+  $1->sym = find_or_create_symbol(prog, $5, 0, 0);
   $1->flags = 0x01FF;
-  PPRINT($1->pretty, "STI R%d, %s", $3, yytext);
+  PPRINT($1->pretty, "STI R%d, %s", $SR, $5);
+  free($5);
   $$ = $1;
 }
-| alloc STR reg ',' reg ',' num /* offset6 */
+| alloc STR REG[SR] ',' REG[BaseR] ',' num[offset6]
 {
-  // TODO is this correct? maybe we should fail if $7 is more than 6 bits wide?
-  $1->inst = (OP_STR << 12) | ($3 << 9) | ($5 << 6) | ($7 & 0x003F);
-  PPRINT($1->pretty, "STR R%d, R%d, %s", $3, $5, yytext);
+  // TODO is this correct? maybe we should fail if $offset6 is more than 6 bits wide?
+  $1->inst = (OP_STR << 12) | ($SR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
+  PPRINT($1->pretty, "STR R%d, R%d, #%d", $SR, $BaseR, $offset6);
   $$ = $1;
 }
-| alloc TRAP num /* trapvect8 */
+| alloc TRAP num[trapvect8]
 {
-  // TODO is this correct? maybe we should fail if $3 is more than 8 bits wide?
-  $1->inst = (OP_TRAP << 12) | ($3 << 0);
-  PPRINT($1->pretty, "TRAP %s", yytext);
+  // TODO is this correct? maybe we should fail if $trapvect8 is more than 8 bits wide?
+  $1->inst = (OP_TRAP << 12) | ($trapvect8 << 0);
+  PPRINT($1->pretty, "TRAP x%02X", $trapvect8);
   $$ = $1;
 }
 | directive {$$=$1;}
@@ -265,22 +268,23 @@ instruction:
 ;
 
 directive:
-  alloc FILL num
+  alloc FILL num[data]
 {
   $1->inst = $3;
-  PPRINT($1->pretty, ".FILL %s", yytext);
+  PPRINT($1->pretty, ".FILL x%X", $data);
   $$ = $1;
 }
 | alloc FILL LABEL
 {
-  $1->sym = find_or_create_symbol(prog, yytext, 0, 0);
-  PPRINT($1->pretty, ".FILL %s", yytext);
+  $1->sym = find_or_create_symbol(prog, $3, 0, 0);
+  PPRINT($1->pretty, ".FILL %s", $3);
+  free($3);
   $$ = $1;
 }
-| alloc STRINGZ STRLIT
+| alloc STRINGZ STRLIT[raw]
 {
-  char *buf = calloc(strlen(yytext)+1, sizeof(char));
-  if(unescape_string(buf, yytext) != 0)
+  char *buf = calloc(strlen($raw)+1, sizeof(char));
+  if(unescape_string(buf, $raw) != 0)
   {
     fprintf(stderr, "error: unknown escape sequence in string literal\n");
     YYERROR;
@@ -296,7 +300,8 @@ directive:
   inst->inst = 0;
   free(buf);
 
-  PPRINT($1->pretty, ".STRINGZ \"%s\"", yytext);
+  PPRINT($1->pretty, ".STRINGZ \"%s\"", $raw);
+  free($raw);
 
   $1->last = inst;
   $$ = $1;
@@ -350,24 +355,6 @@ num:
 | DECLIT
 {
   $$ = strtol(yytext+1, 0, 10);
-}
-;
-
-reg: REG
-{
-  $$ = *(yytext+1) - '0';
-}
-;
-
-branch: BR
-{
-  $$ = strdup(yytext);
-}
-;
-
-label: LABEL
-{
-  $$ = strdup(yytext);
 }
 ;
 

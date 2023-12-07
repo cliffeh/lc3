@@ -12,7 +12,7 @@
  /* op codes */
 [aA][dD][dD]                   { return(ADD);     }
 [aA][nN][dD]                   { return(AND);     }
-[bB][rR][nN]?[zZ]?[pP]?        { return(BR);      }
+[bB][rR][nN]?[zZ]?[pP]?        { yylval->str = strdup(yytext); return(BR); }
 [jJ][mM][pP]                   { return(JMP);     }
 [jJ][sS][rR]                   { return(JSR);     }
 [jJ][sS][rR][rR]               { return(JSRR);    }
@@ -38,7 +38,7 @@
 
 
  /* registers */
-[rR][0-7]                      { return(REG);     }
+[rR][0-7]                      { yylval->num = *(yytext+1) - '0'; return(REG); }
 
  /* assembler directives */
 \.[oO][rR][iI][gG]             { return(ORIG);    }
@@ -53,13 +53,13 @@
 \" { // TODO this needs entirely more rigor
   BEGIN STRING;
 }
-<STRING>(\\\"|[^\"])*          { return(STRLIT);  }
+<STRING>(\\\"|[^\"])*          { yylval->str = strdup(yytext); return(STRLIT); }
 <STRING>\" {
   BEGIN INITIAL;
 }
 
  /* labels */
-[_a-zA-Z][_\-a-zA-Z0-9]*       { return(LABEL);   }
+[_a-zA-Z][_\-a-zA-Z0-9]*       { yylval->str = strdup(yytext); return(LABEL); }
 
  /* other considerations */
 , { return(','); } // comma-separated arguments
