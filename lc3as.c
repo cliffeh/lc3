@@ -160,10 +160,10 @@ main (int argc, const char *argv[])
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
 
   yyscan_t scanner;
-  yylex_init(&scanner);
-  yyset_in(in, scanner);
+  yylex_init (&scanner);
+  yyset_in (in, scanner);
 
-  rc = yyparse (&prog, &scanner);
+  rc = yyparse (&prog, scanner);
 
   if (rc == 0)
     {
@@ -276,6 +276,7 @@ main (int argc, const char *argv[])
       free_symbols (prog.symbols);
     }
 
+  yylex_destroy (scanner);
   fclose (in);
   fclose (out);
   poptFreeContext (optCon);

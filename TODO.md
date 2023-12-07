@@ -6,7 +6,8 @@
 * more/better test cases
 * tighten up duplicative rules?
 * better string literal handling
-* make it reentrant?
+* move the parser code into a function
+* for everything that can use a label, also allow it to use a NUMLIT
 
 ## lc3vm (virtual machine)
 * interactive mode?

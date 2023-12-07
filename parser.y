@@ -18,8 +18,8 @@ void yyerror();
 
 %define api.pure true
 %define parse.error verbose
-%param    { program *prog }
-%param    { void *scanner }
+%parse-param    { program *prog }
+%param          { void *scanner }
 
 %union {
   instruction *inst;
@@ -152,7 +152,7 @@ instruction:
   }
   // TODO is this correct? maybe we should fail if $PCoffset9 is more than 9 bits wide?
   $1->inst |= ($PCoffset9 & 0x01FF);
-  PPRINT($1->pretty, "%s x%X", $2, $PCoffset9);
+  PPRINT($1->pretty, "%s #%d", $2, $PCoffset9);
   free($2);
   $$ = $1;
 }

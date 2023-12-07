@@ -3,8 +3,7 @@
 #include "parser.h"
 %}
 
-%option noyywrap
-%option yylineno
+%option noyywrap nounput noinput
 %option reentrant bison-bridge
 
 %x STRING
