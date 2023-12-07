@@ -2,13 +2,13 @@ AC_INIT([lc3], m4_esyscmd_s([cat VERSION]), [cliff.snyder@gmail.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_PROG_CC
-AM_PROG_LEX
-if test "$LEX" != "flex"; then
-    AC_MSG_ERROR([flex not found])
+AC_CHECK_PROGS([LEX], [flex])
+if test -z "$LEX"; then
+   AC_MSG_ERROR([flex not found])
 fi
-AC_PROG_YACC
-if test "$YACC" != "bison -y"; then
-    AC_MSG_ERROR([bison not found])
+AC_CHECK_PROGS([YACC], [bison])
+if test -z "$YACC"; then
+   AC_MSG_ERROR([bison not found])
 fi
 
 AC_CONFIG_HEADERS([config.h])

@@ -2,6 +2,7 @@
 * consolidate shared code
 * is a basic disassembler possible?
 * jettison autotools? (more trouble than it's worth)
+* docs!
 
 ## lc3as (assembler)
 * more/better test cases
