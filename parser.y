@@ -1,9 +1,9 @@
 %{
 #include "lc3as.h"
 #include "util.h"
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define PPRINT(buf, args...) \
 do { \
@@ -22,7 +22,6 @@ void yyerror();
 %param    { void *scanner }
 
 %union {
-  program *prog;
   instruction *inst;
   int num;
   char *str;
@@ -42,12 +41,12 @@ void yyerror();
 %token ORIG END FILL STRINGZ
 
 // literals
-%token DECLIT HEXLIT STRLIT LABEL
+%token NUMLIT STRLIT LABEL
 
 %type <inst> instruction instruction_list
 // special cases of instruction
 %type <inst> alloc directive trap
-%type <num> num REG
+%type <num> NUMLIT REG
 %type <str> BR LABEL STRLIT
 
 %start program
@@ -55,7 +54,7 @@ void yyerror();
 %%
 
 program:
-  ORIG num
+  ORIG NUMLIT
   instruction_list
   END
 {
@@ -98,7 +97,7 @@ instruction:
   PPRINT($1->pretty, "ADD R%d, R%d, R%d", $DR, $SR1, $SR2);
   $$ = $1;
 }
-| alloc ADD REG[DR] ',' REG[SR1] ',' num[imm5]
+| alloc ADD REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
 {
   // TODO is this correct? maybe we should fail if $imm5 is more than 5 bits wide?
   $1->inst = (OP_ADD << 12) | ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
@@ -111,7 +110,7 @@ instruction:
   PPRINT($1->pretty, "AND R%d, R%d, R%d", $DR, $SR1, $SR2);
   $$ = $1;
 }
-| alloc AND REG[DR] ',' REG[SR1] ',' num[imm5]
+| alloc AND REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
 {
   // TODO is this correct? maybe we should fail if $imm5 is more than 5 bits wide?
   $1->inst = (OP_AND << 12) | ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
@@ -138,7 +137,7 @@ instruction:
   free($3);
   $$ = $1;
 }
-| alloc BR num[PCoffset9]
+| alloc BR NUMLIT[PCoffset9]
 {
   $1->inst = (OP_BR << 12);
   for(char *p = $2+2; *p; p++) {
@@ -196,7 +195,7 @@ instruction:
   free($5);
   $$ = $1;
 }
-| alloc LDR REG[DR] ',' REG[BaseR] ',' num[offset6]
+| alloc LDR REG[DR] ',' REG[BaseR] ',' NUMLIT[offset6]
 {
   // TODO is this correct? maybe we should fail if $offset6 is more than 6 bits wide?
   $1->inst = (OP_LDR << 12) | ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
@@ -249,14 +248,14 @@ instruction:
   free($5);
   $$ = $1;
 }
-| alloc STR REG[SR] ',' REG[BaseR] ',' num[offset6]
+| alloc STR REG[SR] ',' REG[BaseR] ',' NUMLIT[offset6]
 {
   // TODO is this correct? maybe we should fail if $offset6 is more than 6 bits wide?
   $1->inst = (OP_STR << 12) | ($SR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
   PPRINT($1->pretty, "STR R%d, R%d, #%d", $SR, $BaseR, $offset6);
   $$ = $1;
 }
-| alloc TRAP num[trapvect8]
+| alloc TRAP NUMLIT[trapvect8]
 {
   // TODO is this correct? maybe we should fail if $trapvect8 is more than 8 bits wide?
   $1->inst = (OP_TRAP << 12) | ($trapvect8 << 0);
@@ -268,9 +267,9 @@ instruction:
 ;
 
 directive:
-  alloc FILL num[data]
+  alloc FILL NUMLIT[data]
 {
-  $1->inst = $3;
+  $1->inst = $data;
   PPRINT($1->pretty, ".FILL x%X", $data);
   $$ = $1;
 }
@@ -283,22 +282,22 @@ directive:
 }
 | alloc STRINGZ STRLIT[raw]
 {
-  char *buf = calloc(strlen($raw)+1, sizeof(char));
-  if(unescape_string(buf, $raw) != 0)
+  char *escaped = calloc(strlen($raw)+1, sizeof(char));
+  if(unescape_string(escaped, $raw) != 0)
   {
     fprintf(stderr, "error: unknown escape sequence in string literal\n");
     YYERROR;
   }
 
   instruction *inst = $1;
-  for(char *p = buf; *p; p++) {
+  for(char *p = escaped; *p; p++) {
     inst->inst = *p;
     inst->next = calloc(1, sizeof(instruction));
     inst = inst->next;
     inst->addr = prog->len++;
   }
   inst->inst = 0;
-  free(buf);
+  free(escaped);
 
   PPRINT($1->pretty, ".STRINGZ \"%s\"", $raw);
   free($raw);
@@ -344,17 +343,6 @@ trap:
   $1->inst = (OP_TRAP << 12) | (TRAP_HALT << 0);
   PPRINT($1->pretty, "HALT");
   $$ = $1;
-}
-;
-
-num:
-  HEXLIT
-{
-  $$ = strtol(yytext+1, 0, 16);
-}
-| DECLIT
-{
-  $$ = strtol(yytext+1, 0, 10);
 }
 ;
 

@@ -47,8 +47,8 @@
 \.[sS][tT][rR][iI][nN][gG][zZ] { return(STRINGZ); }
 
  /* literals */
-[xX][0-9a-fA-F]{1,4}           { return(HEXLIT);  }
-#(0|-?[1-9][0-9]*)             { return(DECLIT);  }
+[xX][0-9a-fA-F]{1,4}           { yylval->num = strtol(yytext+1, 0, 16); return(NUMLIT);  }
+#(0|-?[1-9][0-9]*)             { yylval->num = strtol(yytext+1, 0, 10); return(NUMLIT);  }
 
 \" { // TODO this needs entirely more rigor
   BEGIN STRING;
