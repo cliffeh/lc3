@@ -1,5 +1,5 @@
 bin_PROGRAMS = lc3as lc3vm lc3diff
-lc3as_SOURCES = lc3as.c lc3as.h util.c util.h parse.y scan.l popt/popt.h
+lc3as_SOURCES = scanner.l parser.y lc3as.c lc3as.h util.c util.h popt/popt.h
 lc3as_LDADD = popt/libpopt.a
 
 lc3vm_SOURCES = lc3vm.c util.c util.h popt/popt.h
@@ -13,8 +13,8 @@ noinst_HEADERS = lc3as.h util.h
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
 
-# TODO get rid of posix yacc warnings?
-AM_YFLAGS = -d
+AM_LFLAGS = --header-file=scanner.h
+AM_YFLAGS = -d -Wno-yacc
 
 SUBDIRS = popt
 

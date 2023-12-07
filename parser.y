@@ -14,11 +14,14 @@ do { \
 
 int yylex();
 void yyerror();
-extern char *yytext;
-extern int yylineno;
+// extern char *yytext;
+// extern int yylineno;
 %}
 
+%define api.pure true
+%define parse.error verbose
 %parse-param    { program *prog }
+%param          { void *scanner }
 
 %union {
   program *prog;
@@ -372,7 +375,7 @@ label: LABEL
 
 // TODO better error messages
 void
-yyerror (char const *s)
+yyerror (char const *msg)
 {
-  fprintf(stderr, "parse error on line %d: %s : %s\n", yylineno, s, yytext);
+  fprintf(stderr, "parse error: %s\n", msg);
 }

@@ -1,9 +1,11 @@
 %{
 #include "lc3as.h"
-#include "parse.h"
+#include "parser.h"
 %}
 
 %option noyywrap
+%option yylineno
+%option reentrant bison-bridge
 
 %x STRING
 %%

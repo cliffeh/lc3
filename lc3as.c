@@ -8,7 +8,9 @@
 #endif
 
 #include "lc3as.h"
+#include "parser.h"
 #include "popt/popt.h"
+#include "scanner.h"
 #include "util.h"
 #include <errno.h>
 #include <stdio.h>
@@ -27,16 +29,12 @@
     }                                                                         \
   while (0)
 
-extern FILE *yyin;
-int yyparse (program *prog);
-
 int
 main (int argc, const char *argv[])
 {
   int rc, flags = FORMAT_OBJECT;
   char *outfile = "-", *format = "object";
-  FILE *out = 0;
-  yyin = 0;
+  FILE *out = 0, *in = 0;
 
   poptContext optCon;
 
@@ -145,11 +143,11 @@ main (int argc, const char *argv[])
     }
   else if (!infile || strcmp (infile, "-") == 0)
     {
-      yyin = stdin;
+      in = stdin;
     }
   else
     {
-      if (!(yyin = fopen (infile, "r")))
+      if (!(in = fopen (infile, "r")))
         {
           ERR_EXIT ("couldn't open input file '%s': %s", infile,
                     strerror (errno));
@@ -161,7 +159,11 @@ main (int argc, const char *argv[])
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
 
-  rc = yyparse (&prog);
+  yyscan_t scanner;
+  yylex_init(&scanner);
+  yyset_in(in, scanner);
+
+  rc = yyparse (&prog, &scanner);
 
   if (rc == 0)
     {
@@ -274,7 +276,7 @@ main (int argc, const char *argv[])
       free_symbols (prog.symbols);
     }
 
-  fclose (yyin);
+  fclose (in);
   fclose (out);
   poptFreeContext (optCon);
 
