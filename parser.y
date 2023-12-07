@@ -12,19 +12,25 @@ do { \
   sprintf(buf, args); \
 } while(0)
 
-int yylex();
 void yyerror();
 %}
 
 %define api.pure true
 %define parse.error verbose
-%parse-param    { program *prog }
-%param          { void *scanner }
+%param    { program *prog }
+%param    { void *scanner }
 
 %union {
   instruction *inst;
   int num;
   char *str;
+}
+
+%code requires {
+  typedef void* yyscan_t;
+}
+%code {
+  int yylex(YYSTYPE *yylvalp, program *prog, yyscan_t scanner);
 }
 
 // operations

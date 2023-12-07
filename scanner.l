@@ -2,10 +2,13 @@
 #include "lc3as.h"
 #include "parser.h"
 
+#define YY_DECL int yylex(YYSTYPE * yylval_param, program *prog, yyscan_t yyscanner)
+
 // TODO set addr
 #define NEW_INST(yylval) \
   do { \
     yylval->inst = calloc(1, sizeof(instruction)); \
+    yylval->inst->addr = prog->len++; \
     yylval->inst->last = yylval->inst; \
   }while(0)
 %}
