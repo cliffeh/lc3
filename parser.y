@@ -296,9 +296,10 @@ instruction:
 | STRINGZ STRLIT[raw]
 {
   char *escaped = calloc(strlen($raw)+1, sizeof(char));
-  if(unescape_string(escaped, $raw) != 0)
+  const char *test;
+  if((test = unescape_string(escaped, $raw)) != 0)
   {
-    fprintf(stderr, "error: unknown escape sequence in string literal\n");
+    fprintf(stderr, "error: unknown escape sequence in string literal: \\%c\n", *test);
     YYERROR;
   }
 

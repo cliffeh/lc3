@@ -11,11 +11,14 @@ main ()
   char *input_string = "this\\tis\\bmy \\\\test\\n";
   char *expected = "this\tis\bmy \\test\n";
   char output_string[1024];
+  const char *test;
 
   // TODO use rc?
-  rc = unescape_string(output_string, input_string);
+  test = unescape_string(output_string, input_string);
+  assert(!test);
 
   printf("output string: '%s'\n", output_string);
+  assert(strcmp(output_string, expected) == 0);
 
-  return strcmp(output_string, expected);
+  return 0;
 }

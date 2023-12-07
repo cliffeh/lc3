@@ -2,7 +2,6 @@
 
 #include "lc3.h"
 #include <stdint.h> // for uint16_t
-#include <stdio.h>
 
 // print out assembled object code
 #define FORMAT_OBJECT 0
