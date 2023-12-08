@@ -7,7 +7,6 @@
 
 ## lc3vm (virtual machine)
 * interactive mode?
-* move execution into its own function
 * support windows?
 * encapsulate setup/teardown stuff elsewhere
 

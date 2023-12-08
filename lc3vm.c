@@ -22,9 +22,7 @@
 #include <sys/termios.h>
 #include <unistd.h>
 
-#define MEMORY_MAX (1 << 16)
-uint16_t memory[MEMORY_MAX]; /* 65536 locations */
-uint16_t reg[R_COUNT];
+#define MEMORY_MAX (1 << 16) /* 65536 locations */
 
 struct termios original_tio;
 
@@ -51,8 +49,8 @@ handle_interrupt (int signal)
   exit (-2);
 }
 
-void
-read_image_file (FILE *file)
+int
+read_image (uint16_t *memory, FILE *file)
 {
   /* the origin tells us where in memory to place the image */
   uint16_t origin;
@@ -61,35 +59,17 @@ read_image_file (FILE *file)
 
   /* we know the maximum file size so we only need one fread */
   uint16_t max_read = MEMORY_MAX - origin;
-  uint16_t *p = memory + origin;
-  read += fread (p, sizeof (uint16_t), max_read, file);
+  read += fread (memory, sizeof (uint16_t), max_read, file);
 
   /* swap to little endian */
   while (read-- > 0)
     {
-      *p = SWAP16 (*p);
-      ++p;
+      *memory = SWAP16 (*memory);
+      ++memory;
     }
-}
 
-int
-read_image (const char *image_path)
-{
-  FILE *file = fopen (image_path, "rb");
-  if (!file)
-    {
-      return 0;
-    };
-  read_image_file (file);
-  fclose (file);
-  return 1;
-}
-
-void
-mem_clear ()
-{
-  for (int i = 0; i < MEMORY_MAX; i++)
-    memory[i] = 0;
+  // TODO error checking?
+  return 0;
 }
 
 #define ERR_EXIT(args...)                                                     \
@@ -141,6 +121,7 @@ main (int argc, const char *argv[])
   optCon = poptGetContext (0, argc, argv, options, 0);
   while ((rc = poptGetNextOpt (optCon)) > 0)
     {
+      // TODO parse args
     }
 
   if (rc != -1)
@@ -156,13 +137,22 @@ main (int argc, const char *argv[])
       for (const char *filename = poptGetArg (optCon); filename;
            filename = poptGetArg (optCon))
         {
-          if (!read_image (filename))
+          FILE *in = fopen (filename, "r");
+          if (!in)
+            {
+              fprintf (stderr, "warning: unable to read from %s\n", filename);
+              continue;
+            }
+
+          uint16_t *memory = calloc (MEMORY_MAX, sizeof (uint16_t));
+          uint16_t *reg = calloc (R_COUNT, sizeof (uint16_t));
+          if (read_image (memory, in) != 0)
             {
               printf ("failed to load image: %s\n", filename);
               exit (1);
             }
+
           execute_program (memory, reg);
-          mem_clear ();
         }
       restore_input_buffering ();
     }
