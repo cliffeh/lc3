@@ -1,4 +1,5 @@
 #define PROGRAM_NAME "lc3as"
+#define PROGRAM_DESCRIPTION "an LC-3 assembler"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -19,7 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PROGRAM_DESCRIPTION "an LC-3 assembler"
 #define HELP_PREAMBLE                                                         \
   "Note: if FILE is not provided this program will read from stdin."
 
