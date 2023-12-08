@@ -110,6 +110,13 @@ mem_write (uint16_t address, uint16_t val)
   memory[address] = val;
 }
 
+void
+mem_clear ()
+{
+  for (int i = 0; i < MEMORY_MAX; i++)
+    memory[i] = 0;
+}
+
 uint16_t
 mem_read (uint16_t address)
 {
@@ -128,28 +135,9 @@ mem_read (uint16_t address)
   return memory[address];
 }
 
-int
-main (int argc, const char *argv[])
+void
+execute_program ()
 {
-  // TODO popt/add'l args
-  if (argc < 2)
-    {
-      /* show usage string */
-      printf ("lc3 [image-file1] ...\n");
-      exit (2);
-    }
-
-  for (int j = 1; j < argc; ++j)
-    {
-      if (!read_image (argv[j]))
-        {
-          printf ("failed to load image: %s\n", argv[j]);
-          exit (1);
-        }
-    }
-  signal (SIGINT, handle_interrupt);
-  disable_input_buffering ();
-
   /* since exactly one condition flag should be set at any given time, set the
    * Z flag */
   reg[R_COND] = FL_ZRO;
@@ -382,5 +370,31 @@ main (int argc, const char *argv[])
           break;
         }
     }
+}
+
+int
+main (int argc, const char *argv[])
+{
+  // TODO popt/add'l args
+  if (argc < 2)
+    {
+      /* show usage string */
+      printf ("lc3 [image-file1] ...\n");
+      exit (2);
+    }
+
+  for (int j = 1; j < argc; ++j)
+    {
+      if (!read_image (argv[j]))
+        {
+          printf ("failed to load image: %s\n", argv[j]);
+          exit (1);
+        }
+    }
+  signal (SIGINT, handle_interrupt);
+  disable_input_buffering ();
+
+  execute_program ();
+
   restore_input_buffering ();
 }
