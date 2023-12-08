@@ -10,7 +10,6 @@
 #include "lc3as.h"
 #include "parser.h"
 #include "popt/popt.h"
-#include "scanner.h"
 #include "util.h"
 #include <errno.h>
 #include <stdio.h>
@@ -174,20 +173,6 @@ cleanup:
   poptFreeContext (optCon);
 
   exit (rc);
-}
-
-int
-parse_program (program *prog, FILE *in)
-{
-  yyscan_t scanner;
-  yylex_init (&scanner);
-  yyset_in (in, scanner);
-
-  int rc = yyparse (prog, scanner);
-
-  yylex_destroy (scanner);
-
-  return rc;
 }
 
 int

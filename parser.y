@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define PPRINT(buf, args...) \
-do { \
+#define PPRINT(buf, args...)                \
+do {                                        \
   size_t needed = snprintf(0, 0, args) + 1; \
-  buf = calloc(needed, sizeof(char)); \
-  sprintf(buf, args); \
+  buf = calloc(needed, sizeof(char));       \
+  sprintf(buf, args);                       \
 } while(0)
 
 %}
@@ -31,6 +31,10 @@ do { \
   typedef void* yyscan_t;
 }
 %code {
+  // need all of these to prevent compiler warnings
+  int yylex_init(yyscan_t *scanner);
+  int yyset_in(FILE *in, yyscan_t scanner);
+  int yylex_destroy(yyscan_t scanner);
   int yylex(YYSTYPE *yylvalp, YYLTYPE* yyllocp, program *prog, yyscan_t scanner);
   void yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg);
 }
@@ -319,6 +323,20 @@ instruction:
 ;
 
 %%
+
+int
+parse_program (program *prog, FILE *in)
+{
+  yyscan_t scanner;
+  yylex_init (&scanner);
+  yyset_in (in, scanner);
+
+  int rc = yyparse (prog, scanner);
+
+  yylex_destroy (scanner);
+
+  return rc;
+}
 
 void
 yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg)
