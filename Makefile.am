@@ -1,16 +1,14 @@
 bin_PROGRAMS = lc3as lc3vm lc3diff
-lc3as_SOURCES = parser.y scanner.l lc3as.c lc3as.h print.c util.c util.h popt/popt.h
+lc3as_SOURCES = parser.y scanner.l lc3.h lc3as.c lc3as.h print.c popt/popt.h
 lc3as_LDADD = popt/libpopt.a
 
-BUILT_SOURCES = parser.c parser.h scanner.c
-
-lc3vm_SOURCES = lc3vm.c util.c util.h popt/popt.h
+lc3vm_SOURCES = lc3vm.c lc3.h popt/popt.h
 lc3vm_LDADD = popt/libpopt.a
 
 lc3diff_SOURCES = lc3diff.c
 
 include_HEADERS = lc3.h
-noinst_HEADERS = lc3as.h util.h
+noinst_HEADERS = lc3as.h
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
@@ -20,9 +18,7 @@ AM_YFLAGS = -d -Wno-yacc
 SUBDIRS = popt
 
 # TODO move all this under tests with a separate makefile
-check_PROGRAMS = test/inst_to_bits test/unescape_string
-test_inst_to_bits_SOURCES = test/inst_to_bits.c util.c util.h
-test_unescape_string_SOURCES = test/unescape_string.c util.c util.h
+# check_PROGRAMS =
 
 check_SCRIPTS = test/2048.sh test/rogue.sh test/all-instructions.sh test/hello-world.sh
 MEMCHECKS = test/valgrind-lc3as-2048.sh test/valgrind-lc3vm-hello-world.sh

@@ -3,7 +3,6 @@
 #include <stdio.h>
 /* unix only */
 #include "lc3.h"
-#include "util.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/mman.h>

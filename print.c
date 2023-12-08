@@ -1,5 +1,4 @@
 #include "lc3as.h"
-#include "util.h"
 
 int
 print_program (FILE *out, int flags, program *prog)
@@ -84,11 +83,16 @@ print_program (FILE *out, int flags, program *prog)
 
               if (flags & FORMAT_BITS)
                 {
-                  char buf[32];
-                  inst_to_bits (buf, inst->inst);
-                  fprintf (out, "%s%s",
-                           (flags & (FORMAT_ADDR | FORMAT_HEX)) ? "  " : "",
-                           buf);
+                  if (flags & (FORMAT_ADDR | FORMAT_HEX))
+                    fprintf (out, "  ");
+
+                  for (int i = 15; i >= 0; i--)
+                    {
+                      fprintf (out, "%c",
+                               ((inst->inst & (1 << i)) >> i) + '0');
+                      if (i && i % 4 == 0)
+                        fprintf (out, " ");
+                    }
                 }
 
               if (flags & FORMAT_PRETTY)

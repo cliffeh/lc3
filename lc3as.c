@@ -10,7 +10,6 @@
 #include "lc3as.h"
 #include "parser.h"
 #include "popt/popt.h"
-#include "util.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>

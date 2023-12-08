@@ -48,8 +48,8 @@ enum
 // keyboard codes
 enum
 {
-    MR_KBSR = 0xFE00, /* keyboard status */
-    MR_KBDR = 0xFE02  /* keyboard data */
+  MR_KBSR = 0xFE00, /* keyboard status */
+  MR_KBDR = 0xFE02  /* keyboard data */
 };
 
 // trap codes
@@ -62,3 +62,7 @@ enum
   TRAP_PUTSP = 0x24, /* output a byte string */
   TRAP_HALT = 0x25   /* halt the program */
 };
+
+#define SWAP16(x) ((x << 8) | (x >> 8))
+#define SIGN_EXT(x, bits)                                                     \
+  ((((x) >> ((bits)-1)) & 1) ? ((x) | (0xFFFF << (bits))) : (x))

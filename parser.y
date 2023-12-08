@@ -1,6 +1,5 @@
 %{
 #include "lc3as.h"
-#include "util.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,6 +36,8 @@ do {                                        \
   int yylex_destroy(yyscan_t scanner);
   int yylex(YYSTYPE *yylvalp, YYLTYPE* yyllocp, program *prog, yyscan_t scanner);
   void yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg);
+
+  const char *unescape_string (char *dest, const char *str);
 }
 
 // operations
@@ -336,6 +337,46 @@ parse_program (program *prog, FILE *in)
   yylex_destroy (scanner);
 
   return rc;
+}
+
+const char *
+unescape_string (char *dest, const char *str)
+{
+  char *d = dest;
+  for (const char *p = str; *p; p++)
+    {
+      if (*p == '\\')
+        {
+          switch (*(++p))
+            {
+              // clang-format off
+            case 'a':  *d++ = '\007';  break;
+            case 'b':  *d++ = '\b';    break;
+            case 'e':  *d++ = '\e';    break;
+            case 'f':  *d++ = '\f';    break;
+            case 'n':  *d++ = '\n';    break;
+            case 'r':  *d++ = '\r';    break;
+            case 't':  *d++ = '\t';    break;
+            case 'v':  *d++ = '\013';  break;
+            case '\\': *d++ = '\\';    break;
+            case '?':  *d++ = '?';     break;
+            case '\'': *d++ = '\'';    break;
+            case '"':  *d++ = '\"';    break;
+            default:
+              {
+                return p;
+              }
+              // clang-format on
+            }
+        }
+      else
+        {
+          *d++ = *p;
+        }
+    }
+  // null terminate
+  *d = 0;
+  return 0;
 }
 
 void
