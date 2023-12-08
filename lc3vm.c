@@ -385,30 +385,83 @@ execute_program ()
     }
 }
 
+#define ERR_EXIT(args...)                                                     \
+  do                                                                          \
+    {                                                                         \
+      fprintf (stderr, "error: ");                                            \
+      fprintf (stderr, args);                                                 \
+      fprintf (stderr, "\n");                                                 \
+      poptPrintHelp (optCon, stderr, 0);                                      \
+      poptFreeContext (optCon);                                               \
+      exit (1);                                                               \
+    }                                                                         \
+  while (0)
+
 int
 main (int argc, const char *argv[])
 {
-  int interactive = 0;
-  // TODO popt/add'l args
-  if (argc < 2)
+  int rc, interactive = 0;
+
+  poptContext optCon;
+
+  // hack for injecting preamble/postamble into the help message
+  struct poptOption emptyTable[] = { POPT_TABLEEND };
+
+  struct poptOption progOptions[]
+      = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          { "interactive", 'i', POPT_ARG_NONE, &interactive, 'i',
+            "run in interactive mode", 0 },
+          { "version", '\0', POPT_ARG_NONE, 0, 'V',
+            "show version information and exit", 0 },
+          POPT_TABLEEND
+        };
+
+  struct poptOption options[] = {
+#ifdef HELP_PREAMBLE
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_PREAMBLE, 0 },
+#endif
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &progOptions, 0, "Options:", 0 },
+    POPT_AUTOHELP
+#ifdef HELP_POSTAMBLE
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_POSTAMBLE, 0 },
+#endif
+    POPT_TABLEEND
+  };
+
+  optCon = poptGetContext (0, argc, argv, options, 0);
+  while ((rc = poptGetNextOpt (optCon)) > 0)
     {
-      /* show usage string */
-      printf ("lc3 [image-file1] ...\n");
-      exit (2);
     }
 
-  for (int j = 1; j < argc; ++j)
+  if (rc != -1)
     {
-      if (!read_image (argv[j]))
+      ERR_EXIT ("%s: %s\n", poptBadOption (optCon, POPT_BADOPTION_NOALIAS),
+                poptStrerror (rc));
+    }
+
+  if (!interactive)
+    {
+      signal (SIGINT, handle_interrupt);
+      disable_input_buffering ();
+      for (const char *filename = poptGetArg (optCon); filename;
+           filename = poptGetArg (optCon))
         {
-          printf ("failed to load image: %s\n", argv[j]);
-          exit (1);
+          if (!read_image (filename))
+            {
+              printf ("failed to load image: %s\n", filename);
+              exit (1);
+            }
+          execute_program ();
+          mem_clear ();
         }
+      restore_input_buffering ();
     }
-  signal (SIGINT, handle_interrupt);
-  disable_input_buffering ();
+  else
+    {
+      fprintf (stderr, "interactive mode unimplemented!\n");
+    }
 
-  execute_program ();
-
-  restore_input_buffering ();
+cleanup:
+  poptFreeContext (optCon);
+  exit (0); // TODO collect and return exit code(s)
 }

@@ -58,8 +58,6 @@ main (int argc, const char *argv[])
     POPT_TABLEEND
   };
 
-  extern struct poptOption helpOptions[];
-
   struct poptOption options[] = {
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_PREAMBLE, 0 },
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &progOptions, 0, "Options:", 0 },
@@ -134,23 +132,6 @@ main (int argc, const char *argv[])
                   }
               }
             free (outfile);
-          }
-          break;
-
-        case '?':
-          {
-            printf (PROGRAM_NAME " - " PROGRAM_DESCRIPTION "\n");
-            poptPrintHelp (optCon, stdout, 0);
-            poptFreeContext (optCon);
-            exit (0);
-          }
-          break;
-
-        case 'U':
-          {
-            poptPrintUsage (optCon, stdout, 0);
-            poptFreeContext (optCon);
-            exit (0);
           }
           break;
 
