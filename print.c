@@ -1,0 +1,110 @@
+#include "lc3as.h"
+#include "util.h"
+
+int
+print_program (FILE *out, int flags, program *prog)
+{
+  uint16_t bytecode = SWAP16 (prog->orig);
+  if (!flags)
+    {
+      if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+        {
+          fprintf (stderr, "write error\n");
+          return 1;
+        }
+    }
+  else
+    {
+      if (flags & FORMAT_PRETTY)
+        fprintf (out, ".ORIG x%04x\n", prog->orig);
+    }
+
+  // ensure our symbols are in address order (for pretty-printing below)
+  sort_symbols_by_addr (prog);
+  symbol *current_symbol = prog->symbols;
+
+  for (instruction *inst = prog->instructions; inst; inst = inst->next)
+    {
+      // resolve symbols
+      if (inst->sym)
+        {
+          if (!inst->sym->is_set)
+            {
+              fprintf (stderr, "error: unresolved symbol: %s\n",
+                       inst->sym->label);
+              return 1;
+            }
+
+          if (inst->flags)
+            inst->inst |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
+          else
+            inst->inst = inst->sym->addr + prog->orig;
+        }
+
+      bytecode = SWAP16 (inst->inst);
+      if (!flags)
+        {
+          if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+            {
+              fprintf (stderr, "write error\n");
+              return 1;
+            }
+        }
+      else
+        {
+          if (flags & FORMAT_PRETTY)
+            {
+              // NB if our symbols aren't sorted in address order this
+              // won't work the way we expect it to
+              while (current_symbol && current_symbol->addr == inst->addr)
+                {
+                  // NB for the purposes of debugging it's generally more
+                  // convenient to output addresses relative to .ORIG
+                  // rather than indexed at zero
+                  if (flags & FORMAT_ADDR)
+                    fprintf (out, "%04x  ", inst->addr + 1);
+
+                  fprintf (out, "%s\n", current_symbol->label);
+                  current_symbol = current_symbol->next;
+                }
+            }
+
+          if (inst->pretty) // only print the printable things (not, for
+                            // instance, raw string data)
+            {
+              // NB for the purposes of debugging it's generally more
+              // convenient to output addresses relative to .ORIG rather
+              // than indexed at zero
+              if (flags & FORMAT_ADDR)
+                fprintf (out, "%04x", inst->addr + 1);
+
+              if (flags & FORMAT_HEX)
+                fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
+                         bytecode);
+
+              if (flags & FORMAT_BITS)
+                {
+                  char buf[32];
+                  inst_to_bits (buf, inst->inst);
+                  fprintf (out, "%s%s",
+                           (flags & (FORMAT_ADDR | FORMAT_HEX)) ? "  " : "",
+                           buf);
+                }
+
+              if (flags & FORMAT_PRETTY)
+                fprintf (out, "%s  %s",
+                         (flags & (FORMAT_ADDR | FORMAT_HEX | FORMAT_BITS))
+                             ? "  "
+                             : "",
+                         inst->pretty);
+
+              fprintf (out, "\n");
+            }
+        }
+    }
+
+  if (flags & FORMAT_PRETTY)
+    fprintf (out, ".END\n");
+
+  return 0;
+}
