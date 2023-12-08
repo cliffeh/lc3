@@ -2,6 +2,7 @@
 
 #include "lc3.h"
 #include <stdint.h> // for uint16_t
+#include <stdio.h>  // for FILE *
 
 // print out assembled object code
 #define FORMAT_OBJECT 0
@@ -38,10 +39,11 @@ typedef struct program
   symbol *symbols;
 } program;
 
-symbol *find_or_create_symbol (program *prog, const char *label, uint16_t addr,
-                               uint16_t set);
+int parse_program (program *prog, FILE *in);
+int print_program (FILE *out, int flags, program *prog);
+symbol *find_or_create_symbol (program *prog, const char *label);
 symbol *find_symbol_by_label (symbol *symbols, const char *label);
 void sort_symbols_by_addr (program *prog);
 
-void free_instructions(instruction *instructions);
-void free_symbols(symbol *symbols);
+void free_instructions (instruction *instructions);
+void free_symbols (symbol *symbols);

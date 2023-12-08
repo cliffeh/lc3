@@ -154,134 +154,148 @@ main (int argc, const char *argv[])
         }
     }
 
+  if (!in)
+    in = stdin;
   if (!out)
     out = stdout;
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
 
+  if ((rc = parse_program (&prog, in)) == 0)
+    {
+      rc = print_program (out, flags, &prog);
+    }
+
+cleanup:
+  fclose (in);
+  fclose (out);
+  free_instructions (prog.instructions);
+  free_symbols (prog.symbols);
+  poptFreeContext (optCon);
+
+  exit (rc);
+}
+
+int
+parse_program (program *prog, FILE *in)
+{
   yyscan_t scanner;
   yylex_init (&scanner);
   yyset_in (in, scanner);
 
-  rc = yyparse (&prog, scanner);
+  int rc = yyparse (prog, scanner);
 
-  if (rc == 0)
+  yylex_destroy (scanner);
+
+  return rc;
+}
+
+int
+print_program (FILE *out, int flags, program *prog)
+{
+  uint16_t bytecode = SWAP16 (prog->orig);
+  if (!flags)
     {
-      char buf[32];
+      if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+        {
+          fprintf (stderr, "write error\n");
+          return 1;
+        }
+    }
+  else
+    {
+      if (flags & FORMAT_PRETTY)
+        fprintf (out, ".ORIG x%04x\n", prog->orig);
+    }
 
-      uint16_t bytecode = SWAP16 (prog.orig);
+  // ensure our symbols are in address order (for pretty-printing below)
+  sort_symbols_by_addr (prog);
+  symbol *current_symbol = prog->symbols;
+
+  for (instruction *inst = prog->instructions; inst; inst = inst->next)
+    {
+      // resolve symbols
+      if (inst->sym)
+        {
+          if (!inst->sym->is_set)
+            {
+              fprintf (stderr, "error: unresolved symbol: %s\n",
+                       inst->sym->label);
+              return 1;
+            }
+
+          if (inst->flags)
+            inst->inst |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
+          else
+            inst->inst = inst->sym->addr + prog->orig;
+        }
+
+      bytecode = SWAP16 (inst->inst);
       if (!flags)
         {
           if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
             {
-              fprintf (stderr, "write error; bailing...\n");
-              exit (1);
+              fprintf (stderr, "write error\n");
+              return 1;
             }
         }
       else
         {
           if (flags & FORMAT_PRETTY)
-            fprintf (out, ".ORIG x%04x\n", prog.orig);
-        }
-
-      // ensure our symbols are in address order (for pretty-printing below)
-      sort_symbols_by_addr (&prog);
-      symbol *current_symbol = prog.symbols;
-
-      for (instruction *inst = prog.instructions; inst; inst = inst->next)
-        {
-          // resolve symbols
-          if (inst->sym)
             {
-              if (!inst->sym->is_set)
-                {
-                  fprintf (stderr, "error: unresolved symbol: %s\n",
-                           inst->sym->label);
-                  exit (1);
-                }
-
-              if (inst->flags)
-                inst->inst
-                    |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
-              else
-                inst->inst = inst->sym->addr + prog.orig;
-            }
-
-          bytecode = SWAP16 (inst->inst);
-          if (!flags)
-            {
-              if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
-                {
-                  fprintf (stderr, "write error; bailing...\n");
-                  exit (1);
-                }
-            }
-          else
-            {
-              if (flags & FORMAT_PRETTY)
-                {
-                  // NB if our symbols aren't sorted in address order this
-                  // won't work the way we expect it to
-                  while (current_symbol && current_symbol->addr == inst->addr)
-                    {
-                      // NB for the purposes of debugging it's generally more
-                      // convenient to output addresses relative to .ORIG
-                      // rather than indexed at zero
-                      if (flags & FORMAT_ADDR)
-                        fprintf (out, "%04x  ", inst->addr + 1);
-
-                      fprintf (out, "%s\n", current_symbol->label);
-                      current_symbol = current_symbol->next;
-                    }
-                }
-
-              if (inst->pretty) // only print the printable things (not, for
-                                // instance, raw string data)
+              // NB if our symbols aren't sorted in address order this
+              // won't work the way we expect it to
+              while (current_symbol && current_symbol->addr == inst->addr)
                 {
                   // NB for the purposes of debugging it's generally more
-                  // convenient to output addresses relative to .ORIG rather
-                  // than indexed at zero
+                  // convenient to output addresses relative to .ORIG
+                  // rather than indexed at zero
                   if (flags & FORMAT_ADDR)
-                    fprintf (out, "%04x", inst->addr + 1);
+                    fprintf (out, "%04x  ", inst->addr + 1);
 
-                  if (flags & FORMAT_HEX)
-                    fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
-                             bytecode);
-
-                  if (flags & FORMAT_BITS)
-                    {
-                      inst_to_bits (buf, inst->inst);
-                      fprintf (out, "%s%s",
-                               (flags & (FORMAT_ADDR | FORMAT_HEX)) ? "  "
-                                                                    : "",
-                               buf);
-                    }
-
-                  if (flags & FORMAT_PRETTY)
-                    fprintf (out, "%s  %s",
-                             (flags & (FORMAT_ADDR | FORMAT_HEX | FORMAT_BITS))
-                                 ? "  "
-                                 : "",
-                             inst->pretty);
-
-                  fprintf (out, "\n");
+                  fprintf (out, "%s\n", current_symbol->label);
+                  current_symbol = current_symbol->next;
                 }
             }
+
+          if (inst->pretty) // only print the printable things (not, for
+                            // instance, raw string data)
+            {
+              // NB for the purposes of debugging it's generally more
+              // convenient to output addresses relative to .ORIG rather
+              // than indexed at zero
+              if (flags & FORMAT_ADDR)
+                fprintf (out, "%04x", inst->addr + 1);
+
+              if (flags & FORMAT_HEX)
+                fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
+                         bytecode);
+
+              if (flags & FORMAT_BITS)
+                {
+                  char buf[32];
+                  inst_to_bits (buf, inst->inst);
+                  fprintf (out, "%s%s",
+                           (flags & (FORMAT_ADDR | FORMAT_HEX)) ? "  " : "",
+                           buf);
+                }
+
+              if (flags & FORMAT_PRETTY)
+                fprintf (out, "%s  %s",
+                         (flags & (FORMAT_ADDR | FORMAT_HEX | FORMAT_BITS))
+                             ? "  "
+                             : "",
+                         inst->pretty);
+
+              fprintf (out, "\n");
+            }
         }
-
-      if (flags & FORMAT_PRETTY)
-        fprintf (out, ".END\n");
-
-      free_instructions (prog.instructions);
-      free_symbols (prog.symbols);
     }
 
-  yylex_destroy (scanner);
-  fclose (in);
-  fclose (out);
-  poptFreeContext (optCon);
+  if (flags & FORMAT_PRETTY)
+    fprintf (out, ".END\n");
 
-  exit (rc);
+  return 0;
 }
 
 symbol *
@@ -296,8 +310,7 @@ find_symbol_by_label (symbol *symbols, const char *label)
 }
 
 symbol *
-find_or_create_symbol (program *prog, const char *label, uint16_t addr,
-                       uint16_t set)
+find_or_create_symbol (program *prog, const char *label)
 {
   symbol *sym = find_symbol_by_label (prog->symbols, label);
 
@@ -307,20 +320,6 @@ find_or_create_symbol (program *prog, const char *label, uint16_t addr,
       sym->label = strdup (label);
       sym->next = prog->symbols;
       prog->symbols = sym;
-    }
-
-  if (set)
-    {
-      if (sym->is_set)
-        {
-          fprintf (stderr, "error: duplicate symbol found: %s\n", label);
-          exit (1);
-        }
-      else
-        {
-          sym->addr = addr;
-          sym->is_set = 1;
-        }
     }
 
   return sym;

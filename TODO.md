@@ -8,6 +8,9 @@
 * better string literal handling
 * move the parser code into a function
 * for everything that can use a label, also allow it to use a NUMLIT
+* get rid of exit() calls in functions
+  * let the caller decide how to handle errors
+* restructure code/break out into different files
 
 ## lc3vm (virtual machine)
 * interactive mode?

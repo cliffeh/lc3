@@ -86,7 +86,7 @@
 }
 
  /* labels */
-[_a-zA-Z][_\-a-zA-Z0-9]*       { yylval->sym = find_or_create_symbol(prog, yytext, 0, 0); return(LABEL); }
+[_a-zA-Z][_\-a-zA-Z0-9]*       { yylval->sym = find_or_create_symbol(prog, yytext); return(LABEL); }
 
  /* stuff to ignore */
 \n      { yylineno++; } // ignore newlines, but count them
