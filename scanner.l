@@ -2,26 +2,35 @@
 #include "lc3as.h"
 #include "parser.h"
 
-#define YY_DECL int yylex(YYSTYPE * yylval_param, program *prog, yyscan_t yyscanner)
+#define YY_DECL int yylex(YYSTYPE *yylval_param, YYLTYPE* yylloc_param, program *prog, yyscan_t yyscanner)
 
-// TODO set addr
-#define NEW_INST(yylval, op) \
-  do { \
+#define YY_USER_ACTION                        \
+  yylloc->first_line = yylloc->last_line;     \
+  yylloc->first_column = yylloc->last_column; \
+  if (yylloc->last_line == yylineno)          \
+    yylloc->last_column += yyleng;            \
+  else {                                      \
+    yylloc->last_line = yylineno;             \
+    yylloc->last_column = yyleng;             \
+  }
+
+#define NEW_INST(yylval, op)                       \
+  do {                                             \
     yylval->inst = calloc(1, sizeof(instruction)); \
-    yylval->inst->inst = (op << 12); \
-    yylval->inst->addr = prog->len++; \
-    yylval->inst->last = yylval->inst; \
-  }while(0)
+    yylval->inst->inst = (op << 12);               \
+    yylval->inst->addr = prog->len++;              \
+    yylval->inst->last = yylval->inst;             \
+  } while (0)
 %}
 
 %option noyywrap nounput noinput
-%option reentrant bison-bridge
+%option reentrant bison-bridge bison-locations
 
 %x STRING
 %%
  /* op codes */
-[aA][dD][dD]                   { NEW_INST(yylval, OP_ADD); return(ADD);     }
-[aA][nN][dD]                   { NEW_INST(yylval, OP_AND); return(AND);     }
+[aA][dD][dD]                   { NEW_INST(yylval, OP_ADD); return(ADD);    }
+[aA][nN][dD]                   { NEW_INST(yylval, OP_AND); return(AND);    }
 [bB][rR][nN]?[zZ]?[pP]?        { 
   NEW_INST(yylval, OP_BR);
   for(char *p = yytext+2; *p; p++) {
@@ -32,20 +41,20 @@
     }
   }
   return(BR);                  }
-[jJ][mM][pP]                   { NEW_INST(yylval, OP_JMP); return(JMP);   }
-[jJ][sS][rR]                   { NEW_INST(yylval, OP_JSR); return(JSR);   }
-[jJ][sS][rR][rR]               { NEW_INST(yylval, OP_JSR); return(JSRR);  }
-[lL][dD]                       { NEW_INST(yylval, OP_LD); return(LD);     }
-[lL][dD][iI]                   { NEW_INST(yylval, OP_LDI); return(LDI);   }
-[lL][dD][rR]                   { NEW_INST(yylval, OP_LDR); return(LDR);   }
-[lL][eE][aA]                   { NEW_INST(yylval, OP_LEA); return(LEA);   }
-[nN][oO][tT]                   { NEW_INST(yylval, OP_NOT); return(NOT);   }
-[rR][eE][tT]                   { NEW_INST(yylval, OP_JMP); return(RET);   }
-[rR][tT][iI]                   { NEW_INST(yylval, OP_RTI); return(RTI);   }
-[sS][tT]                       { NEW_INST(yylval, OP_ST); return(ST);     }
-[sS][tT][iI]                   { NEW_INST(yylval, OP_STI); return(STI);   }
-[sS][tT][rR]                   { NEW_INST(yylval, OP_STR); return(STR);   }
-[tT][rR][aA][pP]               { NEW_INST(yylval, OP_TRAP); return(TRAP); }
+[jJ][mM][pP]                   { NEW_INST(yylval, OP_JMP); return(JMP);    }
+[jJ][sS][rR]                   { NEW_INST(yylval, OP_JSR); return(JSR);    }
+[jJ][sS][rR][rR]               { NEW_INST(yylval, OP_JSR); return(JSRR);   }
+[lL][dD]                       { NEW_INST(yylval, OP_LD); return(LD);      }
+[lL][dD][iI]                   { NEW_INST(yylval, OP_LDI); return(LDI);    }
+[lL][dD][rR]                   { NEW_INST(yylval, OP_LDR); return(LDR);    }
+[lL][eE][aA]                   { NEW_INST(yylval, OP_LEA); return(LEA);    }
+[nN][oO][tT]                   { NEW_INST(yylval, OP_NOT); return(NOT);    }
+[rR][eE][tT]                   { NEW_INST(yylval, OP_JMP); return(RET);    }
+[rR][tT][iI]                   { NEW_INST(yylval, OP_RTI); return(RTI);    }
+[sS][tT]                       { NEW_INST(yylval, OP_ST); return(ST);      }
+[sS][tT][iI]                   { NEW_INST(yylval, OP_STI); return(STI);    }
+[sS][tT][rR]                   { NEW_INST(yylval, OP_STR); return(STR);    }
+[tT][rR][aA][pP]               { NEW_INST(yylval, OP_TRAP); return(TRAP);  }
 
  /* trap routines */
 [gG][eE][tT][cC]               { NEW_INST(yylval, OP_TRAP); return(GETC);  }
@@ -79,10 +88,10 @@
  /* labels */
 [_a-zA-Z][_\-a-zA-Z0-9]*       { yylval->sym = find_or_create_symbol(prog, yytext, 0, 0); return(LABEL); }
 
- /* other considerations */
-, { return(','); } // comma-separated arguments
-[ \t]*             // ignore whitespace
-\n { yylineno++; } // ignore newlines, but count lines
-;.*                // ignore comments
+ /* stuff to ignore */
+\n      { yylineno++; } // ignore newlines, but count them
+[ \t]*                  // ignore whitespace
+;.*                     // ignore comments
 
-. { fprintf(stderr, "unexpected input on line %d\n", yylineno); }
+ /* if we don't know what it is, just return it */
+. return *yytext;
