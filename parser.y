@@ -12,13 +12,13 @@ do { \
   sprintf(buf, args); \
 } while(0)
 
-void yyerror();
 %}
 
-%define api.pure true
+%define api.pure full
+%locations
 %define parse.error verbose
-%param    { program *prog }
-%param    { void *scanner }
+%param  { program *prog }
+%param  { void *scanner }
 
 %union {
   instruction *inst;
@@ -31,7 +31,8 @@ void yyerror();
   typedef void* yyscan_t;
 }
 %code {
-  int yylex(YYSTYPE *yylvalp, program *prog, yyscan_t scanner);
+  int yylex(YYSTYPE *yylvalp, YYLTYPE* yyllocp, program *prog, yyscan_t scanner);
+  void yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg);
 }
 
 // operations
@@ -325,7 +326,8 @@ instruction:
 
 // TODO better error messages
 void
-yyerror (char const *msg)
+yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg)
 {
-  fprintf(stderr, "parse error: %s\n", msg);
+  fprintf(stderr, "[line %d, column %d]: %s\n",
+          yyllocp->first_line, yyllocp->first_column, msg);
 }

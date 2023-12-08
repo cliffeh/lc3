@@ -2,20 +2,29 @@
 #include "lc3as.h"
 #include "parser.h"
 
-#define YY_DECL int yylex(YYSTYPE * yylval_param, program *prog, yyscan_t yyscanner)
+#define YY_DECL int yylex(YYSTYPE *yylval_param, YYLTYPE* yylloc_param, program *prog, yyscan_t yyscanner)
 
-// TODO set addr
-#define NEW_INST(yylval, op) \
-  do { \
+#define YY_USER_ACTION                        \
+  yylloc->first_line = yylloc->last_line;     \
+  yylloc->first_column = yylloc->last_column; \
+  if (yylloc->last_line == yylineno)          \
+    yylloc->last_column += yyleng;            \
+  else {                                      \
+    yylloc->last_line = yylineno;             \
+    yylloc->last_column = yyleng;             \
+  }
+
+#define NEW_INST(yylval, op)                       \
+  do {                                             \
     yylval->inst = calloc(1, sizeof(instruction)); \
-    yylval->inst->inst = (op << 12); \
-    yylval->inst->addr = prog->len++; \
-    yylval->inst->last = yylval->inst; \
-  }while(0)
+    yylval->inst->inst = (op << 12);               \
+    yylval->inst->addr = prog->len++;              \
+    yylval->inst->last = yylval->inst;             \
+  } while (0)
 %}
 
 %option noyywrap nounput noinput
-%option reentrant bison-bridge
+%option reentrant bison-bridge bison-locations
 
 %x STRING
 %%
@@ -79,10 +88,10 @@
  /* labels */
 [_a-zA-Z][_\-a-zA-Z0-9]*       { yylval->sym = find_or_create_symbol(prog, yytext, 0, 0); return(LABEL); }
 
- /* other considerations */
-, { return(','); } // comma-separated arguments
-[ \t]*             // ignore whitespace
-\n { yylineno++; } // ignore newlines, but count lines
-;.*                // ignore comments
+ /* stuff to ignore */
+\n      { yylineno++; } // ignore newlines, but count them
+[ \t]*  // ignore whitespace
+;.*     // ignore comments
 
-. { fprintf(stderr, "unexpected input on line %d\n", yylineno); }
+ /* if we don't know what it is, just return it */
+. return *yytext;
