@@ -1,8 +1,21 @@
+#define PROGRAM_NAME "lc3vm"
+#define PROGRAM_DESCRIPTION "an LC-3 virtual machine"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#define HELP_POSTAMBLE "Report bugs to <" PACKAGE_BUGREPORT ">."
+#else
+#define PACKAGE_VERSION "unknown"
+#endif
+
+#define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
+
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 /* unix only */
 #include "lc3.h"
+#include "popt/popt.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -375,6 +388,7 @@ execute_program ()
 int
 main (int argc, const char *argv[])
 {
+  int interactive = 0;
   // TODO popt/add'l args
   if (argc < 2)
     {
