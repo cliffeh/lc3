@@ -29,8 +29,8 @@
 %x STRING
 %%
  /* op codes */
-[aA][dD][dD]                   { NEW_INST(yylval, OP_ADD); return(ADD);     }
-[aA][nN][dD]                   { NEW_INST(yylval, OP_AND); return(AND);     }
+[aA][dD][dD]                   { NEW_INST(yylval, OP_ADD); return(ADD);    }
+[aA][nN][dD]                   { NEW_INST(yylval, OP_AND); return(AND);    }
 [bB][rR][nN]?[zZ]?[pP]?        { 
   NEW_INST(yylval, OP_BR);
   for(char *p = yytext+2; *p; p++) {
@@ -41,20 +41,20 @@
     }
   }
   return(BR);                  }
-[jJ][mM][pP]                   { NEW_INST(yylval, OP_JMP); return(JMP);   }
-[jJ][sS][rR]                   { NEW_INST(yylval, OP_JSR); return(JSR);   }
-[jJ][sS][rR][rR]               { NEW_INST(yylval, OP_JSR); return(JSRR);  }
-[lL][dD]                       { NEW_INST(yylval, OP_LD); return(LD);     }
-[lL][dD][iI]                   { NEW_INST(yylval, OP_LDI); return(LDI);   }
-[lL][dD][rR]                   { NEW_INST(yylval, OP_LDR); return(LDR);   }
-[lL][eE][aA]                   { NEW_INST(yylval, OP_LEA); return(LEA);   }
-[nN][oO][tT]                   { NEW_INST(yylval, OP_NOT); return(NOT);   }
-[rR][eE][tT]                   { NEW_INST(yylval, OP_JMP); return(RET);   }
-[rR][tT][iI]                   { NEW_INST(yylval, OP_RTI); return(RTI);   }
-[sS][tT]                       { NEW_INST(yylval, OP_ST); return(ST);     }
-[sS][tT][iI]                   { NEW_INST(yylval, OP_STI); return(STI);   }
-[sS][tT][rR]                   { NEW_INST(yylval, OP_STR); return(STR);   }
-[tT][rR][aA][pP]               { NEW_INST(yylval, OP_TRAP); return(TRAP); }
+[jJ][mM][pP]                   { NEW_INST(yylval, OP_JMP); return(JMP);    }
+[jJ][sS][rR]                   { NEW_INST(yylval, OP_JSR); return(JSR);    }
+[jJ][sS][rR][rR]               { NEW_INST(yylval, OP_JSR); return(JSRR);   }
+[lL][dD]                       { NEW_INST(yylval, OP_LD); return(LD);      }
+[lL][dD][iI]                   { NEW_INST(yylval, OP_LDI); return(LDI);    }
+[lL][dD][rR]                   { NEW_INST(yylval, OP_LDR); return(LDR);    }
+[lL][eE][aA]                   { NEW_INST(yylval, OP_LEA); return(LEA);    }
+[nN][oO][tT]                   { NEW_INST(yylval, OP_NOT); return(NOT);    }
+[rR][eE][tT]                   { NEW_INST(yylval, OP_JMP); return(RET);    }
+[rR][tT][iI]                   { NEW_INST(yylval, OP_RTI); return(RTI);    }
+[sS][tT]                       { NEW_INST(yylval, OP_ST); return(ST);      }
+[sS][tT][iI]                   { NEW_INST(yylval, OP_STI); return(STI);    }
+[sS][tT][rR]                   { NEW_INST(yylval, OP_STR); return(STR);    }
+[tT][rR][aA][pP]               { NEW_INST(yylval, OP_TRAP); return(TRAP);  }
 
  /* trap routines */
 [gG][eE][tT][cC]               { NEW_INST(yylval, OP_TRAP); return(GETC);  }
@@ -90,8 +90,8 @@
 
  /* stuff to ignore */
 \n      { yylineno++; } // ignore newlines, but count them
-[ \t]*  // ignore whitespace
-;.*     // ignore comments
+[ \t]*                  // ignore whitespace
+;.*                     // ignore comments
 
  /* if we don't know what it is, just return it */
 . return *yytext;

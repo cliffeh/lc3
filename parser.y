@@ -95,6 +95,7 @@ instruction_list:
 ;
 
 instruction:
+/* operations */
   ADD REG[DR] ',' REG[SR1] ',' REG[SR2]
 {
   $1->inst |= ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
@@ -103,7 +104,6 @@ instruction:
 }
 | ADD REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
 {
-  // TODO is this correct? maybe we should fail if $imm5 is more than 5 bits wide?
   $1->inst |= ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
   PPRINT($1->pretty, "ADD R%d, R%d, #%d", $DR, $SR1, $imm5);
   $$ = $1;
@@ -116,7 +116,6 @@ instruction:
 }
 | AND REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
 {
-  // TODO is this correct? maybe we should fail if $imm5 is more than 5 bits wide?
   $1->inst |= ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
   PPRINT($1->pretty, "AND R%d, R%d, #%d", $DR, $SR1, $imm5);
   $$ = $1;
@@ -136,7 +135,6 @@ instruction:
 | BR NUMLIT[PCoffset9]
 {
   $1->inst |= (OP_BR << 12);
-  // TODO is this correct? maybe we should fail if $PCoffset9 is more than 9 bits wide?
   $1->inst |= ($PCoffset9 & 0x01FF);
   PPRINT($1->pretty, "BR%s%s%s #%d",
     ($1->inst & (1<<11)) ? "n": "",
@@ -183,7 +181,6 @@ instruction:
 }
 | LDR REG[DR] ',' REG[BaseR] ',' NUMLIT[offset6]
 {
-  // TODO is this correct? maybe we should fail if $offset6 is more than 6 bits wide?
   $1->inst |= ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
   PPRINT($1->pretty, "LDR R%d, R%d, #%d", $DR, $BaseR, $offset6);
   $$ = $1;
@@ -203,8 +200,7 @@ instruction:
   $$ = $1;
 }
 | RET
-{
-  // special case of JMP, where R7 is implied as DR
+{ // special case of JMP, where R7 is implied as DR
   $1->inst |= (R_R7 << 6);
   PPRINT($1->pretty, "RET");
   $$ = $1;
@@ -232,19 +228,17 @@ instruction:
 }
 | STR REG[SR] ',' REG[BaseR] ',' NUMLIT[offset6]
 {
-  // TODO is this correct? maybe we should fail if $offset6 is more than 6 bits wide?
   $1->inst |= ($SR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
   PPRINT($1->pretty, "STR R%d, R%d, #%d", $SR, $BaseR, $offset6);
   $$ = $1;
 }
 | TRAP NUMLIT[trapvect8]
 {
-  // TODO is this correct? maybe we should fail if $trapvect8 is more than 8 bits wide?
-  $1->inst |= ($trapvect8 << 0);
+ $1->inst |= ($trapvect8 << 0);
   PPRINT($1->pretty, "TRAP x%02X", $trapvect8);
   $$ = $1;
 }
-// traps
+/* traps */
 | GETC
 {
   $1->inst |= (TRAP_GETC << 0);
@@ -281,7 +275,7 @@ instruction:
   PPRINT($1->pretty, "HALT");
   $$ = $1;
 }
-// assembler directives
+/* assembler directives */
 | FILL NUMLIT[data]
 {
   $1->inst = $data;
@@ -324,7 +318,6 @@ instruction:
 
 %%
 
-// TODO better error messages
 void
 yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg)
 {
