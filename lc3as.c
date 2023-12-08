@@ -3,14 +3,12 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
-#define HELP_POSTAMBLE "Report bugs to Cliff Snyder <" PACKAGE_BUGREPORT ">."
+#define HELP_POSTAMBLE "Report bugs to <" PACKAGE_BUGREPORT ">."
 #else
-#define VERSION_STRING                                                        \
-  PROGRAM_NAME " "                                                            \
-               "unknown"
-#define HELP_POSTAMBLE ""
+#define PACKAGE_VERSION "unknown"
 #endif
+
+#define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
 #include "lc3as.h"
 #include "parse.h"
@@ -55,13 +53,6 @@ main (int argc, const char *argv[])
       "FORMAT" },
     { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &outfile,
       'o', "write output to FILE", "FILE" },
-    POPT_TABLEEND
-  };
-
-  struct poptOption helpOptions[] = {
-    /* longName, shortName, argInfo, arg, val, descrip, argDescript */
-    { "help", '?', 0, 0, '?', "show this help message", 0 },
-    { "usage", '\0', POPT_ARG_NONE, 0, 'U', "display brief usage message", 0 },
     { "version", '\0', POPT_ARG_NONE, 0, 'V',
       "show version information and exit", 0 },
     POPT_TABLEEND
@@ -70,8 +61,10 @@ main (int argc, const char *argv[])
   struct poptOption options[] = {
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_PREAMBLE, 0 },
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &progOptions, 0, "Options:", 0 },
-    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &helpOptions, 0, "Help Options:", 0 },
+    POPT_AUTOHELP
+#ifdef HELP_POSTAMBLE
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_POSTAMBLE, 0 },
+#endif
     POPT_TABLEEND
   };
 
@@ -139,23 +132,6 @@ main (int argc, const char *argv[])
                   }
               }
             free (outfile);
-          }
-          break;
-
-        case '?':
-          {
-            printf (PROGRAM_NAME " - " PROGRAM_DESCRIPTION "\n");
-            poptPrintHelp (optCon, stdout, 0);
-            poptFreeContext (optCon);
-            exit (0);
-          }
-          break;
-
-        case 'U':
-          {
-            poptPrintUsage (optCon, stdout, 0);
-            poptFreeContext (optCon);
-            exit (0);
           }
           break;
 
