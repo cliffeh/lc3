@@ -1,10 +1,14 @@
+#define PROGRAM_NAME "lc3as"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#define VERSION_STRING "lc3as " PACKAGE_VERSION
-#endif
-
-#ifndef VERSION_STRING
-#define VERSION_STRING "lc3as unknown"
+#define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
+#define HELP_POSTAMBLE "Report bugs to Cliff Snyder <" PACKAGE_BUGREPORT ">."
+#else
+#define VERSION_STRING                                                        \
+  PROGRAM_NAME " "                                                            \
+               "unknown"
+#define HELP_POSTAMBLE ""
 #endif
 
 #include "lc3as.h"
@@ -14,6 +18,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define PROGRAM_DESCRIPTION "an LC-3 assembler"
+#define HELP_PREAMBLE                                                         \
+  "Note: if FILE is not provided this program will read from stdin."
 
 #define ERR_EXIT(args...)                                                     \
   do                                                                          \
@@ -36,7 +44,10 @@ main (int argc, const char *argv[])
 
   poptContext optCon;
 
-  struct poptOption options[] = {
+  // hack for injecting preamble/postamble into the help message
+  struct poptOption emptyTable[] = { POPT_TABLEEND };
+
+  struct poptOption progOptions[] = {
     /* longName, shortName, argInfo, arg, val, descrip, argDescript */
     { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &format, 'F',
       "output format; can be one of a[ddress], b[its], d[ebug], h[ex], "
@@ -44,14 +55,28 @@ main (int argc, const char *argv[])
       "FORMAT" },
     { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &outfile,
       'o', "write output to FILE", "FILE" },
-    { "version", 0, POPT_ARG_NONE, 0, 'Z', "show version information and exit",
-      0 },
-    POPT_AUTOHELP POPT_TABLEEND
+    POPT_TABLEEND
+  };
+
+  struct poptOption helpOptions[] = {
+    /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+    { "help", '?', 0, 0, '?', "show this help message", 0 },
+    { "usage", '\0', POPT_ARG_NONE, 0, 'U', "display brief usage message", 0 },
+    { "version", '\0', POPT_ARG_NONE, 0, 'V',
+      "show version information and exit", 0 },
+    POPT_TABLEEND
+  };
+
+  struct poptOption options[] = {
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_PREAMBLE, 0 },
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &progOptions, 0, "Options:", 0 },
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &helpOptions, 0, "Help Options:", 0 },
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_POSTAMBLE, 0 },
+    POPT_TABLEEND
   };
 
   optCon = poptGetContext (0, argc, argv, options, 0);
-  poptSetOtherOptionHelp (optCon, "[OPTION...] [FILE]\nWill read from "
-                                  "stdin if no FILE is provided.\nOptions:");
+  poptSetOtherOptionHelp (optCon, "[FILE]");
 
   while ((rc = poptGetNextOpt (optCon)) > 0)
     {
@@ -117,7 +142,24 @@ main (int argc, const char *argv[])
           }
           break;
 
-        case 'Z':
+        case '?':
+          {
+            printf (PROGRAM_NAME " - " PROGRAM_DESCRIPTION "\n");
+            poptPrintHelp (optCon, stdout, 0);
+            poptFreeContext (optCon);
+            exit (0);
+          }
+          break;
+
+        case 'U':
+          {
+            poptPrintUsage (optCon, stdout, 0);
+            poptFreeContext (optCon);
+            exit (0);
+          }
+          break;
+
+        case 'V':
           {
             printf (VERSION_STRING);
             poptFreeContext (optCon);
@@ -134,6 +176,7 @@ main (int argc, const char *argv[])
     }
 
   const char *infile = poptGetArg (optCon);
+
   if (poptGetArg (optCon))
     {
       // TODO maybe support more than one input file
