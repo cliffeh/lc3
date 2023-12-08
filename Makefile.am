@@ -17,7 +17,7 @@ ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
 
 AM_LFLAGS = --header-file=scanner.h
-AM_YFLAGS = -d
+AM_YFLAGS = -d -Wno-yacc
 
 SUBDIRS = popt
 
