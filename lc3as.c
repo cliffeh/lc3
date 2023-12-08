@@ -8,7 +8,7 @@
 #endif
 
 #include "lc3as.h"
-#include "parser.h"
+#include "parse.h"
 #include "popt/popt.h"
 #include <errno.h>
 #include <stdio.h>

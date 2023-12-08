@@ -59,10 +59,10 @@ Makefile
 
 # generated source files
 /config.h
-/parser.c
-/parser.h
-/scanner.c
-/scanner.h
+/parse.c
+/parse.h
+/scan.c
+/scan.h
 
 # generated object files
 *.o
