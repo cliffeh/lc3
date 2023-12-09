@@ -56,13 +56,13 @@ read_image_file (uint16_t memory[], FILE *file)
 {
   /* the origin tells us where in memory to place the image */
   uint16_t origin;
-  fread (&origin, sizeof (origin), 1, file);
+  size_t read = fread (&origin, sizeof (origin), 1, file);
   origin = SWAP16 (origin);
 
   /* we know the maximum file size so we only need one fread */
   uint16_t max_read = MEMORY_MAX - origin;
   uint16_t *p = memory + origin;
-  size_t read = fread (p, sizeof (uint16_t), max_read, file);
+  read = fread (p, sizeof (uint16_t), max_read, file);
 
   /* swap to little endian */
   while (read-- > 0)
@@ -169,6 +169,9 @@ main (int argc, const char *argv[])
   // TODO capture return code
   rc = execute_program (memory, reg);
   restore_input_buffering ();
+
+cleanup:
+  poptFreeContext (optCon);
 
   exit (rc);
 }
