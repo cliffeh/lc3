@@ -251,7 +251,8 @@ execute_program (uint16_t memory[], uint16_t reg[])
             uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             /* add pc_offset to the current PC, look at that memory location to
              * get the final address */
-            reg[r0] = mem_read (memory, mem_read (memory, reg[R_PC] + pc_offset));
+            reg[r0]
+                = mem_read (memory, mem_read (memory, reg[R_PC] + pc_offset));
             update_flags (reg, r0);
           }
           break;
@@ -283,7 +284,8 @@ execute_program (uint16_t memory[], uint16_t reg[])
           {
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
-            mem_write (memory, mem_read (memory, reg[R_PC] + pc_offset), reg[r0]);
+            mem_write (memory, mem_read (memory, reg[R_PC] + pc_offset),
+                       reg[r0]);
           }
           break;
         case OP_STR:
@@ -358,7 +360,7 @@ execute_program (uint16_t memory[], uint16_t reg[])
         case OP_RES:
         case OP_RTI:
         default:
-          abort ();
+          return -1;
           break;
         }
     }
@@ -388,6 +390,9 @@ main (int argc, const char *argv[])
 
   signal (SIGINT, handle_interrupt);
   disable_input_buffering ();
+  // TODO capture return code
   execute_program (memory, reg);
   restore_input_buffering ();
+
+  exit (0);
 }
