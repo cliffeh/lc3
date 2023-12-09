@@ -1,4 +1,17 @@
+#define PROGRAM_NAME "lc3vm"
+#define PROGRAM_DESCRIPTION "an LC-3 virtual machine"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#define HELP_POSTAMBLE "Report bugs to <" PACKAGE_BUGREPORT ">."
+#else
+#define PACKAGE_VERSION "unknown"
+#endif
+
+#define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
+
 #include "lc3.h"
+#include "popt/popt.h"
 
 #include <signal.h>
 #include <stdint.h>
@@ -75,24 +88,78 @@ read_image (uint16_t memory[], const char *image_path)
 // TODO put this in a header somewhere
 int execute_program (uint16_t memory[], uint16_t reg[]);
 
+#define ERR_EXIT(args...)                                                     \
+  do                                                                          \
+    {                                                                         \
+      fprintf (stderr, "error: ");                                            \
+      fprintf (stderr, args);                                                 \
+      fprintf (stderr, "\n");                                                 \
+      poptPrintHelp (optCon, stderr, 0);                                      \
+      poptFreeContext (optCon);                                               \
+      exit (1);                                                               \
+    }                                                                         \
+  while (0)
+
 int
 main (int argc, const char *argv[])
 {
-  if (argc < 2)
+  poptContext optCon;
+
+  // hack for injecting preamble/postamble into the help message
+  struct poptOption emptyTable[] = { POPT_TABLEEND };
+
+  struct poptOption progOptions[]
+      = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          { "version", '\0', POPT_ARG_NONE, 0, 'V',
+            "show version information and exit", 0 },
+          POPT_TABLEEND
+        };
+
+  struct poptOption options[] = {
+#ifdef HELP_PREAMBLE
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_PREAMBLE, 0 },
+#endif
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &progOptions, 0, "Options:", 0 },
+    POPT_AUTOHELP
+#ifdef HELP_POSTAMBLE
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_POSTAMBLE, 0 },
+#endif
+    POPT_TABLEEND
+  };
+
+  optCon = poptGetContext (0, argc, argv, options, 0);
+  poptSetOtherOptionHelp (optCon, "[FILE...]");
+
+  int rc;
+  while ((rc = poptGetNextOpt (optCon)) > 0)
     {
-      /* show usage string */
-      printf ("lc3 [image-file1] ...\n");
-      exit (2);
+      switch (rc)
+        {
+        case 'V':
+          {
+            printf (VERSION_STRING);
+            poptFreeContext (optCon);
+            exit (0);
+          }
+          break;
+        }
+    }
+
+  if (rc != -1)
+    {
+      ERR_EXIT ("%s: %s\n", poptBadOption (optCon, POPT_BADOPTION_NOALIAS),
+                poptStrerror (rc));
     }
 
   uint16_t memory[MEMORY_MAX]; /* 65536 locations */
   uint16_t reg[R_COUNT];
 
-  for (int j = 1; j < argc; ++j)
+  for (const char *infile = poptGetArg (optCon); infile;
+       infile = poptGetArg (optCon))
     {
-      if (!read_image (memory, argv[j]))
+      if (!read_image (memory, infile))
         {
-          printf ("failed to load image: %s\n", argv[j]);
+          printf ("failed to load image: %s\n", infile);
           exit (1);
         }
     }
@@ -100,8 +167,8 @@ main (int argc, const char *argv[])
   signal (SIGINT, handle_interrupt);
   disable_input_buffering ();
   // TODO capture return code
-  execute_program (memory, reg);
+  rc = execute_program (memory, reg);
   restore_input_buffering ();
 
-  exit (0);
+  exit (rc);
 }

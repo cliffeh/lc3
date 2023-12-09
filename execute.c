@@ -302,4 +302,6 @@ execute_program (uint16_t memory[], uint16_t reg[])
           break;
         }
     }
+
+  return 0;
 }

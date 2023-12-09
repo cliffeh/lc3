@@ -59,7 +59,9 @@ main (int argc, const char *argv[])
   };
 
   struct poptOption options[] = {
+#ifdef HELP_PREAMBLE
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_PREAMBLE, 0 },
+#endif
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &progOptions, 0, "Options:", 0 },
     POPT_AUTOHELP
 #ifdef HELP_POSTAMBLE
