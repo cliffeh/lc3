@@ -64,5 +64,5 @@ enum
 };
 
 #define SWAP16(x) ((x << 8) | (x >> 8))
-#define SIGN_EXT(x, bits)                                                     \
+#define SIGN_EXTEND(x, bits)                                                     \
   ((((x) >> ((bits)-1)) & 1) ? ((x) | (0xFFFF << (bits))) : (x))
