@@ -119,7 +119,7 @@ static command command_table[]
 static void
 print_help ()
 {
-  for (command *cmd = &(*command_table); cmd->name; cmd++)
+  for (command *cmd = command_table; cmd->name; cmd++)
     {
       printf ("%-10s", cmd->name);
       printf ("%-10s", cmd->args ? cmd->args : "");
@@ -282,14 +282,25 @@ main (int argc, const char *argv[])
   uint16_t memory[MEMORY_MAX]; /* 65536 locations */
   uint16_t reg[R_COUNT];
 
+  int programs_loaded = 0;
   for (const char *infile = poptGetArg (optCon); infile;
        infile = poptGetArg (optCon))
     {
+      if (interactive)
+        printf ("loading %s...", infile);
+
       if (!read_image (memory, infile))
         {
           printf ("failed to load image: %s\n", infile);
           exit (1);
         }
+      else
+        {
+          programs_loaded++;
+        }
+
+      if (interactive)
+        printf ("successfully loaded\n");
     }
 
   signal (SIGINT, handle_interrupt);
