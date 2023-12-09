@@ -13,8 +13,6 @@
 #include <unistd.h>
 
 #define MEMORY_MAX (1 << 16)
-uint16_t memory[MEMORY_MAX]; /* 65536 locations */
-uint16_t reg[R_COUNT];
 
 struct termios original_tio;
 
@@ -55,7 +53,7 @@ handle_interrupt (int signal)
 }
 
 void
-update_flags (uint16_t r)
+update_flags (uint16_t reg[], uint16_t r)
 {
   if (reg[r] == 0)
     {
@@ -72,7 +70,7 @@ update_flags (uint16_t r)
 }
 
 void
-read_image_file (FILE *file)
+read_image_file (uint16_t memory[], FILE *file)
 {
   /* the origin tells us where in memory to place the image */
   uint16_t origin;
@@ -93,26 +91,26 @@ read_image_file (FILE *file)
 }
 
 int
-read_image (const char *image_path)
+read_image (uint16_t memory[], const char *image_path)
 {
   FILE *file = fopen (image_path, "rb");
   if (!file)
     {
       return 0;
     };
-  read_image_file (file);
+  read_image_file (memory, file);
   fclose (file);
   return 1;
 }
 
 void
-mem_write (uint16_t address, uint16_t val)
+mem_write (uint16_t memory[], uint16_t address, uint16_t val)
 {
   memory[address] = val;
 }
 
 uint16_t
-mem_read (uint16_t address)
+mem_read (uint16_t memory[], uint16_t address)
 {
   if (address == MR_KBSR)
     {
@@ -130,7 +128,7 @@ mem_read (uint16_t address)
 }
 
 int
-execute_program ()
+execute_program (uint16_t memory[], uint16_t reg[])
 {
   /* since exactly one condition flag should be set at any given time, set the
    * Z flag */
@@ -148,7 +146,7 @@ execute_program ()
   while (running)
     {
       /* FETCH */
-      uint16_t instr = mem_read (reg[R_PC]++);
+      uint16_t instr = mem_read (memory, reg[R_PC]++);
       uint16_t op = instr >> 12;
 
       switch (op)
@@ -173,7 +171,7 @@ execute_program ()
                 reg[r0] = reg[r1] + reg[r2];
               }
 
-            update_flags (r0);
+            update_flags (reg, r0);
           }
           break;
         case OP_AND:
@@ -192,7 +190,7 @@ execute_program ()
                 uint16_t r2 = instr & 0x7;
                 reg[r0] = reg[r1] & reg[r2];
               }
-            update_flags (r0);
+            update_flags (reg, r0);
           }
           break;
         case OP_NOT:
@@ -201,7 +199,7 @@ execute_program ()
             uint16_t r1 = (instr >> 6) & 0x7;
 
             reg[r0] = ~reg[r1];
-            update_flags (r0);
+            update_flags (reg, r0);
           }
           break;
         case OP_BR:
@@ -241,8 +239,8 @@ execute_program ()
           {
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
-            reg[r0] = mem_read (reg[R_PC] + pc_offset);
-            update_flags (r0);
+            reg[r0] = mem_read (memory, reg[R_PC] + pc_offset);
+            update_flags (reg, r0);
           }
           break;
         case OP_LDI:
@@ -253,8 +251,8 @@ execute_program ()
             uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             /* add pc_offset to the current PC, look at that memory location to
              * get the final address */
-            reg[r0] = mem_read (mem_read (reg[R_PC] + pc_offset));
-            update_flags (r0);
+            reg[r0] = mem_read (memory, mem_read (memory, reg[R_PC] + pc_offset));
+            update_flags (reg, r0);
           }
           break;
         case OP_LDR:
@@ -262,8 +260,8 @@ execute_program ()
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t r1 = (instr >> 6) & 0x7;
             uint16_t offset = SIGN_EXTEND (instr & 0x3F, 6);
-            reg[r0] = mem_read (reg[r1] + offset);
-            update_flags (r0);
+            reg[r0] = mem_read (memory, reg[r1] + offset);
+            update_flags (reg, r0);
           }
           break;
         case OP_LEA:
@@ -271,21 +269,21 @@ execute_program ()
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             reg[r0] = reg[R_PC] + pc_offset;
-            update_flags (r0);
+            update_flags (reg, r0);
           }
           break;
         case OP_ST:
           {
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
-            mem_write (reg[R_PC] + pc_offset, reg[r0]);
+            mem_write (memory, reg[R_PC] + pc_offset, reg[r0]);
           }
           break;
         case OP_STI:
           {
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
-            mem_write (mem_read (reg[R_PC] + pc_offset), reg[r0]);
+            mem_write (memory, mem_read (memory, reg[R_PC] + pc_offset), reg[r0]);
           }
           break;
         case OP_STR:
@@ -293,7 +291,7 @@ execute_program ()
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t r1 = (instr >> 6) & 0x7;
             uint16_t offset = SIGN_EXTEND (instr & 0x3F, 6);
-            mem_write (reg[r1] + offset, reg[r0]);
+            mem_write (memory, reg[r1] + offset, reg[r0]);
           }
           break;
         case OP_TRAP:
@@ -304,7 +302,7 @@ execute_program ()
             case TRAP_GETC:
               /* read a single ASCII char */
               reg[R_R0] = (uint16_t)getchar ();
-              update_flags (R_R0);
+              update_flags (reg, R_R0);
               break;
             case TRAP_OUT:
               putc ((char)reg[R_R0], stdout);
@@ -329,7 +327,7 @@ execute_program ()
                 putc (c, stdout);
                 fflush (stdout);
                 reg[R_R0] = (uint16_t)c;
-                update_flags (R_R0);
+                update_flags (reg, R_R0);
               }
               break;
             case TRAP_PUTSP:
@@ -376,16 +374,20 @@ main (int argc, const char *argv[])
       exit (2);
     }
 
+  uint16_t memory[MEMORY_MAX]; /* 65536 locations */
+  uint16_t reg[R_COUNT];
+
   for (int j = 1; j < argc; ++j)
     {
-      if (!read_image (argv[j]))
+      if (!read_image (memory, argv[j]))
         {
           printf ("failed to load image: %s\n", argv[j]);
           exit (1);
         }
     }
+
   signal (SIGINT, handle_interrupt);
   disable_input_buffering ();
-  execute_program ();
+  execute_program (memory, reg);
   restore_input_buffering ();
 }
