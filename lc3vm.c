@@ -13,9 +13,11 @@
 #include "lc3.h"
 #include "popt/popt.h"
 
+#include <ctype.h> // isprint()
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 /* unix only */
 #include <fcntl.h>
 #include <stdlib.h>
@@ -100,16 +102,142 @@ int execute_program (uint16_t memory[], uint16_t reg[]);
     }                                                                         \
   while (0)
 
+typedef struct command
+{
+  char *name, *args, *desc;
+} command;
+
+static command command_table[]
+    = { { "assemble", "[file...]",
+          "asssemble and load one or more assembly files" },
+        { "load", "[file...]", "load one or more object files" },
+        { "regs", 0, "display the current contents of the registers" },
+        { "help", 0, "display this help message" },
+        { "exit", 0, "exit the program" },
+        { 0 } };
+
+static void
+print_help ()
+{
+  for (command *cmd = &(*command_table); cmd->name; cmd++)
+    {
+      printf ("%-10s", cmd->name);
+      printf ("%-10s", cmd->args ? cmd->args : "");
+      printf ("%s\n", cmd->desc);
+    }
+}
+
+static int
+process_command (const char *input)
+{
+  if (strstr (input, "help") == input)
+    {
+      print_help ();
+    }
+  else
+    {
+      printf ("unknown command: %s\n", input);
+      print_help ();
+    }
+}
+
+static void
+prompt (char *current_input)
+{
+  printf ("> ");
+  if (current_input)
+    printf ("%s", current_input);
+}
+
+static int
+handle_interactive (uint16_t memory[], uint16_t reg[])
+{
+  // TODO define buf size somewhere else
+  char buf[1024], c, *p = buf;
+  int running = 1, rc = 0;
+
+  prompt (0);
+  do
+    {
+      switch (c = getchar ())
+        {
+        case 0x04: // ^D
+        case EOF:
+          running = 0;
+          break;
+
+        case 0x08: // ^H
+        case 0x7f: // backspace
+          {
+            if (p != buf) // we have existing input
+              {
+                // TODO better way to handle backspace?
+                putc ('\b', stdout);
+                putc (' ', stdout);
+                putc ('\b', stdout);
+                *(--p) = 0;
+                // prompt (buf);
+              }
+          }
+          break;
+
+        case '\t':
+          {
+            // TODO match on existing input?
+            putc ('\n', stdout);
+            print_help ();
+            prompt (buf);
+          }
+          break;
+
+        case '\n':
+          {
+            putc (c, stdout);
+            if (p != buf) // if the input buffer isn't empty
+              {
+                process_command (buf);
+                p = buf;
+                *p = 0;
+              }
+            prompt (0);
+          };
+          break;
+
+        default:
+          {
+            // fprintf (stderr, "\ngot char: %02x\n", c);
+            if (isprint (c))
+              {
+                *p++ = c;
+                *p = 0;
+                putc (c, stdout);
+              }
+            else
+              {
+                fprintf (stderr, "unhandled code: %02x\n", c);
+              }
+          }
+          break;
+        }
+    }
+  while (running);
+
+  return rc;
+}
+
 int
 main (int argc, const char *argv[])
 {
   poptContext optCon;
+  int interactive = 0;
 
   // hack for injecting preamble/postamble into the help message
   struct poptOption emptyTable[] = { POPT_TABLEEND };
 
   struct poptOption progOptions[]
       = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          { "interactive", 'i', POPT_ARG_NONE, &interactive, 'i',
+            "run in interactive mode", 0 },
           { "version", '\0', POPT_ARG_NONE, 0, 'V',
             "show version information and exit", 0 },
           POPT_TABLEEND
@@ -166,8 +294,14 @@ main (int argc, const char *argv[])
 
   signal (SIGINT, handle_interrupt);
   disable_input_buffering ();
-  // TODO capture return code
-  rc = execute_program (memory, reg);
+  if (!interactive)
+    {
+      rc = execute_program (memory, reg);
+    }
+  else
+    {
+      rc = handle_interactive (memory, reg);
+    }
   restore_input_buffering ();
 
 cleanup:
