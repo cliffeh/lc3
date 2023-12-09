@@ -1,5 +1,7 @@
 #pragma once
 
+#define SWAP16(x) ((x << 8) | (x >> 8))
+
 // registers
 enum
 {
@@ -62,7 +64,3 @@ enum
   TRAP_PUTSP = 0x24, /* output a byte string */
   TRAP_HALT = 0x25   /* halt the program */
 };
-
-#define SWAP16(x) ((x << 8) | (x >> 8))
-#define SIGN_EXT(x, bits)                                                     \
-  ((((x) >> ((bits)-1)) & 1) ? ((x) | (0xFFFF << (bits))) : (x))

@@ -6,9 +6,8 @@
 * for everything that can use a label, also allow it to use a NUMLIT
 
 ## lc3vm (virtual machine)
-* interactive mode?
+* interactive mode
 * support windows?
-* encapsulate setup/teardown stuff elsewhere
 
 ## lc3diff
 * make it moar prettier?

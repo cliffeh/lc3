@@ -1,14 +1,17 @@
 #include "lc3.h"
 
-#include <stdint.h> // for uint16_t
-#include <stdio.h>  // for stdout, etc.
+#include <stdint.h>
+#include <stdio.h>
 /* unix only */
-#include <sys/mman.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-static uint16_t
+#define SIGN_EXTEND(x, bits)                                                  \
+  ((((x) >> ((bits)-1)) & 1) ? ((x) | (0xFFFF << (bits))) : (x))
+
+uint16_t
 check_key ()
 {
   fd_set readfds;
@@ -21,8 +24,31 @@ check_key ()
   return select (1, &readfds, NULL, NULL, &timeout) != 0;
 }
 
-static uint16_t
-mem_read (uint16_t *memory, uint16_t address)
+void
+update_flags (uint16_t reg[], uint16_t r)
+{
+  if (reg[r] == 0)
+    {
+      reg[R_COND] = FL_ZRO;
+    }
+  else if (reg[r] >> 15) /* a 1 in the left-most bit indicates negative */
+    {
+      reg[R_COND] = FL_NEG;
+    }
+  else
+    {
+      reg[R_COND] = FL_POS;
+    }
+}
+
+void
+mem_write (uint16_t memory[], uint16_t address, uint16_t val)
+{
+  memory[address] = val;
+}
+
+uint16_t
+mem_read (uint16_t memory[], uint16_t address)
 {
   if (address == MR_KBSR)
     {
@@ -39,31 +65,8 @@ mem_read (uint16_t *memory, uint16_t address)
   return memory[address];
 }
 
-void
-mem_write (uint16_t *memory, uint16_t address, uint16_t val)
-{
-  memory[address] = val;
-}
-
-void
-update_flags (uint16_t *reg, uint16_t r)
-{
-  if (reg[r] == 0)
-    {
-      reg[R_COND] = FL_ZRO;
-    }
-  else if (reg[r] >> 15) /* a 1 in the left-most bit indicates negative */
-    {
-      reg[R_COND] = FL_NEG;
-    }
-  else
-    {
-      reg[R_COND] = FL_POS;
-    }
-}
-
 int
-execute_program (uint16_t *memory, uint16_t *reg)
+execute_program (uint16_t memory[], uint16_t reg[])
 {
   /* since exactly one condition flag should be set at any given time, set the
    * Z flag */
@@ -97,7 +100,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
 
             if (imm_flag)
               {
-                uint16_t imm5 = SIGN_EXT (instr & 0x1F, 5);
+                uint16_t imm5 = SIGN_EXTEND (instr & 0x1F, 5);
                 reg[r0] = reg[r1] + imm5;
               }
             else
@@ -117,7 +120,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
 
             if (imm_flag)
               {
-                uint16_t imm5 = SIGN_EXT (instr & 0x1F, 5);
+                uint16_t imm5 = SIGN_EXTEND (instr & 0x1F, 5);
                 reg[r0] = reg[r1] & imm5;
               }
             else
@@ -139,7 +142,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
           break;
         case OP_BR:
           {
-            uint16_t pc_offset = SIGN_EXT (instr & 0x1FF, 9);
+            uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             uint16_t cond_flag = (instr >> 9) & 0x7;
             if (cond_flag & reg[R_COND])
               {
@@ -160,7 +163,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
             reg[R_R7] = reg[R_PC];
             if (long_flag)
               {
-                uint16_t long_pc_offset = SIGN_EXT (instr & 0x7FF, 11);
+                uint16_t long_pc_offset = SIGN_EXTEND (instr & 0x7FF, 11);
                 reg[R_PC] += long_pc_offset; /* JSR */
               }
             else
@@ -173,7 +176,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
         case OP_LD:
           {
             uint16_t r0 = (instr >> 9) & 0x7;
-            uint16_t pc_offset = SIGN_EXT (instr & 0x1FF, 9);
+            uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             reg[r0] = mem_read (memory, reg[R_PC] + pc_offset);
             update_flags (reg, r0);
           }
@@ -183,7 +186,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
             /* destination register (DR) */
             uint16_t r0 = (instr >> 9) & 0x7;
             /* PCoffset 9*/
-            uint16_t pc_offset = SIGN_EXT (instr & 0x1FF, 9);
+            uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             /* add pc_offset to the current PC, look at that memory location to
              * get the final address */
             reg[r0]
@@ -195,7 +198,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
           {
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t r1 = (instr >> 6) & 0x7;
-            uint16_t offset = SIGN_EXT (instr & 0x3F, 6);
+            uint16_t offset = SIGN_EXTEND (instr & 0x3F, 6);
             reg[r0] = mem_read (memory, reg[r1] + offset);
             update_flags (reg, r0);
           }
@@ -203,7 +206,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
         case OP_LEA:
           {
             uint16_t r0 = (instr >> 9) & 0x7;
-            uint16_t pc_offset = SIGN_EXT (instr & 0x1FF, 9);
+            uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             reg[r0] = reg[R_PC] + pc_offset;
             update_flags (reg, r0);
           }
@@ -211,14 +214,14 @@ execute_program (uint16_t *memory, uint16_t *reg)
         case OP_ST:
           {
             uint16_t r0 = (instr >> 9) & 0x7;
-            uint16_t pc_offset = SIGN_EXT (instr & 0x1FF, 9);
+            uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             mem_write (memory, reg[R_PC] + pc_offset, reg[r0]);
           }
           break;
         case OP_STI:
           {
             uint16_t r0 = (instr >> 9) & 0x7;
-            uint16_t pc_offset = SIGN_EXT (instr & 0x1FF, 9);
+            uint16_t pc_offset = SIGN_EXTEND (instr & 0x1FF, 9);
             mem_write (memory, mem_read (memory, reg[R_PC] + pc_offset),
                        reg[r0]);
           }
@@ -227,7 +230,7 @@ execute_program (uint16_t *memory, uint16_t *reg)
           {
             uint16_t r0 = (instr >> 9) & 0x7;
             uint16_t r1 = (instr >> 6) & 0x7;
-            uint16_t offset = SIGN_EXT (instr & 0x3F, 6);
+            uint16_t offset = SIGN_EXTEND (instr & 0x3F, 6);
             mem_write (memory, reg[r1] + offset, reg[r0]);
           }
           break;
@@ -286,8 +289,8 @@ execute_program (uint16_t *memory, uint16_t *reg)
               }
               break;
             case TRAP_HALT:
-              // puts ("HALT");
-              // fflush (stdout);
+              // puts("HALT");
+              // fflush(stdout);
               running = 0;
               break;
             }
@@ -295,8 +298,10 @@ execute_program (uint16_t *memory, uint16_t *reg)
         case OP_RES:
         case OP_RTI:
         default:
-          return 1;
+          return -1;
           break;
         }
     }
+
+  return 0;
 }
