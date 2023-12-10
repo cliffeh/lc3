@@ -1,5 +1,5 @@
 bin_PROGRAMS = lc3as lc3vm lc3diff
-lc3as_SOURCES = parse.y scan.l lc3.h lc3as.c lc3as.h print.c popt/popt.h
+lc3as_SOURCES = parse.y scan.l lc3.h lc3as.c lc3as.h assemble.c print.c popt/popt.h
 lc3as_LDADD = popt/libpopt.a
 
 lc3vm_SOURCES = lc3vm.c lc3.h execute.c popt/popt.h

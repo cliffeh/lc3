@@ -41,6 +41,9 @@ typedef struct program
 
 int parse_program (program *prog, FILE *in);
 int print_program (FILE *out, int flags, program *prog);
+int assemble_program (uint16_t dest[], FILE *in);
+
+int resolve_symbols(program *prog, instruction *inst);
 symbol *find_or_create_symbol (program *prog, const char *label);
 symbol *find_symbol_by_label (symbol *symbols, const char *label);
 void sort_symbols_by_addr (program *prog);

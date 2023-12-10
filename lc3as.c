@@ -180,9 +180,19 @@ main (int argc, const char *argv[])
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
 
-  if ((rc = parse_program (&prog, in)) == 0)
+  if (flags)
     {
-      rc = print_program (out, flags, &prog);
+      if ((rc = parse_program (&prog, in)) == 0)
+        {
+          rc = print_program (out, flags, &prog);
+        }
+    }
+  else
+    {
+      // TODO use MEMORY_MAX?
+      uint16_t bytecode[1 << 16];
+      int len = assemble_program (bytecode, in);
+      rc = (fwrite (bytecode, sizeof (uint16_t), len, out) == len) ? 0 : 1;
     }
 
 cleanup:
