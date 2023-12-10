@@ -27,6 +27,8 @@
 #include <unistd.h>
 
 #define MEMORY_MAX (1 << 16)
+uint16_t memory[MEMORY_MAX]; /* 65536 locations */
+uint16_t reg[R_COUNT];
 
 struct termios original_tio;
 
@@ -48,13 +50,14 @@ restore_input_buffering ()
 void
 handle_interrupt (int signal)
 {
+  // TODO handle this for interactive mode (drop back into shell)
   restore_input_buffering ();
   printf ("\n");
   exit (-2);
 }
 
 void
-read_image_file (uint16_t memory[], FILE *file)
+read_image_file (FILE *file)
 {
   /* the origin tells us where in memory to place the image */
   uint16_t origin;
@@ -75,14 +78,14 @@ read_image_file (uint16_t memory[], FILE *file)
 }
 
 int
-read_image (uint16_t memory[], const char *image_path)
+read_image (const char *image_path)
 {
   FILE *file = fopen (image_path, "rb");
   if (!file)
     {
       return 0;
     };
-  read_image_file (memory, file);
+  read_image_file (file);
   fclose (file);
   return 1;
 }
@@ -109,12 +112,14 @@ typedef struct command
 
 static command command_table[]
     = { { "assemble", "[file...]",
-          "asssemble and load one or more assembly files" },
+          "assemble and load one or more assembly files" },
         { "load", "[file...]", "load one or more object files" },
+        { "clear", 0, "clear memory and registers" },
         { "regs", 0, "display the current contents of the registers" },
+        { "run", 0, "run the currently-loaded program" },
         { "help", 0, "display this help message" },
         { "exit", 0, "exit the program" },
-        { 0 } };
+        0 };
 
 static void
 print_help ()
@@ -128,16 +133,36 @@ print_help ()
 }
 
 static int
-process_command (const char *input)
+process_command (char *input)
 {
   if (strstr (input, "help") == input)
     {
       print_help ();
     }
+  else if (strstr (input, "load") == input)
+    {
+      for (char *p = strtok (input + 4, " "); p; p = strtok (0, " "))
+        {
+          printf ("loading %s...", p);
+
+          if (!read_image (p))
+            {
+              printf ("failed to load image: %s\n", p);
+            }
+          else
+            {
+              printf ("successfully loaded\n");
+            }
+        }
+    }
+  else if (strstr (input, "run") == input)
+    {
+      execute_program (memory, reg);
+    }
   else
     {
       printf ("unknown command: %s\n", input);
-      print_help ();
+      // print_help ();
     }
 }
 
@@ -150,10 +175,10 @@ prompt (char *current_input)
 }
 
 static int
-handle_interactive (uint16_t memory[], uint16_t reg[])
+handle_interactive ()
 {
   // TODO define buf size somewhere else
-  char buf[1024], c, *p = buf;
+  char buf[1024], c, *cursor = buf, *bufend = buf;
   int running = 1, rc = 0;
 
   prompt (0);
@@ -166,20 +191,26 @@ handle_interactive (uint16_t memory[], uint16_t reg[])
           running = 0;
           break;
 
-        case 0x08: // ^H
-        case 0x7f: // backspace
+        case '\b': // backspace
+        case 0x7f: // ^H
           {
-            if (p != buf) // we have existing input
+            if (cursor != buf) // cursor is beyond the beginning of the line
               {
                 // TODO better way to handle backspace?
                 putc ('\b', stdout);
-                putc (' ', stdout);
+                putc (' ',
+                      stdout); // make it "look like" the character disappeared
                 putc ('\b', stdout);
-                *(--p) = 0;
+                *(--cursor) = 0;
                 // prompt (buf);
               }
           }
           break;
+
+          // case 0x1b: // ESC
+          //   {
+          //   }
+          //   break;
 
         case '\t':
           {
@@ -193,11 +224,12 @@ handle_interactive (uint16_t memory[], uint16_t reg[])
         case '\n':
           {
             putc (c, stdout);
-            if (p != buf) // if the input buffer isn't empty
+            if (*buf) // we have existing input
               {
                 process_command (buf);
-                p = buf;
-                *p = 0;
+                // clear the buffer
+                cursor = buf;
+                *cursor = 0;
               }
             prompt (0);
           };
@@ -208,13 +240,14 @@ handle_interactive (uint16_t memory[], uint16_t reg[])
             // fprintf (stderr, "\ngot char: %02x\n", c);
             if (isprint (c))
               {
-                *p++ = c;
-                *p = 0;
+                *cursor++ = c;
+                *cursor = 0;
                 putc (c, stdout);
               }
             else
               {
                 fprintf (stderr, "unhandled code: %02x\n", c);
+                prompt (buf);
               }
           }
           break;
@@ -279,9 +312,6 @@ main (int argc, const char *argv[])
                 poptStrerror (rc));
     }
 
-  uint16_t memory[MEMORY_MAX]; /* 65536 locations */
-  uint16_t reg[R_COUNT];
-
   int programs_loaded = 0;
   for (const char *infile = poptGetArg (optCon); infile;
        infile = poptGetArg (optCon))
@@ -289,7 +319,7 @@ main (int argc, const char *argv[])
       if (interactive)
         printf ("loading %s...", infile);
 
-      if (!read_image (memory, infile))
+      if (!read_image (infile))
         {
           printf ("failed to load image: %s\n", infile);
           exit (1);
