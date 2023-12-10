@@ -15,9 +15,6 @@ print_program (FILE *out, int flags, program *prog)
 
   for (instruction *inst = prog->instructions; inst; inst = inst->next)
     {
-      if (resolve_symbols (prog, inst) != 0)
-        return 1;
-
       uint16_t bytecode = SWAP16 (inst->inst);
 
       if (flags & FORMAT_PRETTY)

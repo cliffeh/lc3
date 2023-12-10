@@ -179,23 +179,33 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
+  if ((rc = parse_program (&prog, in)) != 0)
+    goto cleanup;
+  if ((rc = resolve_symbols (&prog)) != 0)
+    goto cleanup;
 
   if (flags)
     {
-      if ((rc = parse_program (&prog, in)) == 0)
-        {
-          rc = print_program (out, flags, &prog);
-        }
+      rc = print_program (out, flags, &prog);
     }
   else
     {
-      // TODO use MEMORY_MAX?
-      uint16_t bytecode[1 << 16];
-      int len = assemble_program (bytecode, in);
-      for (int i = 0; i < len; i++)
-        bytecode[i] = SWAP16 (bytecode[i]);
-
-      rc = (fwrite (bytecode, sizeof (uint16_t), len, out) == len) ? 0 : 1;
+      uint16_t bytecode = SWAP16 (prog.orig);
+      if ((rc = (fwrite (&bytecode, sizeof (uint16_t), 1, out))) != 1)
+        {
+          fprintf (stderr, "write error...bailing.\n");
+          goto cleanup;
+        }
+      for (instruction *inst = prog.instructions; inst; inst = inst->next)
+        {
+          bytecode = SWAP16 (inst->inst);
+          if ((rc = (fwrite (&bytecode, sizeof (uint16_t), 1, out))) != 1)
+            {
+              fprintf (stderr, "write error...bailing.\n");
+              goto cleanup;
+            }
+        }
+      rc = 0;
     }
 
 cleanup:
