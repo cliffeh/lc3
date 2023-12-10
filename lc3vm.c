@@ -188,11 +188,13 @@ prompt (char *current_input)
     printf ("%s", current_input);
 }
 
+#define BOOP putc ('\a', stdout)
+
 static int
 handle_interactive ()
 {
   // TODO define buf size somewhere else
-  char buf[1024], c, *cursor = buf, *bufend = buf;
+  char buf[1024] = "", c, *cursor = buf, *bufend = buf;
   int running = 1, rc = 0;
 
   prompt (0);
@@ -200,31 +202,76 @@ handle_interactive ()
     {
       switch (c = getchar ())
         {
-        case 0x04: // ^D
         case EOF:
           running = 0;
+        case 0x04: // ^D
+          if (!*buf)
+            running = 0;
           break;
 
         case '\b': // backspace
         case 0x7f: // ^H
           {
-            if (cursor != buf) // cursor is beyond the beginning of the line
+            // TODO what if our cursor is in the middle of the buffer?
+            if (cursor > buf) // cursor is beyond the beginning of the line
               {
-                // TODO better way to handle backspace?
-                putc ('\b', stdout);
-                putc (' ',
-                      stdout); // make it "look like" the character disappeared
-                putc ('\b', stdout);
+                // replace printed character with a space to make it "look
+                // like" it's disappeared
+                printf ("\b \b");
                 *(--cursor) = 0;
-                // prompt (buf);
               }
           }
           break;
 
-          // case 0x1b: // ESC
-          //   {
-          //   }
-          //   break;
+        case 0x1b: // ESC
+          {
+            switch (c = getchar ())
+              {
+              case '[':
+                {
+                  switch (c = getchar ())
+                    {
+                      // TODO implement!
+                    case 'A': // up arrow
+                      break;
+                    case 'B': // down arrow
+                      break;
+                    case 'C': // right arrow
+                      {
+                        if (*cursor)
+                          putc (*cursor++, stdout);
+                      }
+                      break;
+                    case 'D': // left arrow
+                      {
+                        if (cursor > buf) // cursor is beyond the beginning of
+                                          // the line
+                          {
+                            putc ('\b', stdout);
+                            cursor--;
+                          }
+                      }
+                      break;
+                    default:
+                      {
+                        BOOP;
+                        fprintf (stderr, "unhandled escape sequence: [%c\n",
+                                 c);
+                        prompt (buf);
+                      }
+                    }
+                }
+                break;
+
+              default:
+                {
+                  BOOP;
+                  fprintf (stderr, "unhandled escape code: %02x\n", c);
+                  prompt (buf);
+                }
+              }
+          }
+          break;
 
         case '\t':
           {
@@ -240,6 +287,7 @@ handle_interactive ()
             putc (c, stdout);
             if (*buf) // we have existing input
               {
+                // TODO handle this better
                 char *cmd = strtok (buf, " ");
                 char *args = strtok (0, " ");
                 process_command (cmd, args); // TODO capture return
@@ -257,13 +305,29 @@ handle_interactive ()
             // fprintf (stderr, "\ngot char: %02x\n", c);
             if (isprint (c))
               {
-                *cursor++ = c;
-                *cursor = 0;
-                putc (c, stdout);
+                // if we're appending to the end of the buffer then we want to
+                // ensure it remains null-terminated
+                if (!*cursor)
+                  *(cursor + 1) = 0;
+
+                // if we're not already at the end of the buffer then we need
+                // to shift everything to the right 1
+                for (char *p = cursor + strlen (cursor); p >= cursor; p--)
+                  {
+                    *(p + 1) = *p;
+                  }
+
+                *cursor = c;
+                int len = printf ("%s", cursor++);
+
+                // move the (visible) cursor back to where it should be
+                while (--len > 0)
+                  putc ('\b', stdout);
               }
             else
               {
-                fprintf (stderr, "unhandled code: %02x\n", c);
+                BOOP;
+                fprintf (stderr, "unhandled unprintable character: %02x\n", c);
                 prompt (buf);
               }
           }
