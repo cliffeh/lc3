@@ -321,7 +321,16 @@ handle_interactive ()
                   process_command (cmd, args); // TODO capture return
 
                 // append it to our history
-                history[history_pos++ % MAX_HISTORY] = strdup (buf);
+                if (history[history_pos])
+                  {
+                    if (strcmp (buf, history[history_pos]) != 0) // dedupe
+                      {
+                        history_pos = (history_pos + 1) % MAX_HISTORY;
+                        if (history[history_pos])
+                          free (history[history_pos]);
+                        history[history_pos] = strdup (buf);
+                      }
+                  }
 
                 // clear the buffer
                 cursor = buf;
