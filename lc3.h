@@ -1,5 +1,13 @@
 #pragma once
 
+#include <stdint.h> // uint16_t
+// TODO i don't like headers creeping in without good reason; can we get
+// stdio.h out of here?
+#include <stdio.h> // FILE *
+
+int assemble_program (uint16_t dest[], FILE *in);
+
+// TODO all of the below is internal and can move elsewhere
 #define SWAP16(x) ((x << 8) | (x >> 8))
 
 // registers

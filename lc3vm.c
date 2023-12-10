@@ -90,6 +90,16 @@ read_image (const char *image_path)
   return 1;
 }
 
+void
+load_image (const uint16_t image[], uint16_t len)
+{
+  if (!len)
+    return;
+
+  uint16_t origin = image[0];
+  memcpy (memory + origin, image + 1, len - 1);
+}
+
 // TODO put this in a header somewhere
 int execute_program (uint16_t memory[], uint16_t reg[]);
 
@@ -133,15 +143,19 @@ print_help ()
 }
 
 static int
-process_command (char *input)
+process_command (char *cmd, char *args)
 {
-  if (strstr (input, "help") == input)
+  if (strcmp (cmd, "help") == 0)
     {
       print_help ();
     }
-  else if (strstr (input, "load") == input)
+  // else if (strcmp (cmd, "assemble") == 0)
+  //   {
+
+  //   }
+  else if (strcmp (cmd, "load") == 0)
     {
-      for (char *p = strtok (input + 4, " "); p; p = strtok (0, " "))
+      for (char *p = args; p; p = strtok (0, " ")) // danger!
         {
           printf ("loading %s...", p);
 
@@ -155,13 +169,13 @@ process_command (char *input)
             }
         }
     }
-  else if (strstr (input, "run") == input)
+  else if (strcmp (cmd, "run") == 0)
     {
       execute_program (memory, reg);
     }
   else
     {
-      printf ("unknown command: %s\n", input);
+      printf ("unknown or unimplemented command: %s\n", cmd);
       // print_help ();
     }
 }
@@ -226,7 +240,10 @@ handle_interactive ()
             putc (c, stdout);
             if (*buf) // we have existing input
               {
-                process_command (buf);
+                char *cmd = strtok (buf, " ");
+                char *args = strtok (0, " ");
+                process_command (cmd, args); // TODO capture return
+
                 // clear the buffer
                 cursor = buf;
                 *cursor = 0;

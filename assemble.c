@@ -28,12 +28,12 @@ assemble_program (uint16_t dest[], FILE *in)
   parse_program (&prog, in);
 
   int i = 0;
-  dest[i++] = SWAP16 (prog.orig);
+  dest[i++] = prog.orig;
   for (instruction *inst = prog.instructions; inst; inst = inst->next)
     {
       resolve_symbols (&prog, inst);
-      dest[i++] = SWAP16 (inst->inst);
+      dest[i++] = inst->inst;
     }
-    
+
   return i;
 }

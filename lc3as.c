@@ -192,6 +192,9 @@ main (int argc, const char *argv[])
       // TODO use MEMORY_MAX?
       uint16_t bytecode[1 << 16];
       int len = assemble_program (bytecode, in);
+      for (int i = 0; i < len; i++)
+        bytecode[i] = SWAP16 (bytecode[i]);
+
       rc = (fwrite (bytecode, sizeof (uint16_t), len, out) == len) ? 0 : 1;
     }
 
