@@ -212,13 +212,20 @@ handle_interactive ()
         case '\b': // backspace
         case 0x7f: // ^H
           {
-            // TODO what if our cursor is in the middle of the buffer?
-            if (cursor > buf) // cursor is beyond the beginning of the line
+            if (cursor > buf) // we're beyond the beginning of the line
               {
-                // replace printed character with a space to make it "look
-                // like" it's disappeared
-                printf ("\b \b");
-                *(--cursor) = 0;
+                // shift everything left by 1
+                for (char *p = cursor - 1; *p; p++)
+                  {
+                    *p = *(p + 1);
+                  }
+                putc ('\b', stdout); // back up our cursor
+
+                // hack: append a space to make it "look like" the last
+                // character has been removed/everything has been shifted left
+                int len = printf ("%s ", --cursor);
+                while (len-- > 0)
+                  putc ('\b', stdout);
               }
           }
           break;
@@ -290,7 +297,9 @@ handle_interactive ()
                 // TODO handle this better
                 char *cmd = strtok (buf, " ");
                 char *args = strtok (0, " ");
-                process_command (cmd, args); // TODO capture return
+
+                if (cmd)
+                  process_command (cmd, args); // TODO capture return
 
                 // clear the buffer
                 cursor = buf;
