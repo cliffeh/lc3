@@ -189,13 +189,15 @@ prompt (char *current_input)
 }
 
 #define BOOP putc ('\a', stdout)
+#define INPUT_BUFFER_SIZE 4096
+#define MAX_HISTORY 2
 
 static int
 handle_interactive ()
 {
-  // TODO define buf size somewhere else
-  char buf[1024] = "", c, *cursor = buf, *bufend = buf;
-  int running = 1, rc = 0;
+  char buf[INPUT_BUFFER_SIZE] = "", c, *cursor = buf, *bufend = buf;
+  char *history[MAX_HISTORY];
+  int running = 1, rc = 0, history_pos = 0;
 
   prompt (0);
   do
@@ -280,6 +282,23 @@ handle_interactive ()
           }
           break;
 
+        case 0x01: // ^A (beginning-of-line)
+          {
+            while (cursor > buf)
+              {
+                cursor--;
+                putc ('\b', stdout);
+              }
+          }
+          break;
+
+        case 0x05: // ^E (end-of-line)
+          {
+            printf ("%s", cursor);
+            cursor = buf + strlen (buf);
+          }
+          break;
+
         case '\t':
           {
             // TODO match on existing input?
@@ -300,6 +319,9 @@ handle_interactive ()
 
                 if (cmd)
                   process_command (cmd, args); // TODO capture return
+
+                // append it to our history
+                history[history_pos++ % MAX_HISTORY] = strdup (buf);
 
                 // clear the buffer
                 cursor = buf;
@@ -336,7 +358,8 @@ handle_interactive ()
             else
               {
                 BOOP;
-                fprintf (stderr, "unhandled unprintable character: %02x\n", c);
+                fprintf (stderr, "\nunhandled unprintable character: %02x\n",
+                         c);
                 prompt (buf);
               }
           }
