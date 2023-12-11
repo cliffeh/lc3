@@ -19,7 +19,9 @@
 #include <string.h>
 
 #define HELP_PREAMBLE                                                         \
-  "Note: if FILE is not provided this program will read from stdin."
+  "If FILE is not provided this program will read from stdin.\n\n"            \
+  "Supported output formats:\n\n  a[ddress], b[its], d[ebug], h[ex], "        \
+  "o[bject], p[retty]\n\nNote: -Fdebug is shorthand for -Fa -Fh -Fp"
 
 #define ERR_EXIT(args...)                                                     \
   do                                                                          \
@@ -45,18 +47,16 @@ main (int argc, const char *argv[])
   // hack for injecting preamble/postamble into the help message
   struct poptOption emptyTable[] = { POPT_TABLEEND };
 
-  struct poptOption progOptions[] = {
-    /* longName, shortName, argInfo, arg, val, descrip, argDescript */
-    { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &format, 'F',
-      "output format; can be one of a[ddress], b[its], d[ebug], h[ex], "
-      "o[bject], p[retty] (note: debug is shorthand for -Fa -Fh -Fp)",
-      "FORMAT" },
-    { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &outfile,
-      'o', "write output to FILE", "FILE" },
-    { "version", '\0', POPT_ARG_NONE, 0, 'V',
-      "show version information and exit", 0 },
-    POPT_TABLEEND
-  };
+  struct poptOption progOptions[]
+      = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
+            &format, 'F', "output format", "FORMAT" },
+          { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
+            &outfile, 'o', "write output to FILE", "FILE" },
+          { "version", '\0', POPT_ARG_NONE, 0, 'V',
+            "show version information and exit", 0 },
+          POPT_TABLEEND
+        };
 
   struct poptOption options[] = {
 #ifdef HELP_PREAMBLE
