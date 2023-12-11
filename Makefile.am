@@ -20,15 +20,19 @@ SUBDIRS = popt
 # TODO move all this under tests with a separate makefile
 # check_PROGRAMS =
 
-check_SCRIPTS = test/2048.sh test/rogue.sh test/all-instructions.sh test/hello-world.sh
-MEMCHECKS = test/valgrind-lc3as-2048.sh test/valgrind-lc3vm-hello-world.sh
+check_SCRIPTS = test/2048.sh test/rogue.sh test/all-instructions.sh test/hello.sh
+MEMCHECKS = test/valgrind-lc3as-2048.sh test/valgrind-lc3vm-hello.sh
 check_SCRIPTS += $(MEMCHECKS)
 
 CLEANFILES = test/*.valgrind
 
 TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
-TEST_INPUTS = test/2048.asm test/2048.obj test/rogue.asm test/rogue.obj test/all-instructions.asm test/hello-world.asm test/hello-world.obj
+TEST_INPUTS = \
+    test/2048.asm test/2048.obj \
+    test/rogue.asm test/rogue.obj \
+    test/hello.asm test/hello.obj \
+    test/all-instructions.asm
 
 dist_doc_DATA = LICENSE README.md TODO.md
 

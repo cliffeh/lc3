@@ -8,6 +8,6 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-logfile="$BUILDDIR/test/valgrind-lc3vm-hello-world.valgrind"
+logfile="$BUILDDIR/test/valgrind-lc3vm-hello.valgrind"
 
-valgrind --leak-check=full --error-exitcode=1 --log-file="$logfile" "$BUILDDIR/lc3vm" "$SRCDIR/test/hello-world.obj" > /dev/null
+valgrind --leak-check=full --error-exitcode=1 --log-file="$logfile" "$BUILDDIR/lc3vm" "$SRCDIR/test/hello.obj" > /dev/null

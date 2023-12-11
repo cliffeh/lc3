@@ -6,7 +6,7 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-result=$("$BUILDDIR/lc3vm" "$SRCDIR/test/hello-world.obj")
+result=$("$BUILDDIR/lc3vm" "$SRCDIR/test/hello.obj")
 
 if [ "$result" != "hello world!" ] ; then
     exit 1

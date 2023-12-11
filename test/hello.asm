@@ -4,6 +4,6 @@ lea r0, msg
 puts
 halt
 
-msg .stringz "hello world!"
+msg .stringz "hello world!\n"
 
 .end
