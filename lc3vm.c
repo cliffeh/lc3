@@ -233,7 +233,8 @@ prompt (char *current_input)
 static int
 handle_interactive ()
 {
-  char buf[INPUT_BUFFER_SIZE] = "", c, *cursor = buf, *bufend = buf;
+  char buf[INPUT_BUFFER_SIZE] = "", cpbuf[INPUT_BUFFER_SIZE] = "", c,
+       *cursor = buf;
   int running = 1, rc = 0;
 
   prompt (0);
@@ -335,6 +336,31 @@ handle_interactive ()
             cursor = buf + strlen (buf);
           }
           break;
+
+        case 0x0b: // ^K (cut after cursor)
+          {
+            char *p = cursor, *q = cpbuf;
+            while (*p)
+              {
+                *q++ = *p;
+                *p++ = 0;
+                // hack: append a space to make it "look like" the character
+                // has disappeared
+                putc (' ', stdout);
+              }
+            *p = 0;
+            *q = 0;
+
+            while (p-- != cursor)
+              putc ('\b', stdout); // move visible cursor back
+          }
+          break;
+
+          // case 0x19: // ^Y (paste buffer)
+          //   {
+          // TODO
+          //   }
+          //   break;
 
         case 0x0c: // ^L (clear)
           {
