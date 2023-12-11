@@ -179,10 +179,33 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
+  if ((rc = parse_program (&prog, in)) != 0)
+    goto cleanup;
+  if ((rc = resolve_symbols (&prog)) != 0)
+    goto cleanup;
 
-  if ((rc = parse_program (&prog, in)) == 0)
+  if (flags)
     {
       rc = print_program (out, flags, &prog);
+    }
+  else
+    {
+      uint16_t bytecode = SWAP16 (prog.orig);
+      if ((rc = (fwrite (&bytecode, sizeof (uint16_t), 1, out))) != 1)
+        {
+          fprintf (stderr, "write error...bailing.\n");
+          goto cleanup;
+        }
+      for (instruction *inst = prog.instructions; inst; inst = inst->next)
+        {
+          bytecode = SWAP16 (inst->inst);
+          if ((rc = (fwrite (&bytecode, sizeof (uint16_t), 1, out))) != 1)
+            {
+              fprintf (stderr, "write error...bailing.\n");
+              goto cleanup;
+            }
+        }
+      rc = 0;
     }
 
 cleanup:
@@ -193,33 +216,6 @@ cleanup:
   poptFreeContext (optCon);
 
   exit (rc);
-}
-
-symbol *
-find_symbol_by_label (symbol *symbols, const char *label)
-{
-  for (symbol *sym = symbols; sym; sym = sym->next)
-    {
-      if (strcmp (label, sym->label) == 0)
-        return sym;
-    }
-  return 0;
-}
-
-symbol *
-find_or_create_symbol (program *prog, const char *label)
-{
-  symbol *sym = find_symbol_by_label (prog->symbols, label);
-
-  if (!sym)
-    {
-      sym = calloc (1, sizeof (symbol));
-      sym->label = strdup (label);
-      sym->next = prog->symbols;
-      prog->symbols = sym;
-    }
-
-  return sym;
 }
 
 static int

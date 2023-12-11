@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdint.h> // uint16_t
+
+// TODO all of the below is internal and can move elsewhere
 #define SWAP16(x) ((x << 8) | (x >> 8))
 
 // registers

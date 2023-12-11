@@ -6,8 +6,13 @@
 * for everything that can use a label, also allow it to use a NUMLIT
 
 ## lc3vm (virtual machine)
-* interactive mode
 * support windows?
+* interactive mode improvements
+  * maintain command history
+  * implement unimplemented commands
+  * command aliases/shortcuts
+  * smarter tab completion
+  * make ^C drop the user back into the shell
 
 ## lc3diff
 * make it moar prettier?
