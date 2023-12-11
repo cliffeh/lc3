@@ -227,6 +227,18 @@ prompt (char *current_input)
     printf ("%s", current_input);
 }
 
+static void
+extend_cursor (char *cursor, int n)
+{
+  // ensure we're null-terminated
+  int cursor_len = strlen (cursor);
+  *(cursor + cursor_len + n) = 0;
+
+  // shift everything to the right n
+  for (char *p = cursor + cursor_len; p >= cursor; p--)
+    *(p + n) = *p;
+}
+
 #define BOOP putc ('\a', stdout)
 #define INPUT_BUFFER_SIZE 4096
 
@@ -356,11 +368,23 @@ handle_interactive ()
           }
           break;
 
-          // case 0x19: // ^Y (paste buffer)
-          //   {
-          // TODO
-          //   }
-          //   break;
+        case 0x19: // ^Y (paste buffer)
+          {
+            // make room for our copy buffer
+            int cursorlen = strlen(cursor);
+            int pastelen = strlen (cpbuf);
+            extend_cursor (cursor, pastelen);
+
+            // paste it and output it
+            strncpy (cursor, cpbuf, pastelen);
+            printf ("%s", cursor);
+            cursor += pastelen;
+
+            // move the (visible) cursor back to where it should be
+            while (cursorlen-- > 0)
+              putc ('\b', stdout);
+          }
+          break;
 
         case 0x0c: // ^L (clear)
           {
@@ -403,17 +427,7 @@ handle_interactive ()
             // fprintf (stderr, "\ngot char: %02x\n", c);
             if (isprint (c))
               {
-                // if we're appending to the end of the buffer then we want to
-                // ensure it remains null-terminated
-                if (!*cursor)
-                  *(cursor + 1) = 0;
-
-                // if we're not already at the end of the buffer then we need
-                // to shift everything to the right 1
-                for (char *p = cursor + strlen (cursor); p >= cursor; p--)
-                  {
-                    *(p + 1) = *p;
-                  }
+                extend_cursor (cursor, 1);
 
                 *cursor = c;
                 int len = printf ("%s", cursor++);
