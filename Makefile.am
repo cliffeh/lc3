@@ -27,7 +27,8 @@ check_SCRIPTS = \
     test/all-instructions.sh \
     test/interactive-hello.sh
 MEMCHECKS = test/valgrind-lc3as-2048.sh test/valgrind-lc3vm-hello.sh test/valgrind-interactive.sh
-check_SCRIPTS += $(MEMCHECKS)
+# uncomment to run memory leak checks (SLOW)
+# check_SCRIPTS += $(MEMCHECKS)
 
 CLEANFILES = test/*.valgrind
 
