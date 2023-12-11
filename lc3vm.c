@@ -336,6 +336,13 @@ handle_interactive ()
           }
           break;
 
+        case 0x0c: // ^L (clear)
+          {
+            printf("\e[2J\e[H\e[3J");
+            prompt(buf);
+          }
+          break;
+
         case '\t':
           {
             // TODO match on existing input?
