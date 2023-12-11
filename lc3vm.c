@@ -227,14 +227,12 @@ prompt (char *current_input)
 
 #define BOOP putc ('\a', stdout)
 #define INPUT_BUFFER_SIZE 4096
-#define MAX_HISTORY 2
 
 static int
 handle_interactive ()
 {
   char buf[INPUT_BUFFER_SIZE] = "", c, *cursor = buf, *bufend = buf;
-  char *history[MAX_HISTORY];
-  int running = 1, rc = 0, history_pos = 0;
+  int running = 1, rc = 0;
 
   prompt (0);
   do
@@ -363,18 +361,6 @@ handle_interactive ()
 
                 if (cmd)
                   process_command (cmd, args); // TODO capture return
-
-                // append it to our history
-                if (history[history_pos])
-                  {
-                    if (strcmp (buf, history[history_pos]) != 0) // dedupe
-                      {
-                        history_pos = (history_pos + 1) % MAX_HISTORY;
-                        if (history[history_pos])
-                          free (history[history_pos]);
-                        history[history_pos] = strdup (buf);
-                      }
-                  }
 
                 // clear the buffer
                 cursor = buf;
