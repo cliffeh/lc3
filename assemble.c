@@ -52,3 +52,36 @@ find_or_create_symbol (program *prog, const char *label)
 
   return sym;
 }
+
+void
+free_instructions (instruction *instructions)
+{
+  instruction *inst = instructions;
+
+  while (inst)
+    {
+      if (inst->pretty)
+        free (inst->pretty);
+
+      instruction *tmp = inst->next;
+      free (inst);
+      inst = tmp;
+    }
+}
+
+void
+free_symbols (symbol *symbols)
+{
+  // TODO figure out why this hangs!
+  symbol *sym = symbols;
+
+  while (sym)
+    {
+      if (sym->label)
+        free (sym->label);
+
+      symbol *tmp = sym->next;
+      free (sym);
+      sym = tmp;
+    }
+}

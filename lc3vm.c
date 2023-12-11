@@ -186,6 +186,8 @@ process_command (char *cmd, char *args)
 
               printf ("successfully loaded\n");
             }
+          free_instructions (prog.instructions);
+          free_symbols (prog.symbols);
         }
 
       return error_count;
@@ -336,8 +338,8 @@ handle_interactive ()
 
         case 0x0c: // ^L (clear)
           {
-            printf("\e[2J\e[H\e[3J");
-            prompt(buf);
+            printf ("\e[2J\e[H\e[3J");
+            prompt (buf);
           }
           break;
 
