@@ -11,6 +11,7 @@
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
 #include "lc3.h"
+#include "lc3as.h"
 #include "popt/popt.h"
 
 #include <ctype.h> // isprint()
@@ -149,10 +150,46 @@ process_command (char *cmd, char *args)
     {
       print_help ();
     }
-  // else if (strcmp (cmd, "assemble") == 0)
-  //   {
+  else if (strcmp (cmd, "assemble") == 0)
+    {
+      int error_count = 0;
 
-  //   }
+      for (char *arg = args; arg; arg = strtok (0, " ")) // danger!
+        {
+          printf ("assembling %s...", arg);
+
+          program prog
+              = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
+          FILE *in = fopen (arg, "r");
+
+          if (!in)
+            {
+              printf ("failed to open %s\n", arg);
+              error_count++;
+            }
+          else if (parse_program (&prog, in) != 0)
+            {
+
+              printf ("failed to assemble: %s\n", arg);
+              error_count++;
+            }
+          else if (resolve_symbols (&prog) != 0)
+            {
+              error_count++;
+            }
+          else
+            {
+              uint16_t orig = prog.orig;
+              for (instruction *inst = prog.instructions; inst;
+                   inst = inst->next)
+                memory[orig++] = inst->inst;
+
+              printf ("successfully loaded\n");
+            }
+        }
+
+      return error_count;
+    }
   else if (strcmp (cmd, "load") == 0)
     {
       for (char *p = args; p; p = strtok (0, " ")) // danger!

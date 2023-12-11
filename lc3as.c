@@ -218,33 +218,6 @@ cleanup:
   exit (rc);
 }
 
-symbol *
-find_symbol_by_label (symbol *symbols, const char *label)
-{
-  for (symbol *sym = symbols; sym; sym = sym->next)
-    {
-      if (strcmp (label, sym->label) == 0)
-        return sym;
-    }
-  return 0;
-}
-
-symbol *
-find_or_create_symbol (program *prog, const char *label)
-{
-  symbol *sym = find_symbol_by_label (prog->symbols, label);
-
-  if (!sym)
-    {
-      sym = calloc (1, sizeof (symbol));
-      sym->label = strdup (label);
-      sym->next = prog->symbols;
-      prog->symbols = sym;
-    }
-
-  return sym;
-}
-
 static int
 compare_symbol_addrs (const void *sym1, const void *sym2)
 {
