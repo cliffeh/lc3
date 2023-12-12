@@ -215,7 +215,7 @@ process_command (const char *cmd, char *args)
 
             if (!in)
               {
-                printf ("failed to open %s\n", arg);
+                printf ("failed to open: %s\n", arg);
                 error_count++;
               }
             else if (parse_program (&prog, in) != 0)
@@ -226,6 +226,7 @@ process_command (const char *cmd, char *args)
               }
             else if (resolve_symbols (&prog) != 0)
               {
+                printf ("symbol resolution error: %s\n", arg);
                 error_count++;
               }
             else
