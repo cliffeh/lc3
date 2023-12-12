@@ -1,4 +1,4 @@
-#include "lc3as.h"
+#include "print.h"
 
 int
 print_program (FILE *out, int flags, program *prog)
@@ -72,6 +72,28 @@ print_program (FILE *out, int flags, program *prog)
 
   if (flags & FORMAT_PRETTY)
     fprintf (out, ".END\n");
+
+  return 0;
+}
+
+int
+write_bytecode (FILE *out, program *prog)
+{
+  uint16_t bytecode = SWAP16 (prog->orig);
+  if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+    {
+      fprintf (stderr, "write error...bailing.\n");
+      return 1;
+    }
+  for (instruction *inst = prog->instructions; inst; inst = inst->next)
+    {
+      bytecode = SWAP16 (inst->inst);
+      if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+        {
+          fprintf (stderr, "write error...bailing.\n");
+          return 1;
+        }
+    }
 
   return 0;
 }

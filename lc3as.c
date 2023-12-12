@@ -10,9 +10,10 @@
 
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
-#include "lc3as.h"
+#include "program.h"
 #include "parse.h"
 #include "popt/popt.h"
+#include "print.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -190,22 +191,7 @@ main (int argc, const char *argv[])
     }
   else
     {
-      uint16_t bytecode = SWAP16 (prog.orig);
-      if ((rc = (fwrite (&bytecode, sizeof (uint16_t), 1, out))) != 1)
-        {
-          fprintf (stderr, "write error...bailing.\n");
-          goto cleanup;
-        }
-      for (instruction *inst = prog.instructions; inst; inst = inst->next)
-        {
-          bytecode = SWAP16 (inst->inst);
-          if ((rc = (fwrite (&bytecode, sizeof (uint16_t), 1, out))) != 1)
-            {
-              fprintf (stderr, "write error...bailing.\n");
-              goto cleanup;
-            }
-        }
-      rc = 0;
+      rc = write_bytecode(out, &prog);
     }
 
 cleanup:

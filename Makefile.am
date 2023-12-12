@@ -1,14 +1,35 @@
 bin_PROGRAMS = lc3as lc3vm lc3diff
-lc3as_SOURCES = parse.y scan.l lc3.h lc3as.c lc3as.h assemble.c print.c popt/popt.h
+
+lc3as_SOURCES = \
+    lc3as.c \
+    assemble.c \
+    machine.h \
+    parse.h \
+    parse.y \
+    print.c \
+    print.h \
+    program.h \
+    scan.l \
+    popt/popt.h
 lc3as_LDADD = popt/libpopt.a
 
-lc3vm_SOURCES = lc3vm.c lc3as.h lc3.h assemble.c execute.c parse.y scan.l popt/popt.h
+lc3vm_SOURCES = \
+    lc3vm.c \
+    assemble.c \
+    execute.c \
+    interactive.c \
+    machine.c \
+    machine.h \
+    parse.h \
+    parse.y \
+    program.h \
+    scan.l \
+    popt/popt.h
 lc3vm_LDADD = popt/libpopt.a
 
 lc3diff_SOURCES = lc3diff.c
 
-include_HEADERS = lc3.h
-noinst_HEADERS = lc3as.h
+BUILT_SOURCES = parse.h
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
@@ -26,7 +47,11 @@ check_SCRIPTS = \
     test/rogue.sh \
     test/all-instructions.sh \
     test/interactive-hello.sh
-MEMCHECKS = test/valgrind-lc3as-2048.sh test/valgrind-lc3vm-hello.sh test/valgrind-interactive.sh
+MEMCHECKS = \
+    test/valgrind-interactive.sh \
+    test/valgrind-lc3as-2048.sh \
+    test/valgrind-lc3vm-hello.sh
+
 # uncomment to run memory leak checks (SLOW)
 # check_SCRIPTS += $(MEMCHECKS)
 
