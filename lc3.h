@@ -2,7 +2,7 @@
 
 #include <stdint.h> // uint16_t
 
-// TODO all of the below is internal and can move elsewhere
+#define MEMORY_MAX (1 << 16)
 #define SWAP16(x) ((x << 8) | (x >> 8))
 
 // registers
@@ -67,3 +67,10 @@ enum
   TRAP_PUTSP = 0x24, /* output a byte string */
   TRAP_HALT = 0x25   /* halt the program */
 };
+
+typedef struct machine {
+  uint16_t memory[MEMORY_MAX];
+  uint16_t reg[R_COUNT];
+} machine;
+
+int execute_program (machine *vm);

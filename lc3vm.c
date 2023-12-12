@@ -27,8 +27,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define MEMORY_MAX (1 << 16)
-
 struct termios original_tio;
 
 void
@@ -89,7 +87,7 @@ read_image (uint16_t *memory, const char *image_path)
 }
 
 // TODO put this in a header somewhere
-int execute_program (uint16_t memory[], uint16_t reg[]);
+int execute_program (machine *vm);
 
 #define ERR_EXIT(args...)                                                     \
   do                                                                          \
@@ -181,7 +179,7 @@ parse_command (const char *s)
 }
 
 static int
-process_command (uint16_t *memory, uint16_t *reg, const char *cmd, char *args)
+process_command (machine *vm, const char *cmd, char *args)
 {
   int error_count = 0;
   switch (parse_command (cmd))
@@ -221,7 +219,7 @@ process_command (uint16_t *memory, uint16_t *reg, const char *cmd, char *args)
                 uint16_t orig = prog.orig;
                 for (instruction *inst = prog.instructions; inst;
                      inst = inst->next)
-                  memory[orig++] = inst->inst;
+                  vm->memory[orig++] = inst->inst;
 
                 printf ("successfully loaded\n");
               }
@@ -237,7 +235,7 @@ process_command (uint16_t *memory, uint16_t *reg, const char *cmd, char *args)
           {
             printf ("loading %s...", p);
 
-            if (!read_image (memory, p))
+            if (!read_image (vm->memory, p))
               {
                 printf ("failed to load image: %s\n", p);
                 error_count++;
@@ -251,7 +249,7 @@ process_command (uint16_t *memory, uint16_t *reg, const char *cmd, char *args)
       break;
 
     case CMD_RUN:
-      if (execute_program (memory, reg) != 0)
+      if (execute_program (vm) != 0)
         error_count++;
       break;
 
@@ -290,7 +288,7 @@ extend_cursor (char *cursor, int n)
 #define INPUT_BUFFER_SIZE 4096
 
 static int
-handle_interactive (uint16_t *memory, uint16_t *reg)
+handle_interactive (machine *vm)
 {
   char buf[INPUT_BUFFER_SIZE] = "", cpbuf[INPUT_BUFFER_SIZE] = "", c,
        *cursor = buf;
@@ -448,7 +446,7 @@ handle_interactive (uint16_t *memory, uint16_t *reg)
                 char *args = strtok (0, " ");
 
                 if (cmd)
-                  rc = process_command (memory, reg, cmd, args); // TODO capture return
+                  rc = process_command (vm, cmd, args); // TODO capture return
 
                 // clear the buffer
                 cursor = buf;
@@ -541,8 +539,8 @@ main (int argc, const char *argv[])
                 poptStrerror (rc));
     }
 
-  uint16_t memory[MEMORY_MAX];
-  uint16_t reg[R_COUNT];
+  machine vm;
+  memset(&vm, 0, sizeof(machine));
 
   int programs_loaded = 0;
   for (const char *infile = poptGetArg (optCon); infile;
@@ -551,7 +549,7 @@ main (int argc, const char *argv[])
       if (interactive)
         printf ("loading %s...", infile);
 
-      if (!read_image (memory, infile))
+      if (!read_image (vm.memory, infile))
         {
           printf ("failed to load image: %s\n", infile);
           exit (1);
@@ -569,11 +567,11 @@ main (int argc, const char *argv[])
   disable_input_buffering ();
   if (!interactive)
     {
-      rc = execute_program (memory, reg);
+      rc = execute_program (&vm);
     }
   else
     {
-      rc = handle_interactive (memory, reg);
+      rc = handle_interactive (&vm);
     }
   restore_input_buffering ();
 

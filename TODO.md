@@ -13,6 +13,10 @@
   * command aliases/shortcuts
   * smarter tab completion
   * make ^C drop the user back into the shell
+* package memory and regs up into a struct
+* better prompt?
+  * include currently-loaded program?
+  * include indicator of last return code?
 
 ## lc3diff
 * make it moar prettier?

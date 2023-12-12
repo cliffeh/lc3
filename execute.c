@@ -66,8 +66,12 @@ mem_read (uint16_t memory[], uint16_t address)
 }
 
 int
-execute_program (uint16_t memory[], uint16_t reg[])
+execute_program (machine *vm)
 {
+  // for convenience (may refactor later)
+  uint16_t *memory = vm->memory;
+  uint16_t *reg = vm->reg;
+
   /* since exactly one condition flag should be set at any given time, set the
    * Z flag */
   reg[R_COND] = FL_ZRO;
