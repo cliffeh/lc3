@@ -11,7 +11,7 @@
 #define SIGN_EXTEND(x, bits)                                                  \
   ((((x) >> ((bits)-1)) & 1) ? ((x) | (0xFFFF << (bits))) : (x))
 
-uint16_t
+static uint16_t
 check_key ()
 {
   fd_set readfds;
@@ -24,7 +24,7 @@ check_key ()
   return select (1, &readfds, NULL, NULL, &timeout) != 0;
 }
 
-void
+static void
 update_flags (uint16_t reg[], uint16_t r)
 {
   if (reg[r] == 0)
@@ -41,13 +41,13 @@ update_flags (uint16_t reg[], uint16_t r)
     }
 }
 
-void
+static void
 mem_write (uint16_t memory[], uint16_t address, uint16_t val)
 {
   memory[address] = val;
 }
 
-uint16_t
+static uint16_t
 mem_read (uint16_t memory[], uint16_t address)
 {
   if (address == MR_KBSR)
@@ -66,7 +66,7 @@ mem_read (uint16_t memory[], uint16_t address)
 }
 
 int
-execute_program (machine *vm)
+execute_machine (machine *vm)
 {
   // for convenience (may refactor later)
   uint16_t *memory = vm->memory;

@@ -14,6 +14,8 @@ lc3vm_SOURCES = \
     lc3vm.c \
     assemble.c \
     execute.c \
+    interactive.c \
+    machine.c \
     machine.h \
     parse.y \
     program.h \
