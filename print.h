@@ -18,3 +18,4 @@
 #define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_HEX | FORMAT_PRETTY)
 
 int print_program (FILE *out, int flags, program *prog);
+int write_bytecode(FILE *out, program *prog);
