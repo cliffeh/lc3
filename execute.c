@@ -1,4 +1,4 @@
-#include "lc3.h"
+#include "machine.h"
 
 #include <stdint.h>
 #include <stdio.h>

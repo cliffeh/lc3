@@ -10,9 +10,10 @@
 
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
-#include "lc3.h"
-#include "program.h"
+#include "machine.h"
+#include "parse.h"
 #include "popt/popt.h"
+#include "program.h"
 
 #include <ctype.h> // isprint()
 #include <signal.h>
@@ -537,7 +538,7 @@ main (int argc, const char *argv[])
     }
 
   machine vm;
-  memset(&vm, 0, sizeof(machine));
+  memset (&vm, 0, sizeof (machine));
 
   int programs_loaded = 0;
   for (const char *infile = poptGetArg (optCon); infile;
