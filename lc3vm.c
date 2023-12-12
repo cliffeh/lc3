@@ -116,113 +116,170 @@ int execute_program (uint16_t memory[], uint16_t reg[]);
     }                                                                         \
   while (0)
 
+#define CMD_UNK 0
+#define CMD_ASM 1
+#define CMD_LOAD 2
+#define CMD_RUN 3
+#define CMD_HELP 4
+#define CMD_EXIT 99
+
 typedef struct command
 {
-  char *name, *args, *desc;
+  int code;
+  char *name, *args, *desc, *aliases[8]; // surely 8 is enough for anyone?
 } command;
 
 static command command_table[]
-    = { { "assemble", "[file...]",
-          "assemble and load one or more assembly files" },
-        { "load", "[file...]", "load one or more object files" },
-        { "clear", 0, "clear memory and registers" },
-        { "regs", 0, "display the current contents of the registers" },
-        { "run", 0, "run the currently-loaded program" },
-        { "help", 0, "display this help message" },
-        { "exit", 0, "exit the program" },
-        0 };
+    = { /* code, name, args, desc, aliases */
+        { CMD_ASM,
+          "asm",
+          "[file...]",
+          "assemble and load one or more assembly files",
+          { "a", 0 } },
+        { CMD_LOAD,
+          "load",
+          "[file...]",
+          "load one or more object files",
+          { "l", 0 } },
+        { CMD_RUN, "run", 0, "run the currently-loaded program", { "r", 0 } },
+        { CMD_HELP, "help", 0, "display this help message", { "h", "?", 0 } },
+        { CMD_EXIT, "quit", 0, "exit the program", { "q", 0 } },
+        { CMD_EXIT, "exit", 0, "exit the program", { "x", 0 } },
+        { 0, 0, 0, 0, 0 }
+      };
+
+#define STYLE_RST "\e[0m"
+#define STYLE_BLD "\e[1m"
+#define STYLE_DIM "\e[2m"
+#define STYLE_ITL "\e[3m"
+#define STYLE_UND "\e[4m"
 
 static void
-print_help ()
+print_help (char *sofar)
 {
+  if (!sofar)
+    printf (STYLE_DIM "%-12s%-12s%s\n" STYLE_RST, "Command", "Arguments",
+            "Description");
+
   for (command *cmd = command_table; cmd->name; cmd++)
     {
-      printf ("%-10s", cmd->name);
-      printf ("%-10s", cmd->args ? cmd->args : "");
+
+      char buf[1024] = "", *aliases = buf, **p = cmd->aliases;
+      aliases += sprintf (buf, "%s", cmd->name);
+      while (*p)
+        aliases += sprintf (aliases, ", %s", *p++);
+
+      printf (STYLE_BLD "%-12s" STYLE_RST, buf);
+      printf ("%-12s", cmd->args ? cmd->args : "");
       printf ("%s\n", cmd->desc);
     }
 }
 
 static int
+parse_command (const char *s)
+{
+  for (command *cmd = command_table; cmd->name; cmd++)
+    {
+      if (strcmp (s, cmd->name) == 0)
+        return cmd->code;
+
+      for (char **p = cmd->aliases; *p; p++)
+        {
+          if (strcmp (s, *p) == 0)
+            return cmd->code;
+        }
+    }
+
+  return CMD_UNK;
+}
+
+static int
 process_command (char *cmd, char *args)
 {
-  if (strcmp (cmd, "help") == 0)
+  int error_count = 0;
+  switch (parse_command (cmd))
     {
-      print_help ();
-    }
-  else if (strcmp (cmd, "assemble") == 0)
-    {
-      int error_count = 0;
+    case CMD_HELP:
+      print_help (0);
+      break;
 
-      for (char *arg = args; arg; arg = strtok (0, " ")) // danger!
-        {
-          printf ("assembling %s...", arg);
+    case CMD_ASM:
+      {
+        for (char *arg = args; arg; arg = strtok (0, " ")) // danger!
+          {
+            printf ("assembling %s...", arg);
 
-          program prog
-              = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
-          FILE *in = fopen (arg, "r");
+            program prog
+                = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
+            FILE *in = fopen (arg, "r");
 
-          if (!in)
-            {
-              printf ("failed to open %s\n", arg);
-              error_count++;
-            }
-          else if (parse_program (&prog, in) != 0)
-            {
+            if (!in)
+              {
+                printf ("failed to open %s\n", arg);
+                error_count++;
+              }
+            else if (parse_program (&prog, in) != 0)
+              {
 
-              printf ("failed to assemble: %s\n", arg);
-              error_count++;
-            }
-          else if (resolve_symbols (&prog) != 0)
-            {
-              error_count++;
-            }
-          else
-            {
-              uint16_t orig = prog.orig;
-              for (instruction *inst = prog.instructions; inst;
-                   inst = inst->next)
-                memory[orig++] = inst->inst;
+                printf ("failed to assemble: %s\n", arg);
+                error_count++;
+              }
+            else if (resolve_symbols (&prog) != 0)
+              {
+                error_count++;
+              }
+            else
+              {
+                uint16_t orig = prog.orig;
+                for (instruction *inst = prog.instructions; inst;
+                     inst = inst->next)
+                  memory[orig++] = inst->inst;
 
-              printf ("successfully loaded\n");
-            }
-          free_instructions (prog.instructions);
-          free_symbols (prog.symbols);
-        }
+                printf ("successfully loaded\n");
+              }
+            free_instructions (prog.instructions);
+            free_symbols (prog.symbols);
+          }
+      }
+      break;
 
-      return error_count;
-    }
-  else if (strcmp (cmd, "load") == 0)
-    {
-      for (char *p = args; p; p = strtok (0, " ")) // danger!
-        {
-          printf ("loading %s...", p);
+    case CMD_LOAD:
+      {
+        for (char *p = args; p; p = strtok (0, " ")) // danger!
+          {
+            printf ("loading %s...", p);
 
-          if (!read_image (p))
-            {
-              printf ("failed to load image: %s\n", p);
-            }
-          else
-            {
-              printf ("successfully loaded\n");
-            }
-        }
-    }
-  else if (strcmp (cmd, "run") == 0)
-    {
-      execute_program (memory, reg);
-    }
-  else
-    {
+            if (!read_image (p))
+              {
+                printf ("failed to load image: %s\n", p);
+                error_count++;
+              }
+            else
+              {
+                printf ("successfully loaded\n");
+              }
+          }
+      }
+      break;
+
+    case CMD_RUN:
+      if (execute_program (memory, reg) != 0)
+        error_count++;
+      break;
+
+    default:
       printf ("unknown or unimplemented command: %s\n", cmd);
-      // print_help ();
+      error_count++;
+      break;
     }
+
+  return error_count;
 }
 
 #define PROMPT_TEXT "> "
 
 static void
-prompt (char *current_input)
+prompt (const char *current_input)
 {
   printf (PROMPT_TEXT);
   if (current_input)
@@ -336,7 +393,7 @@ handle_interactive ()
 
         case 0x01: // ^A (beginning-of-line)
           {
-            printf("\e[3G"); // move cursor to column 3
+            printf ("\e[3G"); // move cursor to column 3
             cursor = buf;
           }
           break;
@@ -388,7 +445,7 @@ handle_interactive ()
           {
             // TODO match on existing input?
             putc ('\n', stdout);
-            print_help ();
+            print_help (buf);
             prompt (buf);
           }
           break;

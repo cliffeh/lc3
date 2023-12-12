@@ -6,7 +6,7 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-CMDS="assemble $SRCDIR/test/hello.asm\nrun"
+CMDS="asm $SRCDIR/test/hello.asm\nrun"
 
 # TODO this is admittedly a bit fragile
 echo -e "$CMDS" | "$BUILDDIR/lc3vm" -i | tail -3 | diff "$SRCDIR/test/interactive-hello.out" -
