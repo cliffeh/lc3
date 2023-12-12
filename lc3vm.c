@@ -28,8 +28,6 @@
 #include <unistd.h>
 
 #define MEMORY_MAX (1 << 16)
-uint16_t memory[MEMORY_MAX]; /* 65536 locations */
-uint16_t reg[R_COUNT];
 
 struct termios original_tio;
 
@@ -58,7 +56,7 @@ handle_interrupt (int signal)
 }
 
 void
-read_image_file (FILE *file)
+read_image_file (uint16_t *memory, FILE *file)
 {
   /* the origin tells us where in memory to place the image */
   uint16_t origin;
@@ -66,9 +64,8 @@ read_image_file (FILE *file)
   origin = SWAP16 (origin);
 
   /* we know the maximum file size so we only need one fread */
-  uint16_t max_read = MEMORY_MAX - origin;
   uint16_t *p = memory + origin;
-  read = fread (p, sizeof (uint16_t), max_read, file);
+  read = fread (p, sizeof (uint16_t), (MEMORY_MAX - origin), file);
 
   /* swap to little endian */
   while (read-- > 0)
@@ -78,15 +75,15 @@ read_image_file (FILE *file)
     }
 }
 
-int
-read_image (const char *image_path)
+int // TODO consolidate this?
+read_image (uint16_t *memory, const char *image_path)
 {
   FILE *file = fopen (image_path, "rb");
   if (!file)
     {
       return 0;
     };
-  read_image_file (file);
+  read_image_file (memory, file);
   fclose (file);
   return 1;
 }
@@ -184,7 +181,7 @@ parse_command (const char *s)
 }
 
 static int
-process_command (const char *cmd, char *args)
+process_command (uint16_t *memory, uint16_t *reg, const char *cmd, char *args)
 {
   int error_count = 0;
   switch (parse_command (cmd))
@@ -240,7 +237,7 @@ process_command (const char *cmd, char *args)
           {
             printf ("loading %s...", p);
 
-            if (!read_image (p))
+            if (!read_image (memory, p))
               {
                 printf ("failed to load image: %s\n", p);
                 error_count++;
@@ -293,7 +290,7 @@ extend_cursor (char *cursor, int n)
 #define INPUT_BUFFER_SIZE 4096
 
 static int
-handle_interactive ()
+handle_interactive (uint16_t *memory, uint16_t *reg)
 {
   char buf[INPUT_BUFFER_SIZE] = "", cpbuf[INPUT_BUFFER_SIZE] = "", c,
        *cursor = buf;
@@ -451,7 +448,7 @@ handle_interactive ()
                 char *args = strtok (0, " ");
 
                 if (cmd)
-                  rc = process_command (cmd, args); // TODO capture return
+                  rc = process_command (memory, reg, cmd, args); // TODO capture return
 
                 // clear the buffer
                 cursor = buf;
@@ -544,6 +541,9 @@ main (int argc, const char *argv[])
                 poptStrerror (rc));
     }
 
+  uint16_t memory[MEMORY_MAX];
+  uint16_t reg[R_COUNT];
+
   int programs_loaded = 0;
   for (const char *infile = poptGetArg (optCon); infile;
        infile = poptGetArg (optCon))
@@ -551,7 +551,7 @@ main (int argc, const char *argv[])
       if (interactive)
         printf ("loading %s...", infile);
 
-      if (!read_image (infile))
+      if (!read_image (memory, infile))
         {
           printf ("failed to load image: %s\n", infile);
           exit (1);
