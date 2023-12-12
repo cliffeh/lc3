@@ -1,16 +1,10 @@
-%{
-#include "lc3as.h"
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-
+%{ // TODO move this into one of the code sections below?
 #define PPRINT(buf, args...)                \
 do {                                        \
   size_t needed = snprintf(0, 0, args) + 1; \
   buf = calloc(needed, sizeof(char));       \
   sprintf(buf, args);                       \
 } while(0)
-
 %}
 
 %define api.pure full
@@ -27,8 +21,17 @@ do {                                        \
 }
 
 %code requires {
+  #include "program.h"
+  #include <string.h>
+  #include <stdio.h>
+  #include <stdlib.h>
   typedef void* yyscan_t;
 }
+
+%code provides {
+  int parse_program (program *prog, FILE *in);
+}
+
 %code {
   // need all of these to prevent compiler warnings
   int yylex_init(yyscan_t *scanner);

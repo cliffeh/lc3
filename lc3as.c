@@ -10,9 +10,10 @@
 
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
-#include "lc3as.h"
+#include "program.h"
 #include "parse.h"
 #include "popt/popt.h"
+#include "print.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>

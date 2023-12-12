@@ -1,14 +1,13 @@
 bin_PROGRAMS = lc3as lc3vm lc3diff
-lc3as_SOURCES = parse.y scan.l lc3.h lc3as.c lc3as.h assemble.c print.c popt/popt.h
+lc3as_SOURCES = parse.y scan.l lc3.h lc3as.c program.h assemble.c print.c popt/popt.h
 lc3as_LDADD = popt/libpopt.a
 
-lc3vm_SOURCES = lc3vm.c lc3as.h lc3.h assemble.c execute.c parse.y scan.l popt/popt.h
+lc3vm_SOURCES = lc3vm.c program.h lc3.h assemble.c execute.c parse.y scan.l popt/popt.h
 lc3vm_LDADD = popt/libpopt.a
 
 lc3diff_SOURCES = lc3diff.c
 
-include_HEADERS = lc3.h
-noinst_HEADERS = lc3as.h
+noinst_HEADERS = print.h program.h
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects

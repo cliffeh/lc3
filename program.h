@@ -4,19 +4,6 @@
 #include <stdint.h> // for uint16_t
 #include <stdio.h>  // for FILE *
 
-// print out assembled object code
-#define FORMAT_OBJECT 0
-// include instruction addresses
-#define FORMAT_ADDR (1 << 0)
-// print instructions as bit strings
-#define FORMAT_BITS (1 << 1)
-// print instructions as hex
-#define FORMAT_HEX (1 << 2)
-// pretty-print the assembly back out
-#define FORMAT_PRETTY (1 << 3)
-// debugging output
-#define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_HEX | FORMAT_PRETTY)
-
 typedef struct symbol
 {
   uint16_t addr, is_set;
@@ -38,9 +25,6 @@ typedef struct program
   instruction *instructions;
   symbol *symbols;
 } program;
-
-int parse_program (program *prog, FILE *in);
-int print_program (FILE *out, int flags, program *prog);
 
 int resolve_symbols(program *prog);
 symbol *find_or_create_symbol (program *prog, const char *label);

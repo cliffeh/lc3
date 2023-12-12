@@ -11,7 +11,7 @@
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
 #include "lc3.h"
-#include "lc3as.h"
+#include "program.h"
 #include "popt/popt.h"
 
 #include <ctype.h> // isprint()
@@ -85,9 +85,6 @@ read_image (uint16_t *memory, const char *image_path)
   fclose (file);
   return 1;
 }
-
-// TODO put this in a header somewhere
-int execute_program (machine *vm);
 
 #define ERR_EXIT(args...)                                                     \
   do                                                                          \

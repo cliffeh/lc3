@@ -1,4 +1,3 @@
-#include "lc3as.h"
 #include "print.h"
 
 int

@@ -1,5 +1,5 @@
 %{
-#include "lc3as.h"
+#include "program.h"
 #include "parse.h"
 
 #define YY_DECL int yylex(YYSTYPE *yylval_param, YYLTYPE* yylloc_param, program *prog, yyscan_t yyscanner)

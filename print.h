@@ -1,6 +1,7 @@
 #pragma once
 
 #include "parse.h"
+#include "program.h"
 #include <stdio.h> // FILE *
 
 // print out assembled object code

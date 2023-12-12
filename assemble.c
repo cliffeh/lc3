@@ -1,4 +1,4 @@
-#include "lc3as.h"
+#include "program.h"
 #include <stdlib.h>
 #include <string.h>
 
