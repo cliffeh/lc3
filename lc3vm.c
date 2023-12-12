@@ -91,16 +91,6 @@ read_image (const char *image_path)
   return 1;
 }
 
-void
-load_image (const uint16_t image[], uint16_t len)
-{
-  if (!len)
-    return;
-
-  uint16_t origin = image[0];
-  memcpy (memory + origin, image + 1, len - 1);
-}
-
 // TODO put this in a header somewhere
 int execute_program (uint16_t memory[], uint16_t reg[]);
 
