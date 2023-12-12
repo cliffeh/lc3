@@ -219,10 +219,12 @@ process_command (char *cmd, char *args)
     }
 }
 
+#define PROMPT_TEXT "> "
+
 static void
 prompt (char *current_input)
 {
-  printf ("> ");
+  printf (PROMPT_TEXT);
   if (current_input)
     printf ("%s", current_input);
 }
@@ -334,11 +336,8 @@ handle_interactive ()
 
         case 0x01: // ^A (beginning-of-line)
           {
-            while (cursor > buf)
-              {
-                cursor--;
-                putc ('\b', stdout);
-              }
+            printf("\e[3G"); // move cursor to column 3
+            cursor = buf;
           }
           break;
 

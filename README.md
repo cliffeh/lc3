@@ -111,3 +111,5 @@ There is also a binary diff tool `lc3diff` that I wrote mostly because I couldn'
 * [bison manual](https://www.gnu.org/software/bison/manual/bison.html#Rules-Syntax)
 * [Practical parsing with Flex and Bison](https://begriffs.com/posts/2021-11-28-practical-parsing.html#using-a-parser-as-a-library)
 * [Thread-safe / reentrant bison + flex](https://stackoverflow.com/questions/48850242/thread-safe-reentrant-bison-flex)
+* https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+* http://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
