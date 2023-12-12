@@ -1,4 +1,5 @@
 #include "lc3as.h"
+#include "print.h"
 
 int
 print_program (FILE *out, int flags, program *prog)
