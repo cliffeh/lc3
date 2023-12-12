@@ -194,7 +194,7 @@ parse_command (const char *s)
 }
 
 static int
-process_command (char *cmd, char *args)
+process_command (const char *cmd, char *args)
 {
   int error_count = 0;
   switch (parse_command (cmd))
@@ -460,7 +460,7 @@ handle_interactive ()
                 char *args = strtok (0, " ");
 
                 if (cmd)
-                  process_command (cmd, args); // TODO capture return
+                  rc = process_command (cmd, args); // TODO capture return
 
                 // clear the buffer
                 cursor = buf;
@@ -472,7 +472,6 @@ handle_interactive ()
 
         default:
           {
-            // fprintf (stderr, "\ngot char: %02x\n", c);
             if (isprint (c))
               {
                 extend_cursor (cursor, 1);
