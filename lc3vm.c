@@ -351,27 +351,19 @@ handle_interactive ()
 
         case 0x0b: // ^K (cut after cursor)
           {
-            char *p = cursor, *q = cpbuf;
-            while (*p)
+            if (*cursor) // only copy if there's something to copy
               {
-                *q++ = *p;
-                *p++ = 0;
-                // hack: append a space to make it "look like" the character
-                // has disappeared
-                putc (' ', stdout);
+                strcpy (cpbuf, cursor);
+                *cursor = 0;
+                printf ("\e[0K"); // erase to end of line
               }
-            *p = 0;
-            *q = 0;
-
-            while (p-- != cursor)
-              putc ('\b', stdout); // move visible cursor back
           }
           break;
 
         case 0x19: // ^Y (paste buffer)
           {
             // make room for our copy buffer
-            int cursorlen = strlen(cursor);
+            int cursorlen = strlen (cursor);
             int pastelen = strlen (cpbuf);
             extend_cursor (cursor, pastelen);
 
