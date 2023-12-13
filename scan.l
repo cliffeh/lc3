@@ -21,6 +21,13 @@
     yylval->inst->addr = prog->len++;              \
     yylval->inst->last = yylval->inst;             \
   } while (0)
+
+#define NEW_DIRECTIVE(yylval, _hint) \
+  do {                              \
+    NEW_INST(yylval, 0);            \
+    yylval->inst->hint = _hint;      \
+  } while (0)
+
 %}
 
 %option noyywrap nounput noinput
@@ -70,8 +77,8 @@
  /* assembler directives */
 \.[oO][rR][iI][gG]             { return(ORIG); }
 \.[eE][nN][dD]                 { return(END);  }
-\.[fF][iI][lL][lL]             { NEW_INST(yylval, 0); return(FILL);    }
-\.[sS][tT][rR][iI][nN][gG][zZ] { NEW_INST(yylval, 0); return(STRINGZ); }
+\.[fF][iI][lL][lL]             { NEW_DIRECTIVE(yylval, HINT_FILL);    return(FILL);     }
+\.[sS][tT][rR][iI][nN][gG][zZ] { NEW_DIRECTIVE(yylval, HINT_STRINGZ); return(STRINGZ);  }
 
  /* literals */
 [xX][0-9a-fA-F]{1,4}           { yylval->num = strtol(yytext+1, 0, 16); return(NUMLIT); }

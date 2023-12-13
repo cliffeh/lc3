@@ -4,6 +4,14 @@
 #include <stdint.h> // for uint16_t
 #include <stdio.h>  // for FILE *
 
+// disassembler hints
+enum
+{
+  HINT_INST = 0,
+  HINT_FILL,
+  HINT_STRINGZ
+};
+
 typedef struct symbol
 {
   uint16_t addr, is_set;
@@ -13,7 +21,7 @@ typedef struct symbol
 
 typedef struct instruction
 {
-  uint16_t addr, word, flags;
+  uint16_t addr, word, flags, hint;
   symbol *sym;
   struct instruction *next, *last;
 } instruction;

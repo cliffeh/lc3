@@ -6,6 +6,8 @@ print_program (FILE *out, int flags, program *prog)
   if (!flags)
     return 0;
 
+  int n = 0;
+
   if (flags & FORMAT_PRETTY)
     fprintf (out, ".ORIG x%04x\n", prog->orig);
 
@@ -15,7 +17,11 @@ print_program (FILE *out, int flags, program *prog)
 
   for (instruction *inst = prog->instructions; inst; inst = inst->next)
     {
-      uint16_t bytecode = SWAP16 (inst->word);
+      // NB for the purposes of debugging it's generally more
+      // convenient to output addresses relative to .ORIG
+      // rather than indexed at zero
+      if (flags & FORMAT_ADDR)
+        n += fprintf (out, "%04x", inst->addr + 1);
 
       if (flags & FORMAT_PRETTY)
         {
@@ -23,51 +29,74 @@ print_program (FILE *out, int flags, program *prog)
           // won't work the way we expect it to
           while (current_symbol && current_symbol->addr == inst->addr)
             {
-              // NB for the purposes of debugging it's generally more
-              // convenient to output addresses relative to .ORIG
-              // rather than indexed at zero
-              if (flags & FORMAT_ADDR)
-                fprintf (out, "%04x  ", inst->addr + 1);
-
-              fprintf (out, "%s\n", current_symbol->label);
+              n += fprintf (out, "%s%s\n", n ? "  " : "",
+                            current_symbol->label);
               current_symbol = current_symbol->next;
             }
         }
-      // TODO re-work this when disassembler is done!
-      /*
-            if (inst->pretty) // only print the printable things (not, for
-                              // instance, raw string data)
+
+      if (flags & FORMAT_HEX)
+        {
+          n += fprintf (out, "%s%04x", n ? "  " : "", SWAP16 (inst->word));
+        }
+
+      if (flags & FORMAT_BITS)
+        {
+          n += fprintf (out, "%s", n ? "  " : "");
+
+          for (int i = 15; i >= 0; i--)
+            {
+              n += fprintf (out, "%c", ((inst->word & (1 << i)) >> i) + '0');
+              if (i && i % 4 == 0)
+                n += fprintf (out, " ");
+            }
+        }
+
+      char buf[4096];
+      switch (inst->hint)
+        {
+        case HINT_INST:
+          {
+            if (flags & FORMAT_PRETTY)
               {
-                // NB for the purposes of debugging it's generally more
-                // convenient to output addresses relative to .ORIG rather
-                // than indexed at zero
-                if (flags & FORMAT_ADDR)
-                  fprintf (out, "%04x", inst->addr + 1);
-
-                if (flags & FORMAT_HEX)
-                  fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
-                           bytecode);
-
-                if (flags & FORMAT_BITS)
-                  {
-                    if (flags & (FORMAT_ADDR | FORMAT_HEX))
-                      fprintf (out, "  ");
-
-                    for (int i = 15; i >= 0; i--)
-                      {
-                        fprintf (out, "%c", ((inst->word & (1 << i)) >> i) +
-         '0'); if (i && i % 4 == 0) fprintf (out, " ");
-                      }
-                  }
-
-                if (flags & FORMAT_PRETTY)
-                  fprintf (out, "%s  %s",
-                           (flags & (FORMAT_ADDR | FORMAT_HEX | FORMAT_BITS)) ?
-         "  " : "", inst->pretty);
-
-                fprintf (out, "\n");
+                disassemble_instruction (buf, flags, prog->symbols, inst);
+                n += fprintf (out, "%s  %s", n ? "  " : "", buf);
               }
-              */
+          }
+          break;
+
+        case HINT_FILL:
+          {
+            if (flags & FORMAT_PRETTY)
+              n += fprintf (out, "%s.FILL x%x", n ? "  " : "", inst->word);
+          }
+          break;
+
+        case HINT_STRINGZ:
+          {
+            if (flags & FORMAT_PRETTY)
+              {
+                n += fprintf (out, "%s.STRINGZ", n ? "  " : "");
+                while (inst && inst->word)
+                  {
+                    // TODO UNESCAPE!
+                    n += fprintf (out, "%c", ((char)inst->word));
+                    inst = inst->next;
+                  }
+              }
+            else
+              {
+                // still need to skip past the characters...
+                while (inst && inst->word)
+                  {
+                    inst = inst->next;
+                  }
+              }
+          }
+          break;
+        }
+
+      fprintf (out, "\n");
     }
 
   if (flags & FORMAT_PRETTY)
