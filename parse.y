@@ -10,8 +10,9 @@ do {                                        \
 %define api.pure full
 %locations
 %define parse.error verbose
-%param  { program *prog }
-%param  { void *scanner }
+%param       { program *prog }
+%parse-param { int flags }
+%param       { void *scanner }
 
 %union {
   instruction *inst;
@@ -29,7 +30,7 @@ do {                                        \
 }
 
 %code provides {
-  int parse_program (program *prog, FILE *in);
+  int assemble_program (program *prog, int flags, FILE *in);
 }
 
 %code {
@@ -38,7 +39,7 @@ do {                                        \
   int yyset_in(FILE *in, yyscan_t scanner);
   int yylex_destroy(yyscan_t scanner);
   int yylex(YYSTYPE *yylvalp, YYLTYPE* yyllocp, program *prog, yyscan_t scanner);
-  void yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg);
+  void yyerror (YYLTYPE* yyllocp, program *prog, int flags, yyscan_t scanner, const char *msg);
 
   const char *unescape_string (char *dest, const char *str);
 }
@@ -329,13 +330,13 @@ instruction:
 %%
 
 int
-parse_program (program *prog, FILE *in)
+assemble_program (program *prog, int flags, FILE *in)
 {
   yyscan_t scanner;
   yylex_init (&scanner);
   yyset_in (in, scanner);
 
-  int rc = yyparse (prog, scanner);
+  int rc = yyparse (prog, flags, scanner);
 
   yylex_destroy (scanner);
 
@@ -383,7 +384,7 @@ unescape_string (char *dest, const char *str)
 }
 
 void
-yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg)
+yyerror (YYLTYPE* yyllocp, program *prog, int flags, yyscan_t scanner, const char *msg)
 {
   fprintf(stderr, "[line %d, column %d]: %s\n",
           yyllocp->first_line, yyllocp->first_column, msg);

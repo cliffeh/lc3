@@ -3,26 +3,33 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#define HELP_POSTAMBLE "Report bugs to <" PACKAGE_BUGREPORT ">."
+#define HELP_BUGREPORT "Report bugs to <" PACKAGE_BUGREPORT ">."
 #else
 #define PACKAGE_VERSION "unknown"
 #endif
 
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
-#include "program.h"
 #include "parse.h"
 #include "popt/popt.h"
 #include "print.h"
+#include "program.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define HELP_PREAMBLE                                                         \
-  "If FILE is not provided this program will read from stdin.\n\n"            \
-  "Supported output formats:\n\n  a[ddress], b[its], d[ebug], h[ex], "        \
-  "o[bject], p[retty]\n\nNote: -Fdebug is shorthand for -Fa -Fh -Fp"
+  "If FILE is not provided this program will read from stdin."
+
+#define HELP_POSTAMBLE                                                        \
+  "Supported output formats:\n\n"                                             \
+  "  o[bject]   output assembled bytecode (default)\n"                        \
+  "  a[ddress]  print the address of each instruction\n"                      \
+  "  b[its]     print a binary representation\n"                              \
+  "  h[ex]      print a hexadecimal representation\n"                         \
+  "  p[retty]   pretty-print the assembly code itself\n"                      \
+  "  d[ebug]    shorthand for -Fa -Fh -Fp"
 
 #define ERR_EXIT(args...)                                                     \
   do                                                                          \
@@ -67,6 +74,9 @@ main (int argc, const char *argv[])
     POPT_AUTOHELP
 #ifdef HELP_POSTAMBLE
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_POSTAMBLE, 0 },
+#endif
+#ifdef HELP_BUGREPORT
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_BUGREPORT, 0 },
 #endif
     POPT_TABLEEND
   };
@@ -180,9 +190,7 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
-  if ((rc = parse_program (&prog, in)) != 0)
-    goto cleanup;
-  if ((rc = resolve_symbols (&prog)) != 0)
+  if ((rc = assemble_program (&prog, flags, in)) != 0)
     goto cleanup;
 
   if (flags)
@@ -191,7 +199,7 @@ main (int argc, const char *argv[])
     }
   else
     {
-      rc = write_bytecode(out, &prog);
+      rc = write_bytecode (out, &prog);
     }
 
 cleanup:

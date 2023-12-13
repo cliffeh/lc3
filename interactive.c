@@ -105,15 +105,10 @@ process_command (machine *vm, const char *cmd, char *args)
                 printf ("failed to open: %s\n", arg);
                 error_count++;
               }
-            else if (parse_program (&prog, in) != 0)
+            else if (assemble_program (&prog, 0, in) != 0)
               {
 
                 printf ("failed to assemble: %s\n", arg);
-                error_count++;
-              }
-            else if (resolve_symbols (&prog) != 0)
-              {
-                printf ("symbol resolution error: %s\n", arg);
                 error_count++;
               }
             else
