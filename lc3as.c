@@ -24,11 +24,13 @@
 
 #define HELP_POSTAMBLE                                                        \
   "Supported output formats:\n\n"                                             \
-  "  o[bject]   output assembled bytecode (default)\n"                        \
+  "  o[bject]   output assembled object code (default)\n"                     \
   "  a[ddress]  print the address of each instruction\n"                      \
   "  b[its]     print a binary representation\n"                              \
   "  h[ex]      print a hexadecimal representation\n"                         \
   "  p[retty]   pretty-print the assembly code itself\n"                      \
+  "  l[ower]    print everything in lowercase\n"                              \
+  "  u[pper]    print everything in uppercase (default)\n"                    \
   "  d[ebug]    shorthand for -Fa -Fh -Fp"
 
 #define ERR_EXIT(args...)                                                     \
@@ -190,7 +192,7 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
-  if ((rc = assemble_program (&prog, flags, in)) != 0)
+  if ((rc = assemble_program (&prog, in)) != 0)
     goto cleanup;
 
   if (flags)

@@ -8,9 +8,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define SIGN_EXTEND(x, bits)                                                  \
-  ((((x) >> ((bits)-1)) & 1) ? ((x) | (0xFFFF << (bits))) : (x))
-
 static uint16_t
 check_key ()
 {

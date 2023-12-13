@@ -33,41 +33,41 @@ print_program (FILE *out, int flags, program *prog)
               current_symbol = current_symbol->next;
             }
         }
+      // TODO re-work this when disassembler is done!
+      /*
+            if (inst->pretty) // only print the printable things (not, for
+                              // instance, raw string data)
+              {
+                // NB for the purposes of debugging it's generally more
+                // convenient to output addresses relative to .ORIG rather
+                // than indexed at zero
+                if (flags & FORMAT_ADDR)
+                  fprintf (out, "%04x", inst->addr + 1);
 
-      if (inst->pretty) // only print the printable things (not, for
-                        // instance, raw string data)
-        {
-          // NB for the purposes of debugging it's generally more
-          // convenient to output addresses relative to .ORIG rather
-          // than indexed at zero
-          if (flags & FORMAT_ADDR)
-            fprintf (out, "%04x", inst->addr + 1);
+                if (flags & FORMAT_HEX)
+                  fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
+                           bytecode);
 
-          if (flags & FORMAT_HEX)
-            fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
-                     bytecode);
+                if (flags & FORMAT_BITS)
+                  {
+                    if (flags & (FORMAT_ADDR | FORMAT_HEX))
+                      fprintf (out, "  ");
 
-          if (flags & FORMAT_BITS)
-            {
-              if (flags & (FORMAT_ADDR | FORMAT_HEX))
-                fprintf (out, "  ");
+                    for (int i = 15; i >= 0; i--)
+                      {
+                        fprintf (out, "%c", ((inst->inst & (1 << i)) >> i) +
+         '0'); if (i && i % 4 == 0) fprintf (out, " ");
+                      }
+                  }
 
-              for (int i = 15; i >= 0; i--)
-                {
-                  fprintf (out, "%c", ((inst->inst & (1 << i)) >> i) + '0');
-                  if (i && i % 4 == 0)
-                    fprintf (out, " ");
-                }
-            }
+                if (flags & FORMAT_PRETTY)
+                  fprintf (out, "%s  %s",
+                           (flags & (FORMAT_ADDR | FORMAT_HEX | FORMAT_BITS)) ?
+         "  " : "", inst->pretty);
 
-          if (flags & FORMAT_PRETTY)
-            fprintf (out, "%s  %s",
-                     (flags & (FORMAT_ADDR | FORMAT_HEX | FORMAT_BITS)) ? "  "
-                                                                        : "",
-                     inst->pretty);
-
-          fprintf (out, "\n");
-        }
+                fprintf (out, "\n");
+              }
+              */
     }
 
   if (flags & FORMAT_PRETTY)

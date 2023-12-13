@@ -1,4 +1,5 @@
 #include "program.h"
+#include "print.h" // for format flags
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,6 +24,17 @@ resolve_symbols (program *prog)
         }
     }
 
+  return 0;
+}
+
+symbol *
+find_symbol_by_addr (symbol *symbols, uint16_t addr)
+{
+  for (symbol *sym = symbols; sym; sym = sym->next)
+    {
+      if (sym->addr == addr)
+        return sym;
+    }
   return 0;
 }
 
@@ -60,9 +72,6 @@ free_instructions (instruction *instructions)
 
   while (inst)
     {
-      if (inst->pretty)
-        free (inst->pretty);
-
       instruction *tmp = inst->next;
       free (inst);
       inst = tmp;
@@ -84,4 +93,236 @@ free_symbols (symbol *symbols)
       free (sym);
       sym = tmp;
     }
+}
+
+#define PPRINT(dest, flags, fmt, lc, UC, ...)                                 \
+  sprintf (dest, fmt,                                                         \
+           (flags & FORMAT_LC) ? lc : UC __VA_OPT__ (, ) __VA_ARGS__)
+
+int
+disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *inst)
+{
+  int n = 0;
+
+  switch (inst->inst >> 12)
+    {
+    case OP_ADD:
+      {
+        n += PPRINT (dest + n, flags, "%s ", "add", "ADD");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 6) & 0x7));
+
+        if (inst->inst & (1 << 5)) // immediate
+          n += sprintf (dest + n, "#%d", inst->inst & 0x1F);
+        else
+          n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->inst >> 0) & 0x7));
+      }
+      break;
+
+    case OP_AND:
+      {
+        n += PPRINT (dest + n, flags, "%s ", "and", "AND");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 6) & 0x7));
+
+        if (inst->inst & (1 << 5)) // immediate
+          n += sprintf (dest + n, "#%d", inst->inst & 0x1F);
+        else
+          n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->inst >> 0) & 0x7));
+      }
+      break;
+
+    case OP_BR:
+      {
+        n += PPRINT (dest + n, flags, "%s", "br", "BR");
+
+        // nzp flags always lowercase
+        n += sprintf (dest + n, "%s%s%s", (inst->inst & (1 << 11)) ? "n" : "",
+                      (inst->inst & (1 << 10)) ? "z" : "",
+                      (inst->inst & (1 << 9)) ? "p" : "");
+
+        uint16_t addr = (inst->inst & 0x1FF);
+        symbol *sym = find_symbol_by_addr (symbols, addr);
+        if (sym)
+          n += sprintf (dest + n, " %s", sym->label);
+        else // TODO sign extended int?
+          n += sprintf (dest + n, " #%d", addr);
+      }
+      break;
+
+    case OP_JMP:
+      {
+        uint16_t BaseR = (inst->inst >> 6) & 0x7;
+        if (BaseR & 0x7) // assume RET special case
+          n += PPRINT (dest + n, flags, "%s", "ret", "RET");
+        else
+          {
+            n += PPRINT (dest + n, flags, "%s ", "jmp", "JMP");
+            n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', BaseR);
+          }
+      }
+      break;
+
+    case OP_JSR:
+      {
+        if (inst->inst & (1 << 11))
+          {
+            n += PPRINT (dest + n, flags, "%s ", "jsr", "JSR");
+            uint16_t addr = (inst->inst & 0x7FF);
+            symbol *sym = find_symbol_by_addr (symbols, addr);
+            if (sym)
+              n += sprintf (dest + n, " %s", sym->label);
+            else // TODO sign extended int?
+              n += sprintf (dest + n, " #%d", addr);
+          }
+        else
+          {
+            n += PPRINT (dest + n, flags, "%s ", "jsrr", "JSRR");
+            n += PPRINT (dest + n, flags, "%c%d", 'r', 'R',
+                         ((inst->inst >> 6) & 0x7));
+          }
+      }
+      break;
+
+    case OP_LD:
+      {
+        n += PPRINT (dest + n, flags, "%s ", "ld", "LD");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+
+        uint16_t addr = (inst->inst & 0x1FF);
+        symbol *sym = find_symbol_by_addr (symbols, addr);
+        if (sym)
+          n += sprintf (dest + n, " %s", sym->label);
+        else // TODO sign extended int?
+          n += sprintf (dest + n, " #%d", addr);
+      }
+      break;
+
+    case OP_LDI:
+      {
+        n += PPRINT (dest + n, flags, "%s ", "ldi", "LDI");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+
+        uint16_t addr = (inst->inst & 0x1FF);
+        symbol *sym = find_symbol_by_addr (symbols, addr);
+        if (sym)
+          n += sprintf (dest + n, " %s", sym->label);
+        else // TODO sign extended int?
+          n += sprintf (dest + n, " #%d", addr);
+      }
+      break;
+
+    case OP_LDR:
+      {
+        n += PPRINT (dest + n, flags, "%s ", "ldr", "LDR");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 6) & 0x7));
+        n += sprintf (dest + n, "#%d", ((inst->inst >> 0) & 0x3F));
+      }
+      break;
+
+    case OP_LEA:
+      {
+        n += PPRINT (dest + n, flags, "%s ", "lea", "LEA");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+
+        uint16_t addr = (inst->inst & 0x1FF);
+        symbol *sym = find_symbol_by_addr (symbols, addr);
+        if (sym)
+          n += sprintf (dest + n, " %s", sym->label);
+        else // TODO sign extended int?
+          n += sprintf (dest + n, " #%d", addr);
+      }
+      break;
+
+    case OP_NOT:
+      { // TODO check that the lower 6 bits are all 1s?
+        n += PPRINT (dest + n, flags, "%s ", "not", "NOT");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->inst >> 6) & 0x7));
+      }
+      break;
+
+    case OP_RTI:
+      {
+        n += PPRINT (dest + n, flags, "%s", "rti", "RTI");
+      }
+      break;
+
+    case OP_ST:
+      {
+        n += PPRINT (dest + n, flags, "%s ", "st", "ST");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+
+        uint16_t addr = (inst->inst & 0x1FF);
+        symbol *sym = find_symbol_by_addr (symbols, addr);
+        if (sym)
+          n += sprintf (dest + n, " %s", sym->label);
+        else // TODO sign extended int?
+          n += sprintf (dest + n, " #%d", addr);
+      }
+      break;
+
+    case OP_STI:
+      {
+        n += PPRINT (dest + n, flags, "%s ", "sti", "STI");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+
+        uint16_t addr = (inst->inst & 0x1FF);
+        symbol *sym = find_symbol_by_addr (symbols, addr);
+        if (sym)
+          n += sprintf (dest + n, " %s", sym->label);
+        else // TODO sign extended int?
+          n += sprintf (dest + n, " #%d", addr);
+      }
+      break;
+
+    case OP_STR:
+      {
+
+        n += PPRINT (dest + n, flags, "%s ", "str", "STR");
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 6) & 0x7));
+        n += sprintf (dest + n, "#%d", ((inst->inst >> 0) & 0x3F));
+      }
+      break;
+
+    case OP_TRAP:
+      {
+        uint16_t trapvect8 = inst->inst & 0xFF;
+        switch (trapvect8)
+          {
+          case TRAP_GETC:
+            n += PPRINT (dest + n, flags, "%s", "getc", "GETC");
+            break;
+          case TRAP_OUT:
+            n += PPRINT (dest + n, flags, "%s", "out", "OUT");
+            break;
+          case TRAP_PUTS:
+            n += PPRINT (dest + n, flags, "%s", "puts", "PUTS");
+            break;
+          case TRAP_IN:
+            n += PPRINT (dest + n, flags, "%s", "in", "IN");
+            break;
+          case TRAP_PUTSP:
+            n += PPRINT (dest + n, flags, "%s", "putsp", "PUTSP");
+            break;
+          case TRAP_HALT:
+            n += PPRINT (dest + n, flags, "%s", "halt", "HALT");
+            break;
+          default:
+            n += PPRINT (dest + n, flags, "%s", "trap", "TRAP");
+            if (flags & FORMAT_LC)
+              n += sprintf (dest + n, "x%x", trapvect8);
+            else
+              n += sprintf (dest + n, "X%X", trapvect8);
+          }
+      }
+      break;
+
+    default: // TODO be silent? do something else?
+      fprintf (stderr, "i don't grok this op: %x\n", (inst->inst >> 12));
+    }
+
+  return n;
 }

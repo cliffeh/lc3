@@ -105,7 +105,7 @@ process_command (machine *vm, const char *cmd, char *args)
                 printf ("failed to open: %s\n", arg);
                 error_count++;
               }
-            else if (assemble_program (&prog, 0, in) != 0)
+            else if (assemble_program (&prog, in) != 0)
               {
 
                 printf ("failed to assemble: %s\n", arg);

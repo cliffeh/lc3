@@ -13,9 +13,8 @@ typedef struct symbol
 
 typedef struct instruction
 {
-  uint16_t inst, addr, flags;
+  uint16_t addr, inst, flags;
   symbol *sym;
-  char *pretty;
   struct instruction *next, *last;
 } instruction;
 
@@ -26,8 +25,12 @@ typedef struct program
   symbol *symbols;
 } program;
 
+int disassemble_instruction (char *dest, int flags, symbol *symbols,
+                             instruction *inst);
+
 int resolve_symbols (program *prog);
 symbol *find_or_create_symbol (program *prog, const char *label);
+symbol *find_symbol_by_addr (symbol *symbols, uint16_t addr);
 symbol *find_symbol_by_label (symbol *symbols, const char *label);
 void sort_symbols_by_addr (program *prog);
 

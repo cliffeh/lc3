@@ -5,6 +5,8 @@
 
 #define MEMORY_MAX (1 << 16)
 #define SWAP16(x) ((x << 8) | (x >> 8))
+#define SIGN_EXTEND(x, bits)                                                  \
+  ((((x) >> ((bits)-1)) & 1) ? ((x) | (0xFFFF << (bits))) : (x))
 
 // registers
 enum
@@ -75,5 +77,5 @@ typedef struct machine
   uint16_t reg[R_COUNT];
 } machine;
 
-int execute_machine (machine *vm); // execute.c
+int execute_machine (machine *vm);        // execute.c
 int load_machine (machine *vm, FILE *in); // machine.c
