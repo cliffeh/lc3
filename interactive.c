@@ -52,7 +52,7 @@ print_help (char *sofar)
     {
 
       char buf[1024] = "", *aliases = buf, **p = cmd->aliases;
-      aliases += sprintf (buf, "%s", cmd->name);
+      aliases += sprintf (buf, "%-4s", cmd->name);
       while (*p)
         aliases += sprintf (aliases, ", %s", *p++);
 
