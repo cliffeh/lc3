@@ -116,7 +116,7 @@ process_command (machine *vm, const char *cmd, char *args)
                 uint16_t orig = prog.orig;
                 for (instruction *inst = prog.instructions; inst;
                      inst = inst->next)
-                  vm->memory[orig++] = inst->inst;
+                  vm->memory[orig++] = inst->word;
 
                 printf ("successfully loaded\n");
               }

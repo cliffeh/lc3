@@ -15,7 +15,7 @@ print_program (FILE *out, int flags, program *prog)
 
   for (instruction *inst = prog->instructions; inst; inst = inst->next)
     {
-      uint16_t bytecode = SWAP16 (inst->inst);
+      uint16_t bytecode = SWAP16 (inst->word);
 
       if (flags & FORMAT_PRETTY)
         {
@@ -55,7 +55,7 @@ print_program (FILE *out, int flags, program *prog)
 
                     for (int i = 15; i >= 0; i--)
                       {
-                        fprintf (out, "%c", ((inst->inst & (1 << i)) >> i) +
+                        fprintf (out, "%c", ((inst->word & (1 << i)) >> i) +
          '0'); if (i && i % 4 == 0) fprintf (out, " ");
                       }
                   }
@@ -87,7 +87,7 @@ write_bytecode (FILE *out, program *prog)
     }
   for (instruction *inst = prog->instructions; inst; inst = inst->next)
     {
-      bytecode = SWAP16 (inst->inst);
+      bytecode = SWAP16 (inst->word);
       if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
         {
           fprintf (stderr, "write error...bailing.\n");

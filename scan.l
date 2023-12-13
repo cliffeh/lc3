@@ -17,7 +17,7 @@
 #define NEW_INST(yylval, op)                       \
   do {                                             \
     yylval->inst = calloc(1, sizeof(instruction)); \
-    yylval->inst->inst = (op << 12);               \
+    yylval->inst->word = (op << 12);               \
     yylval->inst->addr = prog->len++;              \
     yylval->inst->last = yylval->inst;             \
   } while (0)
@@ -35,9 +35,9 @@
   NEW_INST(yylval, OP_BR);
   for(char *p = yytext+2; *p; p++) {
     switch(*p) {
-      case 'n': case 'N': yylval->inst->inst |= (1 << 11); break;
-      case 'z': case 'Z': yylval->inst->inst |= (1 << 10); break;
-      case 'p': case 'P': yylval->inst->inst |= (1 << 9);  break;
+      case 'n': case 'N': yylval->inst->word |= (1 << 11); break;
+      case 'z': case 'Z': yylval->inst->word |= (1 << 10); break;
+      case 'p': case 'P': yylval->inst->word |= (1 << 9);  break;
     }
   }
   return(BR);                  }

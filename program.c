@@ -18,9 +18,9 @@ resolve_symbols (program *prog)
             }
 
           if (inst->flags)
-            inst->inst |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
+            inst->word |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
           else
-            inst->inst = inst->sym->addr + prog->orig;
+            inst->word = inst->sym->addr + prog->orig;
         }
     }
 
@@ -104,31 +104,31 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
 {
   int n = 0;
 
-  switch (inst->inst >> 12)
+  switch (inst->word >> 12)
     {
     case OP_ADD:
       {
         n += PPRINT (dest + n, flags, "%s ", "add", "ADD");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 6) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 6) & 0x7));
 
-        if (inst->inst & (1 << 5)) // immediate
-          n += sprintf (dest + n, "#%d", inst->inst & 0x1F);
+        if (inst->word & (1 << 5)) // immediate
+          n += sprintf (dest + n, "#%d", inst->word & 0x1F);
         else
-          n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->inst >> 0) & 0x7));
+          n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->word >> 0) & 0x7));
       }
       break;
 
     case OP_AND:
       {
         n += PPRINT (dest + n, flags, "%s ", "and", "AND");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 6) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 6) & 0x7));
 
-        if (inst->inst & (1 << 5)) // immediate
-          n += sprintf (dest + n, "#%d", inst->inst & 0x1F);
+        if (inst->word & (1 << 5)) // immediate
+          n += sprintf (dest + n, "#%d", inst->word & 0x1F);
         else
-          n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->inst >> 0) & 0x7));
+          n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->word >> 0) & 0x7));
       }
       break;
 
@@ -137,11 +137,11 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
         n += PPRINT (dest + n, flags, "%s", "br", "BR");
 
         // nzp flags always lowercase
-        n += sprintf (dest + n, "%s%s%s", (inst->inst & (1 << 11)) ? "n" : "",
-                      (inst->inst & (1 << 10)) ? "z" : "",
-                      (inst->inst & (1 << 9)) ? "p" : "");
+        n += sprintf (dest + n, "%s%s%s", (inst->word & (1 << 11)) ? "n" : "",
+                      (inst->word & (1 << 10)) ? "z" : "",
+                      (inst->word & (1 << 9)) ? "p" : "");
 
-        uint16_t addr = (inst->inst & 0x1FF);
+        uint16_t addr = (inst->word & 0x1FF);
         symbol *sym = find_symbol_by_addr (symbols, addr);
         if (sym)
           n += sprintf (dest + n, " %s", sym->label);
@@ -152,7 +152,7 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
 
     case OP_JMP:
       {
-        uint16_t BaseR = (inst->inst >> 6) & 0x7;
+        uint16_t BaseR = (inst->word >> 6) & 0x7;
         if (BaseR & 0x7) // assume RET special case
           n += PPRINT (dest + n, flags, "%s", "ret", "RET");
         else
@@ -165,10 +165,10 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
 
     case OP_JSR:
       {
-        if (inst->inst & (1 << 11))
+        if (inst->word & (1 << 11))
           {
             n += PPRINT (dest + n, flags, "%s ", "jsr", "JSR");
-            uint16_t addr = (inst->inst & 0x7FF);
+            uint16_t addr = (inst->word & 0x7FF);
             symbol *sym = find_symbol_by_addr (symbols, addr);
             if (sym)
               n += sprintf (dest + n, " %s", sym->label);
@@ -179,7 +179,7 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
           {
             n += PPRINT (dest + n, flags, "%s ", "jsrr", "JSRR");
             n += PPRINT (dest + n, flags, "%c%d", 'r', 'R',
-                         ((inst->inst >> 6) & 0x7));
+                         ((inst->word >> 6) & 0x7));
           }
       }
       break;
@@ -187,9 +187,9 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
     case OP_LD:
       {
         n += PPRINT (dest + n, flags, "%s ", "ld", "LD");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
 
-        uint16_t addr = (inst->inst & 0x1FF);
+        uint16_t addr = (inst->word & 0x1FF);
         symbol *sym = find_symbol_by_addr (symbols, addr);
         if (sym)
           n += sprintf (dest + n, " %s", sym->label);
@@ -201,9 +201,9 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
     case OP_LDI:
       {
         n += PPRINT (dest + n, flags, "%s ", "ldi", "LDI");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
 
-        uint16_t addr = (inst->inst & 0x1FF);
+        uint16_t addr = (inst->word & 0x1FF);
         symbol *sym = find_symbol_by_addr (symbols, addr);
         if (sym)
           n += sprintf (dest + n, " %s", sym->label);
@@ -215,18 +215,18 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
     case OP_LDR:
       {
         n += PPRINT (dest + n, flags, "%s ", "ldr", "LDR");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 6) & 0x7));
-        n += sprintf (dest + n, "#%d", ((inst->inst >> 0) & 0x3F));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 6) & 0x7));
+        n += sprintf (dest + n, "#%d", ((inst->word >> 0) & 0x3F));
       }
       break;
 
     case OP_LEA:
       {
         n += PPRINT (dest + n, flags, "%s ", "lea", "LEA");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
 
-        uint16_t addr = (inst->inst & 0x1FF);
+        uint16_t addr = (inst->word & 0x1FF);
         symbol *sym = find_symbol_by_addr (symbols, addr);
         if (sym)
           n += sprintf (dest + n, " %s", sym->label);
@@ -238,8 +238,8 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
     case OP_NOT:
       { // TODO check that the lower 6 bits are all 1s?
         n += PPRINT (dest + n, flags, "%s ", "not", "NOT");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->inst >> 6) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', ((inst->word >> 6) & 0x7));
       }
       break;
 
@@ -252,9 +252,9 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
     case OP_ST:
       {
         n += PPRINT (dest + n, flags, "%s ", "st", "ST");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
 
-        uint16_t addr = (inst->inst & 0x1FF);
+        uint16_t addr = (inst->word & 0x1FF);
         symbol *sym = find_symbol_by_addr (symbols, addr);
         if (sym)
           n += sprintf (dest + n, " %s", sym->label);
@@ -266,9 +266,9 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
     case OP_STI:
       {
         n += PPRINT (dest + n, flags, "%s ", "sti", "STI");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
 
-        uint16_t addr = (inst->inst & 0x1FF);
+        uint16_t addr = (inst->word & 0x1FF);
         symbol *sym = find_symbol_by_addr (symbols, addr);
         if (sym)
           n += sprintf (dest + n, " %s", sym->label);
@@ -281,15 +281,15 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
       {
 
         n += PPRINT (dest + n, flags, "%s ", "str", "STR");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->inst >> 6) & 0x7));
-        n += sprintf (dest + n, "#%d", ((inst->inst >> 0) & 0x3F));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 9) & 0x7));
+        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R', ((inst->word >> 6) & 0x7));
+        n += sprintf (dest + n, "#%d", ((inst->word >> 0) & 0x3F));
       }
       break;
 
     case OP_TRAP:
       {
-        uint16_t trapvect8 = inst->inst & 0xFF;
+        uint16_t trapvect8 = inst->word & 0xFF;
         switch (trapvect8)
           {
           case TRAP_GETC:
@@ -321,7 +321,7 @@ disassemble_instruction (char *dest, int flags, symbol *symbols, instruction *in
       break;
 
     default: // TODO be silent? do something else?
-      fprintf (stderr, "i don't grok this op: %x\n", (inst->inst >> 12));
+      fprintf (stderr, "i don't grok this op: %x\n", (inst->word >> 12));
     }
 
   return n;

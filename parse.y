@@ -99,150 +99,150 @@ instruction:
 /* operations */
   ADD REG[DR] ',' REG[SR1] ',' REG[SR2]
 {
-  $1->inst |= ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
+  $1->word |= ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
   $$ = $1;
 }
 | ADD REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
 {
-  $1->inst |= ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
+  $1->word |= ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
   $$ = $1;
 }
 | AND REG[DR] ',' REG[SR1] ',' REG[SR2]
 {
-  $1->inst |= ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
+  $1->word |= ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
   $$ = $1;
 }
 | AND REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
 {
-  $1->inst |= ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
+  $1->word |= ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
   $$ = $1;
 }
 | BR LABEL[sym]
 {
-  $1->inst |= (OP_BR << 12);
+  $1->word |= (OP_BR << 12);
   $1->sym = $sym;
   $1->flags = 0x01FF;
   $$ = $1;
 }
 | BR NUMLIT[PCoffset9]
 {
-  $1->inst |= (OP_BR << 12);
-  $1->inst |= ($PCoffset9 & 0x01FF);
+  $1->word |= (OP_BR << 12);
+  $1->word |= ($PCoffset9 & 0x01FF);
   $$ = $1;
 }
 | JMP REG[BaseR]
 {
-  $1->inst |= ($BaseR << 6);
+  $1->word |= ($BaseR << 6);
   $$ = $1;
 }
 | JSR LABEL[sym]
 {
-  $1->inst |= (1 << 11);
+  $1->word |= (1 << 11);
   $1->sym = $sym;
   $1->flags = 0x07FF;
   $$ = $1;
 }
 | JSRR REG[BaseR]
 {
-  $1->inst |= ($BaseR << 6);
+  $1->word |= ($BaseR << 6);
   $$ = $1;
 }
 | LD REG[DR] ',' LABEL[sym]
 {
-  $1->inst |= ($DR << 9);
+  $1->word |= ($DR << 9);
   $1->sym = $sym;
   $1->flags = 0x01FF;
   $$ = $1;
 }
 | LDI REG[DR] ',' LABEL[sym]
 {
-  $1->inst |= ($DR << 9);
+  $1->word |= ($DR << 9);
   $1->sym = $sym;
   $1->flags = 0x01FF;
   $$ = $1;
 }
 | LDR REG[DR] ',' REG[BaseR] ',' NUMLIT[offset6]
 {
-  $1->inst |= ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
+  $1->word |= ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
   $$ = $1;
 }
 | LEA REG[DR] ',' LABEL[sym]
 {
-  $1->inst |= ($DR << 9);
+  $1->word |= ($DR << 9);
   $1->sym = $sym;
   $1->flags = 0x01FF;
   $$ = $1;
 }
 | NOT REG[DR] ',' REG[SR]
 {
-  $1->inst |= ($DR << 9) | ($SR << 6) | (0x003F << 0);
+  $1->word |= ($DR << 9) | ($SR << 6) | (0x003F << 0);
   $$ = $1;
 }
 | RET
 { // special case of JMP, where R7 is implied as DR
-  $1->inst |= (R_R7 << 6);
+  $1->word |= (R_R7 << 6);
   $$ = $1;
 }
 | RTI /* $$ = $1 */
 | ST REG[SR] ',' LABEL[sym]
 {
-  $1->inst |= ($SR << 9);
+  $1->word |= ($SR << 9);
   $1->sym = $sym;
   $1->flags = 0x01FF;
   $$ = $1;
 }
 | STI REG[SR] ',' LABEL[sym]
 {
-  $1->inst |= ($SR << 9);
+  $1->word |= ($SR << 9);
   $1->sym = $sym;
   $1->flags = 0x01FF;
   $$ = $1;
 }
 | STR REG[SR] ',' REG[BaseR] ',' NUMLIT[offset6]
 {
-  $1->inst |= ($SR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
+  $1->word |= ($SR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
   $$ = $1;
 }
 | TRAP NUMLIT[trapvect8]
 {
-  $1->inst |= ($trapvect8 << 0);
+  $1->word |= ($trapvect8 << 0);
   $$ = $1;
 }
 /* traps */
 | GETC
 {
-  $1->inst |= (TRAP_GETC << 0);
+  $1->word |= (TRAP_GETC << 0);
   $$ = $1;
 }
 | OUT
 {
-  $1->inst |= (TRAP_OUT << 0);
+  $1->word |= (TRAP_OUT << 0);
   $$ = $1;
 }
 | PUTS
 {
-  $1->inst |= (TRAP_PUTS << 0);
+  $1->word |= (TRAP_PUTS << 0);
   $$ = $1;
 }
 | IN
 {
-  $1->inst |= (TRAP_IN << 0);
+  $1->word |= (TRAP_IN << 0);
   $$ = $1;
 }
 | PUTSP
 {
-  $1->inst |= (TRAP_PUTSP << 0);
+  $1->word |= (TRAP_PUTSP << 0);
   $$ = $1;
 }
 | HALT
 {
-  $1->inst |= (TRAP_HALT << 0);
+  $1->word |= (TRAP_HALT << 0);
   $$ = $1;
 }
 /* assembler directives */
 | FILL NUMLIT[data]
 {
-  $1->inst = $data;
+  $1->word = $data;
   $$ = $1;
 }
 | FILL LABEL[sym]
@@ -262,12 +262,12 @@ instruction:
 
   instruction *inst = $1;
   for(char *p = escaped; *p; p++) {
-    inst->inst = *p;
+    inst->word = *p;
     inst->next = calloc(1, sizeof(instruction));
     inst = inst->next;
     inst->addr = prog->len++;
   }
-  inst->inst = 0;
+  inst->word = 0;
   free(escaped);
   free($raw);
 

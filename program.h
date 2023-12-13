@@ -13,7 +13,7 @@ typedef struct symbol
 
 typedef struct instruction
 {
-  uint16_t addr, inst, flags;
+  uint16_t addr, word, flags;
   symbol *sym;
   struct instruction *next, *last;
 } instruction;
