@@ -1,29 +1,29 @@
 bin_PROGRAMS = lc3as lc3vm lc3diff
 
 lc3as_SOURCES = \
-    lc3as.c \
-    assemble.c \
-    machine.h \
-    parse.h \
-    parse.y \
-    print.c \
-    print.h \
-    program.h \
-    scan.l \
+    lc3as.c     \
+    machine.h   \
+    parse.h     \
+    parse.y     \
+    print.c     \
+    print.h     \
+    program.c   \
+    program.h   \
+    scan.l      \
     popt/popt.h
 lc3as_LDADD = popt/libpopt.a
 
-lc3vm_SOURCES = \
-    lc3vm.c \
-    assemble.c \
-    execute.c \
+lc3vm_SOURCES =   \
+    lc3vm.c       \
+    execute.c     \
     interactive.c \
-    machine.c \
-    machine.h \
-    parse.h \
-    parse.y \
-    program.h \
-    scan.l \
+    machine.c     \
+    machine.h     \
+    parse.h       \
+    parse.y       \
+    program.c     \
+    program.h     \
+    scan.l        \
     popt/popt.h
 lc3vm_LDADD = popt/libpopt.a
 
@@ -41,15 +41,15 @@ SUBDIRS = popt
 # TODO move all this under tests with a separate makefile
 # check_PROGRAMS =
 
-check_SCRIPTS = \
+check_SCRIPTS =   \
     test/hello.sh \
-    test/2048.sh \
+    test/2048.sh  \
     test/rogue.sh \
     test/all-instructions.sh \
     test/interactive-hello.sh
 MEMCHECKS = \
     test/valgrind-interactive.sh \
-    test/valgrind-lc3as-2048.sh \
+    test/valgrind-lc3as-2048.sh  \
     test/valgrind-lc3vm-hello.sh
 
 # uncomment to run memory leak checks (SLOW)
@@ -60,7 +60,7 @@ CLEANFILES = test/*.valgrind
 TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 TEST_INPUTS = \
-    test/2048.asm test/2048.obj \
+    test/2048.asm test/2048.obj   \
     test/rogue.asm test/rogue.obj \
     test/hello.asm test/hello.obj \
     test/all-instructions.asm

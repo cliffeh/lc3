@@ -337,6 +337,8 @@ assemble_program (program *prog, int flags, FILE *in)
   yyset_in (in, scanner);
 
   int rc = yyparse (prog, flags, scanner);
+  if(rc == 0)
+    rc = resolve_symbols(prog);
 
   yylex_destroy (scanner);
 
