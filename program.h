@@ -33,6 +33,8 @@ typedef struct program
   symbol *symbols;
 } program;
 
+int disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
+                      uint16_t word);
 int disassemble_instruction (char *dest, int flags, symbol *symbols,
                              instruction *inst);
 

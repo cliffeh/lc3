@@ -100,6 +100,17 @@ free_symbols (symbol *symbols)
            (flags & FORMAT_LC) ? lc : UC __VA_OPT__ (, ) __VA_ARGS__)
 
 int
+disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
+                  uint16_t word)
+{
+  instruction inst;
+  memset (&inst, 1, sizeof (instruction));
+  inst.addr = addr;
+  inst.word = word;
+  return disassemble_instruction (dest, flags, symbols, &inst);
+}
+
+int
 disassemble_instruction (char *dest, int flags, symbol *symbols,
                          instruction *inst)
 {
