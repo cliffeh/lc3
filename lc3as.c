@@ -47,7 +47,7 @@
 int
 main (int argc, const char *argv[])
 {
-  int rc, disassemble = 0, flags = FORMAT_OBJECT;
+  int rc, disassemble = 0, flags = FMT_OBJECT;
   char *outfile = "-", *format = "object";
   FILE *out = 0, *in = 0;
 
@@ -92,32 +92,32 @@ main (int argc, const char *argv[])
       switch (rc)
         {
         case 'D':
-          flags |= FORMAT_PRETTY;
+          flags |= FMT_PRETTY;
           break;
 
         case 'F':
           {
             if (strcmp (format, "a") == 0 || strcmp (format, "address") == 0)
               {
-                flags |= FORMAT_ADDR;
+                flags |= FMT_ADDR;
               }
             else if (strcmp (format, "b") == 0 || strcmp (format, "bits") == 0)
               {
-                flags |= FORMAT_BITS;
+                flags |= FMT_BITS;
               }
             else if (strcmp (format, "d") == 0
                      || strcmp (format, "debug") == 0)
               {
-                flags = FORMAT_DEBUG;
+                flags = FMT_DEBUG;
               }
             else if (strcmp (format, "h") == 0 || strcmp (format, "hex") == 0)
               {
-                flags |= FORMAT_HEX;
+                flags |= FMT_HEX;
               }
             else if (strcmp (format, "l") == 0
                      || strcmp (format, "lower") == 0)
               {
-                flags |= FORMAT_LC;
+                flags |= FMT_LC;
               }
             else if (strcmp (format, "o") == 0
                      || strcmp (format, "object") == 0)
@@ -128,7 +128,7 @@ main (int argc, const char *argv[])
             else if (strcmp (format, "p") == 0
                      || strcmp (format, "pretty") == 0)
               {
-                flags |= FORMAT_PRETTY;
+                flags |= FMT_PRETTY;
               }
             else
               {

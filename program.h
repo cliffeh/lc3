@@ -6,19 +6,19 @@
 
 /* output formatting flags */
 // print out assembled object code
-#define FORMAT_OBJECT 0
+#define FMT_OBJECT 0
 // include instruction addresses
-#define FORMAT_ADDR (1 << 0)
+#define FMT_ADDR (1 << 0)
 // print instructions as bit strings
-#define FORMAT_BITS (1 << 1)
+#define FMT_BITS (1 << 1)
 // print instructions as hex
-#define FORMAT_HEX (1 << 2)
+#define FMT_HEX (1 << 2)
 // pretty-print the assembly back out
-#define FORMAT_PRETTY (1 << 3)
+#define FMT_PRETTY (1 << 3)
 // default: uppercase
-#define FORMAT_LC (1 << 4)
+#define FMT_LC (1 << 4)
 // debugging output
-#define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_HEX | FORMAT_PRETTY)
+#define FMT_DEBUG (FMT_ADDR | FMT_HEX | FMT_PRETTY)
 
 /* disassembler hints */
 enum

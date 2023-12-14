@@ -113,7 +113,7 @@ free_symbols (symbol *symbols)
 
 #define PPRINT(dest, flags, fmt, lc, UC, ...)                                 \
   sprintf (dest, fmt,                                                         \
-           (flags & FORMAT_LC) ? lc : UC __VA_OPT__ (, ) __VA_ARGS__)
+           (flags & FMT_LC) ? lc : UC __VA_OPT__ (, ) __VA_ARGS__)
 
 int
 disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
@@ -375,7 +375,7 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
             break;
           default:
             n += PPRINT (dest + n, flags, "%s", "trap ", "TRAP ");
-            if (flags & FORMAT_LC)
+            if (flags & FMT_LC)
               n += sprintf (dest + n, "x%x", trapvect8);
             else
               n += sprintf (dest + n, "x%X", trapvect8);

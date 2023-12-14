@@ -30,8 +30,8 @@ print_program (FILE *out, int flags, program *prog)
 
   int n = 0;
 
-  if (flags & FORMAT_PRETTY)
-    fprintf (out, (flags & FORMAT_LC) ? ".orig x%04x" : ".ORIG x%04X\n",
+  if (flags & FMT_PRETTY)
+    fprintf (out, (flags & FMT_LC) ? ".orig x%04x" : ".ORIG x%04X\n",
              prog->orig);
 
   // ensure our symbols are in address order (for pretty-printing below)
@@ -40,7 +40,7 @@ print_program (FILE *out, int flags, program *prog)
 
   for (instruction *inst = prog->instructions; inst; inst = inst->next)
     {
-      if (flags & FORMAT_PRETTY)
+      if (flags & FMT_PRETTY)
         {
           // NB if our symbols aren't sorted in address order this
           // won't work the way we expect it to
@@ -49,8 +49,8 @@ print_program (FILE *out, int flags, program *prog)
               // NB for the purposes of debugging it's generally more
               // convenient to output addresses relative to .ORIG
               // rather than indexed at zero
-              if (flags & FORMAT_ADDR)
-                n += fprintf (out, (flags & FORMAT_LC) ? "%04x" : "%04X",
+              if (flags & FMT_ADDR)
+                n += fprintf (out, (flags & FMT_LC) ? "%04x" : "%04X",
                               inst->addr + 1);
               SPACES (out, n);
               n += fprintf (out, "%s\n", current_symbol->label);
@@ -60,17 +60,17 @@ print_program (FILE *out, int flags, program *prog)
 
       n = 0;
 
-      if (flags & FORMAT_ADDR)
-        n += fprintf (out, (flags & FORMAT_LC) ? "%04x" : "%04X", inst->addr);
+      if (flags & FMT_ADDR)
+        n += fprintf (out, (flags & FMT_LC) ? "%04x" : "%04X", inst->addr);
 
-      if (flags & FORMAT_HEX)
+      if (flags & FMT_HEX)
         {
           SPACES (out, n);
           uint16_t bytecode = SWAP16 (inst->word);
-          n += fprintf (out, (flags & FORMAT_LC) ? "%04x" : "%04X", bytecode);
+          n += fprintf (out, (flags & FMT_LC) ? "%04x" : "%04X", bytecode);
         }
 
-      if (flags & FORMAT_BITS)
+      if (flags & FMT_BITS)
         {
           SPACES (out, n);
           for (int i = 15; i >= 0; i--)
@@ -86,7 +86,7 @@ print_program (FILE *out, int flags, program *prog)
         {
         case HINT_INST:
           {
-            if (flags & FORMAT_PRETTY)
+            if (flags & FMT_PRETTY)
               {
                 disassemble_instruction (buf, flags, prog->symbols, inst);
                 SPACES (out, n);
@@ -97,16 +97,16 @@ print_program (FILE *out, int flags, program *prog)
 
         case HINT_FILL:
           {
-            if (flags & FORMAT_PRETTY)
+            if (flags & FMT_PRETTY)
               {
                 SPACES (out, n);
                 if (inst->sym)
                   n += fprintf (
-                      out, (flags & FORMAT_LC) ? "  .fill %s" : "  .FILL %s",
+                      out, (flags & FMT_LC) ? "  .fill %s" : "  .FILL %s",
                       inst->sym->label);
                 else
                   n += fprintf (
-                      out, (flags & FORMAT_LC) ? "  .fill x%x" : "  .FILL x%X",
+                      out, (flags & FMT_LC) ? "  .fill x%x" : "  .FILL x%X",
                       inst->word);
               }
           }
@@ -114,10 +114,10 @@ print_program (FILE *out, int flags, program *prog)
 
         case HINT_STRINGZ:
           {
-            if (flags & FORMAT_PRETTY)
+            if (flags & FMT_PRETTY)
               {
                 SPACES (out, n);
-                n += fprintf (out, (flags & FORMAT_LC) ? "  .stringz \""
+                n += fprintf (out, (flags & FMT_LC) ? "  .stringz \""
                                                        : "  .STRINGZ \"");
                 while (inst && inst->word)
                   {
@@ -160,8 +160,8 @@ print_program (FILE *out, int flags, program *prog)
       n = 0;
     }
 
-  if (flags & FORMAT_PRETTY)
-    fprintf (out, (flags & FORMAT_LC) ? ".end" : ".END\n");
+  if (flags & FMT_PRETTY)
+    fprintf (out, (flags & FMT_LC) ? ".end" : ".END\n");
 
   return 0;
 }
