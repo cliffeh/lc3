@@ -111,9 +111,18 @@ free_symbols (symbol *symbols)
     }
 }
 
+int
+dump_symbols (FILE *out, symbol *symbols)
+{
+  for (symbol *sym = symbols; sym; sym = sym->next)
+    {
+      fprintf (out, "x%04x %s\n", sym->addr, sym->label);
+    }
+  return 0;
+}
+
 #define PPRINT(dest, flags, fmt, lc, UC, ...)                                 \
-  sprintf (dest, fmt,                                                         \
-           (flags & FMT_LC) ? lc : UC __VA_OPT__ (, ) __VA_ARGS__)
+  sprintf (dest, fmt, (flags & FMT_LC) ? lc : UC __VA_OPT__ (, ) __VA_ARGS__)
 
 int
 disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,

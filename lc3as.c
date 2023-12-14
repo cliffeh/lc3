@@ -225,6 +225,8 @@ main (int argc, const char *argv[])
         goto cleanup;
 
       rc = print_program (out, flags, &prog);
+
+      // dump_symbols (stderr, prog.symbols);
     }
 
 cleanup:

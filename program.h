@@ -58,6 +58,8 @@ int disassemble_instruction (char *dest, int flags, symbol *symbols,
 
 int print_program (FILE *out, int flags, program *prog);
 
+int dump_symbols(FILE *out, symbol *symbols);
+
 int resolve_symbols (program *prog);
 symbol *find_or_create_symbol (program *prog, const char *label);
 symbol *find_symbol_by_addr (symbol *symbols, uint16_t addr);
