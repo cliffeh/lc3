@@ -186,13 +186,7 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
             int16_t PCoffset11 = SIGN_EXTEND (inst->word & 0x7FF, 11);
             symbol *sym
                 = find_symbol_by_addr (symbols, PCoffset11 + inst->addr + 1);
-            if (!sym)
-              {
-                fprintf (stderr,
-                         "JSR couldn't find symbol for addr %04x + %04x + "
-                         "%04x; expected addr: %04x\n",
-                         PCoffset11, inst->addr, 1, inst->sym->addr);
-              }
+
             if (sym)
               n += sprintf (dest + n, "%s", sym->label);
             else // TODO sign extended int?
