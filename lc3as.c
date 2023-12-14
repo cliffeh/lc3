@@ -109,6 +109,11 @@ main (int argc, const char *argv[])
               {
                 flags |= FORMAT_HEX;
               }
+            else if (strcmp (format, "l") == 0
+                     || strcmp (format, "lower") == 0)
+              {
+                flags |= FORMAT_LC;
+              }
             else if (strcmp (format, "o") == 0
                      || strcmp (format, "object") == 0)
               {

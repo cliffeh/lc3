@@ -1,5 +1,9 @@
 #include "print.h"
 
+#define SPACES(out, n)                                                        \
+  if (n)                                                                      \
+  n += fprintf (out, "  ")
+
 int
 print_program (FILE *out, int flags, program *prog)
 {
@@ -9,7 +13,8 @@ print_program (FILE *out, int flags, program *prog)
   int n = 0;
 
   if (flags & FORMAT_PRETTY)
-    fprintf (out, ".ORIG x%04x\n", prog->orig);
+    fprintf (out, (flags & FORMAT_LC) ? ".orig x%04x" : ".ORIG x%04X\n",
+             prog->orig);
 
   // ensure our symbols are in address order (for pretty-printing below)
   sort_symbols_by_addr (prog);
@@ -17,33 +22,43 @@ print_program (FILE *out, int flags, program *prog)
 
   for (instruction *inst = prog->instructions; inst; inst = inst->next)
     {
-      // NB for the purposes of debugging it's generally more
-      // convenient to output addresses relative to .ORIG
-      // rather than indexed at zero
-      if (flags & FORMAT_ADDR)
-        n += fprintf (out, "%04x", inst->addr + 1);
-
       if (flags & FORMAT_PRETTY)
         {
           // NB if our symbols aren't sorted in address order this
           // won't work the way we expect it to
           while (current_symbol && current_symbol->addr == inst->addr)
             {
-              n += fprintf (out, "%s%s\n", n ? "  " : "",
-                            current_symbol->label);
+              // NB for the purposes of debugging it's generally more
+              // convenient to output addresses relative to .ORIG
+              // rather than indexed at zero
+              if (flags & FORMAT_ADDR)
+                n += fprintf (out, (flags & FORMAT_LC) ? "%04x" : "%04X",
+                              inst->addr + 1);
+              SPACES (out, n);
+              n += fprintf (out, "%s\n", current_symbol->label);
               current_symbol = current_symbol->next;
             }
         }
 
+      n = 0;
+
+      // NB for the purposes of debugging it's generally more
+      // convenient to output addresses relative to .ORIG
+      // rather than indexed at zero
+      if (flags & FORMAT_ADDR)
+        n += fprintf (out, (flags & FORMAT_LC) ? "%04x" : "%04X",
+                      inst->addr + 1);
+
       if (flags & FORMAT_HEX)
         {
-          n += fprintf (out, "%s%04x", n ? "  " : "", SWAP16 (inst->word));
+          SPACES (out, n);
+          uint16_t bytecode = SWAP16 (inst->word);
+          n += fprintf (out, (flags & FORMAT_LC) ? "%04x" : "%04X", bytecode);
         }
 
       if (flags & FORMAT_BITS)
         {
-          n += fprintf (out, "%s", n ? "  " : "");
-
+          SPACES (out, n);
           for (int i = 15; i >= 0; i--)
             {
               n += fprintf (out, "%c", ((inst->word & (1 << i)) >> i) + '0');
@@ -60,7 +75,8 @@ print_program (FILE *out, int flags, program *prog)
             if (flags & FORMAT_PRETTY)
               {
                 disassemble_instruction (buf, flags, prog->symbols, inst);
-                n += fprintf (out, "%s  %s", n ? "  " : "", buf);
+                SPACES (out, n);
+                n += fprintf (out, "  %s", buf);
               }
           }
           break;
@@ -68,7 +84,12 @@ print_program (FILE *out, int flags, program *prog)
         case HINT_FILL:
           {
             if (flags & FORMAT_PRETTY)
-              n += fprintf (out, "%s.FILL x%x", n ? "  " : "", inst->word);
+              {
+                SPACES (out, n);
+                n += fprintf (
+                    out, (flags & FORMAT_LC) ? "  .fill x%x" : "  .FILL x%X",
+                    inst->word);
+              }
           }
           break;
 
@@ -76,13 +97,33 @@ print_program (FILE *out, int flags, program *prog)
           {
             if (flags & FORMAT_PRETTY)
               {
-                n += fprintf (out, "%s.STRINGZ", n ? "  " : "");
+                SPACES (out, n);
+                n += fprintf (out, (flags & FORMAT_LC) ? "  .stringz \""
+                                                       : "  .STRINGZ \"");
                 while (inst && inst->word)
                   {
-                    // TODO UNESCAPE!
-                    n += fprintf (out, "%c", ((char)inst->word));
+                    char c = (char)inst->word;
+                    switch (c)
+                      {
+                      // clang-format off
+                        case '\007': n += fprintf (out, "\\a");  break;
+                        case '\013': n += fprintf (out, "\\v");  break;
+                        case '\b':   n += fprintf (out, "\\b");  break;
+                        case '\e':   n += fprintf (out, "\\e");  break;
+                        case '\f':   n += fprintf (out, "\\f");  break;
+                        case '\n':   n += fprintf (out, "\\n");  break;
+                        case '\r':   n += fprintf (out, "\\r");  break;
+                        case '\t':   n += fprintf (out, "\\t");  break;
+                        case '\\':   n += fprintf (out, "\\\\"); break;
+                        case '"':    n += fprintf (out, "\\\""); break;
+                        default:     n += fprintf (out, "%c", c);
+                        // clang-format on
+                      }
+
                     inst = inst->next;
                   }
+
+                n += fprintf (out, "\"");
               }
             else
               {
@@ -97,10 +138,11 @@ print_program (FILE *out, int flags, program *prog)
         }
 
       fprintf (out, "\n");
+      n = 0;
     }
 
   if (flags & FORMAT_PRETTY)
-    fprintf (out, ".END\n");
+    fprintf (out, (flags & FORMAT_LC) ? ".end" : ".END\n");
 
   return 0;
 }
