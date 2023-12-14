@@ -21,14 +21,13 @@
 }
 
 %code provides {
-  int assemble_program (program *prog, FILE *in);
+  // need all of these to prevent compiler warnings
+  int  yylex_init (yyscan_t *scanner);
+  void yyset_in (FILE *in, yyscan_t scanner);
+  int  yylex_destroy (yyscan_t scanner);
 }
 
 %code {
-  // need all of these to prevent compiler warnings
-  int yylex_init(yyscan_t *scanner);
-  int yyset_in(FILE *in, yyscan_t scanner);
-  int yylex_destroy(yyscan_t scanner);
   int yylex(YYSTYPE *yylvalp, YYLTYPE* yyllocp, program *prog, yyscan_t scanner);
   void yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg);
 }
@@ -282,22 +281,6 @@ instruction:
 ;
 
 %%
-
-int
-assemble_program (program *prog, FILE *in)
-{
-  yyscan_t scanner;
-  yylex_init (&scanner);
-  yyset_in (in, scanner);
-
-  int rc = yyparse (prog, scanner);
-  if(rc == 0)
-    rc = resolve_symbols(prog);
-
-  yylex_destroy (scanner);
-
-  return rc;
-}
 
 void
 yyerror (YYLTYPE* yyllocp, program *prog, yyscan_t scanner, const char *msg)

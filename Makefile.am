@@ -6,7 +6,6 @@ lc3as_SOURCES =   \
     parse.h       \
     parse.y       \
     print.c       \
-    print.h       \
     program.c     \
     program.h     \
     scan.l        \

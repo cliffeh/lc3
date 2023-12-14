@@ -4,7 +4,23 @@
 #include <stdint.h> // for uint16_t
 #include <stdio.h>  // for FILE *
 
-// disassembler hints
+/* output formatting flags */
+// print out assembled object code
+#define FORMAT_OBJECT 0
+// include instruction addresses
+#define FORMAT_ADDR (1 << 0)
+// print instructions as bit strings
+#define FORMAT_BITS (1 << 1)
+// print instructions as hex
+#define FORMAT_HEX (1 << 2)
+// pretty-print the assembly back out
+#define FORMAT_PRETTY (1 << 3)
+// default: uppercase
+#define FORMAT_LC (1 << 4)
+// debugging output
+#define FORMAT_DEBUG (FORMAT_ADDR | FORMAT_HEX | FORMAT_PRETTY)
+
+/* disassembler hints */
 enum
 {
   HINT_INST = 0,
@@ -33,10 +49,14 @@ typedef struct program
   symbol *symbols;
 } program;
 
+int assemble_program (program *prog, FILE *in);
+
 int disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
                       uint16_t word);
 int disassemble_instruction (char *dest, int flags, symbol *symbols,
                              instruction *inst);
+
+int print_program (FILE *out, int flags, program *prog);
 
 int resolve_symbols (program *prog);
 symbol *find_or_create_symbol (program *prog, const char *label);

@@ -12,7 +12,6 @@
 
 #include "parse.h"
 #include "popt/popt.h"
-#include "print.h"
 #include "program.h"
 #include <errno.h>
 #include <stdio.h>
@@ -48,7 +47,7 @@
 int
 main (int argc, const char *argv[])
 {
-  int rc, flags = FORMAT_OBJECT;
+  int rc, disassemble = 0, flags = FORMAT_OBJECT;
   char *outfile = "-", *format = "object";
   FILE *out = 0, *in = 0;
 
@@ -59,6 +58,8 @@ main (int argc, const char *argv[])
 
   struct poptOption progOptions[]
       = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          { "disassemble", 'D', POPT_ARG_NONE, &disassemble, 'D',
+            "disassemble object code to assembly (implies -Fp)", 0 },
           { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
             &format, 'F', "output format", "FORMAT" },
           { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
@@ -90,6 +91,10 @@ main (int argc, const char *argv[])
     {
       switch (rc)
         {
+        case 'D':
+          flags |= FORMAT_PRETTY;
+          break;
+
         case 'F':
           {
             if (strcmp (format, "a") == 0 || strcmp (format, "address") == 0)
@@ -197,16 +202,28 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
-  if ((rc = assemble_program (&prog, in)) != 0)
-    goto cleanup;
 
-  if (flags)
+  if (disassemble)
     {
-      rc = print_program (out, flags, &prog);
+      uint16_t orig, word, n = 0;
+      rc = fread (&orig, sizeof (uint16_t), 1, in);
+      orig = SWAP16 (orig);
+
+      while (!feof (in))
+        {
+          char buf[4096];
+          rc = fread (&word, sizeof (uint16_t), 1, in);
+          word = SWAP16 (word);
+          disassemble_word (buf, flags, 0, orig + n++, word);
+          fprintf (out, "%s\n", buf);
+        }
     }
   else
     {
-      rc = write_bytecode (out, &prog);
+      if ((rc = assemble_program (&prog, in)) != 0)
+        goto cleanup;
+
+      rc = print_program (out, flags, &prog);
     }
 
 cleanup:

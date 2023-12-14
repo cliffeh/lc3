@@ -1,4 +1,4 @@
-#include "print.h"
+#include "program.h"
 
 #define SPACES(out, n)                                                        \
   if (n)                                                                      \
@@ -7,8 +7,26 @@
 int
 print_program (FILE *out, int flags, program *prog)
 {
-  if (!flags)
-    return 0;
+  if (!flags) // write  assembled object code
+    {
+      uint16_t bytecode = SWAP16 (prog->orig);
+      if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+        {
+          fprintf (stderr, "write error...bailing.\n");
+          return 1;
+        }
+      for (instruction *inst = prog->instructions; inst; inst = inst->next)
+        {
+          bytecode = SWAP16 (inst->word);
+          if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+            {
+              fprintf (stderr, "write error...bailing.\n");
+              return 1;
+            }
+        }
+
+      return 0;
+    }
 
   int n = 0;
 
@@ -42,12 +60,8 @@ print_program (FILE *out, int flags, program *prog)
 
       n = 0;
 
-      // NB for the purposes of debugging it's generally more
-      // convenient to output addresses relative to .ORIG
-      // rather than indexed at zero
       if (flags & FORMAT_ADDR)
-        n += fprintf (out, (flags & FORMAT_LC) ? "%04x" : "%04X",
-                      inst->addr + 1);
+        n += fprintf (out, (flags & FORMAT_LC) ? "%04x" : "%04X", inst->addr);
 
       if (flags & FORMAT_HEX)
         {
@@ -110,7 +124,7 @@ print_program (FILE *out, int flags, program *prog)
                     char c = (char)inst->word;
                     switch (c)
                       {
-                      // clang-format off
+                        // clang-format off
                         case '\007': n += fprintf (out, "\\a");  break;
                         case '\013': n += fprintf (out, "\\v");  break;
                         case '\b':   n += fprintf (out, "\\b");  break;
@@ -148,28 +162,6 @@ print_program (FILE *out, int flags, program *prog)
 
   if (flags & FORMAT_PRETTY)
     fprintf (out, (flags & FORMAT_LC) ? ".end" : ".END\n");
-
-  return 0;
-}
-
-int
-write_bytecode (FILE *out, program *prog)
-{
-  uint16_t bytecode = SWAP16 (prog->orig);
-  if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
-    {
-      fprintf (stderr, "write error...bailing.\n");
-      return 1;
-    }
-  for (instruction *inst = prog->instructions; inst; inst = inst->next)
-    {
-      bytecode = SWAP16 (inst->word);
-      if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
-        {
-          fprintf (stderr, "write error...bailing.\n");
-          return 1;
-        }
-    }
 
   return 0;
 }
