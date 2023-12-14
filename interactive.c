@@ -20,18 +20,17 @@ static command command_table[]
     = { /* code, name, args, desc, aliases */
         { CMD_ASM,
           "asm",
-          "[file...]",
+          "file",
           "assemble and load one or more assembly files",
           { "a", 0 } },
         { CMD_LOAD,
           "load",
-          "[file...]",
+          "file",
           "load one or more object files",
           { "l", 0 } },
         { CMD_RUN, "run", 0, "run the currently-loaded program", { "r", 0 } },
         { CMD_HELP, "help", 0, "display this help message", { "h", "?", 0 } },
-        { CMD_EXIT, "quit", 0, "exit the program", { "q", 0 } },
-        { CMD_EXIT, "exit", 0, "exit the program", { "x", 0 } },
+        { CMD_EXIT, "exit", 0, "exit the program", { "quit", "q", "x", 0 } },
         { 0, 0, 0, 0, 0 }
       };
 
@@ -45,7 +44,7 @@ static void
 print_help (char *sofar)
 {
   if (!sofar)
-    printf (STYLE_DIM "%-12s%-12s%s\n" STYLE_RST, "Command", "Arguments",
+    printf (STYLE_DIM "%-20s%-12s%s\n" STYLE_RST, "Command", "Arguments",
             "Description");
 
   for (command *cmd = command_table; cmd->name; cmd++)
@@ -56,7 +55,7 @@ print_help (char *sofar)
       while (*p)
         aliases += sprintf (aliases, ", %s", *p++);
 
-      printf (STYLE_BLD "%-12s" STYLE_RST, buf);
+      printf (STYLE_BLD "%-20s" STYLE_RST, buf);
       printf ("%-12s", cmd->args ? cmd->args : "");
       printf ("%s\n", cmd->desc);
     }
@@ -88,6 +87,10 @@ process_command (machine *vm, const char *cmd, char *args)
     {
     case CMD_HELP:
       print_help (0);
+      break;
+
+    case CMD_EXIT:
+      return -1;
       break;
 
     case CMD_ASM:
@@ -349,13 +352,18 @@ handle_interactive (machine *vm)
                 char *args = strtok (0, " ");
 
                 if (cmd)
-                  rc = process_command (vm, cmd, args); // TODO capture return
+                  rc = process_command (vm, cmd, args);
+
+                if (rc == -1) // exit
+                  running = 0;
 
                 // clear the buffer
                 cursor = buf;
                 *cursor = 0;
               }
-            prompt (0);
+
+            if (running) // don't re-prompt if we're exiting
+              prompt (0);
           };
           break;
 
