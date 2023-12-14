@@ -49,6 +49,8 @@ check_SCRIPTS =   \
     test/hello.sh \
     test/2048.sh  \
     test/rogue.sh \
+    test/pretty-2048.sh      \
+    test/pretty-rogue.sh      \
     test/all-instructions.sh \
     test/interactive-hello.sh
 MEMCHECKS = \
