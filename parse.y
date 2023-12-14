@@ -63,12 +63,18 @@
 %%
 
 program:
-  ORIG NUMLIT
-  instruction_list
+  preamble
+  instruction_list[instructions]
   END
 {
-  prog->orig = $2;
-  prog->instructions = $3;
+  prog->instructions = $instructions;
+}
+;
+
+preamble:
+  ORIG NUMLIT[orig]
+{
+  prog->orig = $orig;
 }
 ;
 

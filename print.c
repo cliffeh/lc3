@@ -86,9 +86,15 @@ print_program (FILE *out, int flags, program *prog)
             if (flags & FORMAT_PRETTY)
               {
                 SPACES (out, n);
-                n += fprintf (
-                    out, (flags & FORMAT_LC) ? "  .fill x%x" : "  .FILL x%X",
-                    inst->word);
+                symbol *sym = find_symbol_by_addr (prog->symbols, inst->word);
+                if (sym)
+                  n += fprintf (
+                      out, (flags & FORMAT_LC) ? "  .fill %s" : "  .FILL %s",
+                      sym->label);
+                else
+                  n += fprintf (
+                      out, (flags & FORMAT_LC) ? "  .fill x%x" : "  .FILL x%X",
+                      inst->word);
               }
           }
           break;

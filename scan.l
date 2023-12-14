@@ -18,7 +18,7 @@
   do {                                             \
     yylval->inst = calloc(1, sizeof(instruction)); \
     yylval->inst->word = (op << 12);               \
-    yylval->inst->addr = prog->len++;              \
+    yylval->inst->addr = prog->orig + prog->len++; \
     yylval->inst->last = yylval->inst;             \
   } while (0)
 

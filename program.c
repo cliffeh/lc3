@@ -20,7 +20,7 @@ resolve_symbols (program *prog)
           if (inst->flags)
             inst->word |= (((inst->sym->addr - inst->addr) - 1) & inst->flags);
           else
-            inst->word = inst->sym->addr + prog->orig;
+            inst->word = inst->sym->addr;
         }
     }
 
