@@ -167,7 +167,7 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
     case OP_JMP:
       {
         uint16_t BaseR = (inst->word >> 6) & 0x7;
-        if (BaseR & 0x7) // assume RET special case
+        if (BaseR == 7) // assume RET special case
           n += PPRINT (dest + n, flags, "%s", "ret", "RET");
         else
           {
