@@ -10,4 +10,4 @@ BUILDDIR=${BUILDDIR:-$DIR/..}
 
 logfile="$BUILDDIR/test/valgrind-lc3as-2048.valgrind"
 
-valgrind --leak-check=full --error-exitcode=1 --log-file="$logfile" "$BUILDDIR/lc3as" -Fdebug -o/dev/null "$SRCDIR/test/2048.asm"
+valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 --log-file="$logfile" "$BUILDDIR/lc3as" -Fdebug -o/dev/null "$SRCDIR/test/2048.asm"

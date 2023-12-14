@@ -10,4 +10,4 @@ BUILDDIR=${BUILDDIR:-$DIR/..}
 
 logfile="$BUILDDIR/test/valgrind-lc3vm-hello.valgrind"
 
-valgrind --leak-check=full --error-exitcode=1 --log-file="$logfile" "$BUILDDIR/lc3vm" "$SRCDIR/test/hello.obj" > /dev/null
+valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 --log-file="$logfile" "$BUILDDIR/lc3vm" "$SRCDIR/test/hello.obj" > /dev/null

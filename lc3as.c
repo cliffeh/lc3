@@ -195,6 +195,7 @@ main (int argc, const char *argv[])
                     strerror (errno));
         }
     }
+  poptFreeContext (optCon);
 
   if (!in)
     in = stdin;
@@ -231,7 +232,6 @@ cleanup:
   fclose (out);
   free_instructions (prog.instructions);
   free_symbols (prog.symbols);
-  poptFreeContext (optCon);
 
   exit (rc);
 }

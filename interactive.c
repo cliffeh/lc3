@@ -123,6 +123,8 @@ process_command (machine *vm, const char *cmd, char *args)
 
                 printf ("successfully loaded\n");
               }
+
+            fclose (in);
             free_instructions (prog.instructions);
             free_symbols (prog.symbols);
           }
