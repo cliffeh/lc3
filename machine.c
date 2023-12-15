@@ -4,13 +4,13 @@ int
 load_image (uint16_t *memory, FILE *in)
 {
   /* the origin tells us where in memory to place the image */
-  uint16_t origin;
-  size_t read = fread (&origin, sizeof (origin), 1, in);
-  origin = SWAP16 (origin);
+  uint16_t orig;
+  size_t read = fread (&orig, sizeof (orig), 1, in);
+  orig = SWAP16 (orig);
 
   /* we know the maximum file size so we only need one fread */
-  uint16_t *p = memory + origin;
-  read = fread (p, sizeof (uint16_t), (MEMORY_MAX - origin), in);
+  uint16_t *p = memory + orig;
+  read = fread (p, sizeof (uint16_t), (MEMORY_MAX - orig), in);
 
   /* swap to little endian */
   while (read-- > 0)

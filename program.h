@@ -43,6 +43,7 @@ typedef struct program
 } program;
 
 int assemble_program (program *prog, FILE *in);
+int disassemble_program (program *prog, FILE *symin, FILE *in);
 
 int disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
                       uint16_t word);
