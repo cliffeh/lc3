@@ -2,7 +2,13 @@
 #include "program.h"
 #include "parse.h"
 
-#define YY_DECL int yylex(YYSTYPE *yylval_param, YYLTYPE* yylloc_param, program *prog, yyscan_t yyscanner)
+#define YY_DECL int yylex \
+  (                       \
+   YYSTYPE *yylval_param, \
+   YYLTYPE* yylloc_param, \
+   program *prog,         \
+   yyscan_t yyscanner     \
+  )
 
 #define YY_USER_ACTION                        \
   yylloc->first_line = yylloc->last_line;     \
@@ -23,8 +29,8 @@
   } while (0)
 
 #define NEW_DIRECTIVE(yylval, _hint) \
-  do {                              \
-    NEW_INST(yylval, 0);            \
+  do {                               \
+    NEW_INST(yylval, 0);             \
     yylval->inst->hint = _hint;      \
   } while (0)
 
@@ -97,8 +103,8 @@
 
  /* stuff to ignore */
 \n      { yylineno++; } // ignore newlines, but count them
-[ \t]*                  // ignore whitespace
-;.*                     // ignore comments
+[ \t]*  // ignore whitespace
+;.*     // ignore comments
 
  /* if we don't know what it is, just return it */
 . return *yytext;
