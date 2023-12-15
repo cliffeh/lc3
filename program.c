@@ -121,6 +121,22 @@ dump_symbols (FILE *out, symbol *symbols)
   return 0;
 }
 
+// TODO finish implementing!
+symbol *
+load_symbols (FILE *in)
+{
+  symbol *head;
+  char buf[1024], *p;
+
+  while (fgets (buf, 1024, in))
+    {
+      char *p = strtok (buf, " \t\n");
+      char *q = strtok (0, " \t\n");
+
+      // printf("%s %s\n", p, q);
+    }
+}
+
 #define PPRINT(dest, flags, fmt, lc, UC, ...)                                 \
   sprintf (dest, fmt, (flags & FMT_LC) ? lc : UC __VA_OPT__ (, ) __VA_ARGS__)
 
