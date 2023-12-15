@@ -143,7 +143,7 @@ process_command (machine *vm, const char *cmd, char *args)
                 printf ("failed to open: %s\n", arg);
                 error_count++;
               }
-            else if (!load_machine (vm, in))
+            else if (!load_image (vm->memory, in))
               {
                 printf ("failed to load image: %s\n", arg);
                 error_count++;
