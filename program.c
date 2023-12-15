@@ -206,13 +206,10 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
                       (inst->word & (1 << 10)) ? "z" : "",
                       (inst->word & (1 << 9)) ? "p" : "");
 
-        int16_t PCoffset9 = SIGN_EXTEND (inst->word & 0x1FF, 9);
-        symbol *sym
-            = find_symbol_by_addr (symbols, PCoffset9 + inst->addr + 1);
-        if (sym)
-          n += sprintf (dest + n, "%s", sym->label);
+        if (inst->sym)
+          n += sprintf (dest + n, "%s", inst->sym->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", PCoffset9);
+          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
       }
       break;
 
@@ -235,14 +232,10 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
           {
             n += PPRINT (dest + n, flags, "%s ", "jsr", "JSR");
 
-            int16_t PCoffset11 = SIGN_EXTEND (inst->word & 0x7FF, 11);
-            symbol *sym
-                = find_symbol_by_addr (symbols, PCoffset11 + inst->addr + 1);
-
-            if (sym)
-              n += sprintf (dest + n, "%s", sym->label);
+            if (inst->sym)
+              n += sprintf (dest + n, "%s", inst->sym->label);
             else // TODO sign extended int?
-              n += sprintf (dest + n, "#%d", PCoffset11);
+              n += sprintf (dest + n, "#%d", (inst->word & 0x7FF));
           }
         else
           {
@@ -259,13 +252,10 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
         n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
                      ((inst->word >> 9) & 0x7));
 
-        int16_t PCoffset9 = SIGN_EXTEND (inst->word & 0x1FF, 9);
-        symbol *sym
-            = find_symbol_by_addr (symbols, PCoffset9 + inst->addr + 1);
-        if (sym)
-          n += sprintf (dest + n, "%s", sym->label);
+        if (inst->sym)
+          n += sprintf (dest + n, "%s", inst->sym->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", PCoffset9);
+          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
       }
       break;
 
@@ -275,13 +265,10 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
         n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
                      ((inst->word >> 9) & 0x7));
 
-        int16_t PCoffset9 = SIGN_EXTEND (inst->word & 0x1FF, 9);
-        symbol *sym
-            = find_symbol_by_addr (symbols, PCoffset9 + inst->addr + 1);
-        if (sym)
-          n += sprintf (dest + n, "%s", sym->label);
+        if (inst->sym)
+          n += sprintf (dest + n, "%s", inst->sym->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", PCoffset9);
+          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
       }
       break;
 
@@ -304,13 +291,10 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
         n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
                      ((inst->word >> 9) & 0x7));
 
-        int16_t PCoffset9 = SIGN_EXTEND (inst->word & 0x1FF, 9);
-        symbol *sym
-            = find_symbol_by_addr (symbols, PCoffset9 + inst->addr + 1);
-        if (sym)
-          n += sprintf (dest + n, "%s", sym->label);
+        if (inst->sym)
+          n += sprintf (dest + n, "%s", inst->sym->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", PCoffset9);
+          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
       }
       break;
 
@@ -336,13 +320,10 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
         n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
                      ((inst->word >> 9) & 0x7));
 
-        int16_t PCoffset9 = SIGN_EXTEND (inst->word & 0x1FF, 9);
-        symbol *sym
-            = find_symbol_by_addr (symbols, PCoffset9 + inst->addr + 1);
-        if (sym)
-          n += sprintf (dest + n, "%s", sym->label);
+        if (inst->sym)
+          n += sprintf (dest + n, "%s", inst->sym->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", PCoffset9);
+          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
       }
       break;
 
@@ -352,13 +333,10 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
         n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
                      ((inst->word >> 9) & 0x7));
 
-        int16_t PCoffset9 = SIGN_EXTEND (inst->word & 0x1FF, 9);
-        symbol *sym
-            = find_symbol_by_addr (symbols, PCoffset9 + inst->addr + 1);
-        if (sym)
-          n += sprintf (dest + n, "%s", sym->label);
+        if (inst->sym)
+          n += sprintf (dest + n, "%s", inst->sym->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", PCoffset9);
+          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
       }
       break;
 
