@@ -77,39 +77,50 @@ disassemble_program (program *prog, FILE *symin, FILE *in)
 int
 attach_symbols (instruction *instructions, symbol *symbols)
 {
-  for (instruction *inst = instructions; inst; inst = inst->next)
+  for (symbol *sym = symbols; sym; sym = sym->next)
     {
-      switch (inst->word >> 12)
+      for (instruction *inst = instructions; inst; inst = inst->next)
         {
-        case OP_BR:
-        case OP_LD:
-        case OP_LDI:
-        case OP_LEA:
-        case OP_ST:
-        case OP_STI:
-          {
-            uint16_t PCoffset9 = inst->word & 0x1FF;
-            for (symbol *sym = symbols; sym; sym = sym->next)
+          if (sym->addr == inst->addr)
+            inst->hint = sym->hint;
+
+          switch (inst->word >> 12)
+            {
+            case OP_BR:
+            case OP_LD:
+            case OP_LDI:
+            case OP_LEA:
+            case OP_ST:
+            case OP_STI:
               {
-                if (PCoffset9 == ((sym->addr - inst->addr) - 1))
-                  inst->sym = sym;
-              }
-          }
-          break;
-        // handle separately
-        case OP_JSR:
-          {
-            if (inst->word & (1 << 11))
-              {
-                uint16_t PCoffset11 = inst->word & 0x7FF;
-                for (symbol *sym = symbols; sym; sym = sym->next)
+                int16_t PCoffset9 = inst->word & 0x1FF;
+                int16_t reladdr = ((sym->addr - inst->addr) - 1) & 0x1FF;
+                if (PCoffset9 == reladdr)
                   {
-                    if (PCoffset11 == ((inst->sym->addr - inst->addr) - 1))
-                      inst->sym = sym;
+                    inst->sym = sym;
                   }
               }
-          }
-          break;
+              break;
+
+            case OP_JSR:
+              {
+                if (inst->word & (1 << 11))
+                  {
+                    int16_t PCoffset11 = inst->word & 0x7FF;
+                    int16_t reladdr = ((sym->addr - inst->addr) - 1) & 0x7FF;
+                    if (PCoffset11 == reladdr)
+                      {
+                        inst->sym = sym;
+                      }
+                  }
+              }
+              break;
+
+            default:
+              {
+                // TODO handle FILL?
+              }
+            }
         }
     }
 }
