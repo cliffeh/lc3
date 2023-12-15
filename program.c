@@ -91,8 +91,6 @@ attach_symbols (instruction *instructions, symbol *symbols)
             uint16_t PCoffset9 = inst->word & 0x1FF;
             for (symbol *sym = symbols; sym; sym = sym->next)
               {
-                printf ("PCoffset9: %d, symaddr: %d, instaddr: %d\n",
-                        PCoffset9, sym->addr, inst->addr);
                 if (PCoffset9 == ((sym->addr - inst->addr) - 1))
                   inst->sym = sym;
               }
