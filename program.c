@@ -66,11 +66,54 @@ disassemble_program (program *prog, FILE *symin, FILE *in)
   prog->instructions = handle.next;
 
   if (symin)
-    prog->symbols = load_symbols (symin);
-  // for (symbol *sym = prog->symbols; sym; sym = sym->next)
-  //   printf ("%s\n", sym->label);
+    {
+      prog->symbols = load_symbols (symin);
+      attach_symbols (prog->instructions, prog->symbols);
+    }
 
   return 0;
+}
+
+int
+attach_symbols (instruction *instructions, symbol *symbols)
+{
+  for (instruction *inst = instructions; inst; inst = inst->next)
+    {
+      switch (inst->word >> 12)
+        {
+        case OP_BR:
+        case OP_LD:
+        case OP_LDI:
+        case OP_LEA:
+        case OP_ST:
+        case OP_STI:
+          {
+            uint16_t PCoffset9 = inst->word & 0x1FF;
+            for (symbol *sym = symbols; sym; sym = sym->next)
+              {
+                printf ("PCoffset9: %d, symaddr: %d, instaddr: %d\n",
+                        PCoffset9, sym->addr, inst->addr);
+                if (PCoffset9 == ((sym->addr - inst->addr) - 1))
+                  inst->sym = sym;
+              }
+          }
+          break;
+        // handle separately
+        case OP_JSR:
+          {
+            if (inst->word & (1 << 11))
+              {
+                uint16_t PCoffset11 = inst->word & 0x7FF;
+                for (symbol *sym = symbols; sym; sym = sym->next)
+                  {
+                    if (PCoffset11 == ((inst->sym->addr - inst->addr) - 1))
+                      inst->sym = sym;
+                  }
+              }
+          }
+          break;
+        }
+    }
 }
 
 int
@@ -170,7 +213,7 @@ dump_symbols (FILE *out, symbol *symbols)
 {
   for (symbol *sym = symbols; sym; sym = sym->next)
     {
-      fprintf (out, "x%04x %s\n", sym->addr, sym->label);
+      fprintf (out, "x%04x %s %d\n", sym->addr, sym->label, sym->hint);
     }
   return 0;
 }
@@ -184,15 +227,18 @@ load_symbols (FILE *in)
 
   while (fgets (buf, 1024, in))
     {
-      char *p = strtok (buf, " \t\n");
-      char *q = strtok (0, " \t\n");
+      char *addr = strtok (buf, " \t\n");
+      char *label = strtok (0, " \t\n");
+      char *hint = strtok (0, " \t\n");
       // TODO this could be a little more sophisticated...
-      if (*p && *p == 'x' && *q)
+      if (*addr && *addr == 'x' && *label) // hint optional
         {
           tail->next = calloc (1, sizeof (symbol));
           // TODO check return ptr
-          tail->next->addr = strtol (p + 1, 0, 16);
-          tail->next->label = strdup (q);
+          tail->next->addr = strtol (addr + 1, 0, 16);
+          tail->next->label = strdup (label);
+          if (hint)
+            tail->next->hint = atoi (hint);
           tail->next->is_set = 1;
           tail = tail->next;
         }

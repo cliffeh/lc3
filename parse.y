@@ -88,7 +88,9 @@ instruction_list:
     YYERROR;
   } 
   $sym->addr = $head->addr;
+  $sym->hint = $head->hint;
   $sym->is_set = 1;
+
   $head->last->next = $tail;
   $$ = $head;
 }
