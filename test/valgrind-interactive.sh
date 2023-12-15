@@ -10,6 +10,6 @@ BUILDDIR=${BUILDDIR:-$DIR/..}
 
 logfile="$BUILDDIR/test/valgrind-interactive.valgrind"
 
-CMDS="assemble $SRCDIR/test/hello.asm\nrun"
+CMDS="asm $SRCDIR/test/hello.asm\nrun"
 
-echo "$CMDS" | valgrind --leak-check=full --error-exitcode=1 --log-file="$logfile" "$BUILDDIR/lc3vm" -i > /dev/null
+echo -e "$CMDS" | valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 --log-file="$logfile" "$BUILDDIR/lc3vm" -i > /dev/null

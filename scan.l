@@ -2,7 +2,13 @@
 #include "program.h"
 #include "parse.h"
 
-#define YY_DECL int yylex(YYSTYPE *yylval_param, YYLTYPE* yylloc_param, program *prog, yyscan_t yyscanner)
+#define YY_DECL int yylex \
+  (                       \
+   YYSTYPE *yylval_param, \
+   YYLTYPE* yylloc_param, \
+   program *prog,         \
+   yyscan_t yyscanner     \
+  )
 
 #define YY_USER_ACTION                        \
   yylloc->first_line = yylloc->last_line;     \
@@ -17,10 +23,17 @@
 #define NEW_INST(yylval, op)                       \
   do {                                             \
     yylval->inst = calloc(1, sizeof(instruction)); \
-    yylval->inst->inst = (op << 12);               \
-    yylval->inst->addr = prog->len++;              \
+    yylval->inst->word = (op << 12);               \
+    yylval->inst->addr = prog->orig + prog->len++; \
     yylval->inst->last = yylval->inst;             \
   } while (0)
+
+#define NEW_DIRECTIVE(yylval, _hint) \
+  do {                               \
+    NEW_INST(yylval, 0);             \
+    yylval->inst->hint = _hint;      \
+  } while (0)
+
 %}
 
 %option noyywrap nounput noinput
@@ -35,25 +48,25 @@
   NEW_INST(yylval, OP_BR);
   for(char *p = yytext+2; *p; p++) {
     switch(*p) {
-      case 'n': case 'N': yylval->inst->inst |= (1 << 11); break;
-      case 'z': case 'Z': yylval->inst->inst |= (1 << 10); break;
-      case 'p': case 'P': yylval->inst->inst |= (1 << 9);  break;
+      case 'n': case 'N': yylval->inst->word |= (1 << 11); break;
+      case 'z': case 'Z': yylval->inst->word |= (1 << 10); break;
+      case 'p': case 'P': yylval->inst->word |= (1 << 9);  break;
     }
   }
   return(BR);                  }
-[jJ][mM][pP]                   { NEW_INST(yylval, OP_JMP); return(JMP);    }
-[jJ][sS][rR]                   { NEW_INST(yylval, OP_JSR); return(JSR);    }
-[jJ][sS][rR][rR]               { NEW_INST(yylval, OP_JSR); return(JSRR);   }
-[lL][dD]                       { NEW_INST(yylval, OP_LD); return(LD);      }
-[lL][dD][iI]                   { NEW_INST(yylval, OP_LDI); return(LDI);    }
-[lL][dD][rR]                   { NEW_INST(yylval, OP_LDR); return(LDR);    }
-[lL][eE][aA]                   { NEW_INST(yylval, OP_LEA); return(LEA);    }
-[nN][oO][tT]                   { NEW_INST(yylval, OP_NOT); return(NOT);    }
-[rR][eE][tT]                   { NEW_INST(yylval, OP_JMP); return(RET);    }
-[rR][tT][iI]                   { NEW_INST(yylval, OP_RTI); return(RTI);    }
-[sS][tT]                       { NEW_INST(yylval, OP_ST); return(ST);      }
-[sS][tT][iI]                   { NEW_INST(yylval, OP_STI); return(STI);    }
-[sS][tT][rR]                   { NEW_INST(yylval, OP_STR); return(STR);    }
+[jJ][mM][pP]                   { NEW_INST(yylval, OP_JMP);  return(JMP);   }
+[jJ][sS][rR]                   { NEW_INST(yylval, OP_JSR);  return(JSR);   }
+[jJ][sS][rR][rR]               { NEW_INST(yylval, OP_JSR);  return(JSRR);  }
+[lL][dD]                       { NEW_INST(yylval, OP_LD);   return(LD);    }
+[lL][dD][iI]                   { NEW_INST(yylval, OP_LDI);  return(LDI);   }
+[lL][dD][rR]                   { NEW_INST(yylval, OP_LDR);  return(LDR);   }
+[lL][eE][aA]                   { NEW_INST(yylval, OP_LEA);  return(LEA);   }
+[nN][oO][tT]                   { NEW_INST(yylval, OP_NOT);  return(NOT);   }
+[rR][eE][tT]                   { NEW_INST(yylval, OP_JMP);  return(RET);   }
+[rR][tT][iI]                   { NEW_INST(yylval, OP_RTI);  return(RTI);   }
+[sS][tT]                       { NEW_INST(yylval, OP_ST);   return(ST);    }
+[sS][tT][iI]                   { NEW_INST(yylval, OP_STI);  return(STI);   }
+[sS][tT][rR]                   { NEW_INST(yylval, OP_STR);  return(STR);   }
 [tT][rR][aA][pP]               { NEW_INST(yylval, OP_TRAP); return(TRAP);  }
 
  /* trap routines */
@@ -70,8 +83,8 @@
  /* assembler directives */
 \.[oO][rR][iI][gG]             { return(ORIG); }
 \.[eE][nN][dD]                 { return(END);  }
-\.[fF][iI][lL][lL]             { NEW_INST(yylval, 0); return(FILL);    }
-\.[sS][tT][rR][iI][nN][gG][zZ] { NEW_INST(yylval, 0); return(STRINGZ); }
+\.[fF][iI][lL][lL]             { NEW_DIRECTIVE(yylval, HINT_FILL);    return(FILL);     }
+\.[sS][tT][rR][iI][nN][gG][zZ] { NEW_DIRECTIVE(yylval, HINT_STRINGZ); return(STRINGZ);  }
 
  /* literals */
 [xX][0-9a-fA-F]{1,4}           { yylval->num = strtol(yytext+1, 0, 16); return(NUMLIT); }
@@ -90,8 +103,8 @@
 
  /* stuff to ignore */
 \n      { yylineno++; } // ignore newlines, but count them
-[ \t]*                  // ignore whitespace
-;.*                     // ignore comments
+[ \t]*  // ignore whitespace
+;.*     // ignore comments
 
  /* if we don't know what it is, just return it */
 . return *yytext;

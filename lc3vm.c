@@ -145,12 +145,14 @@ main (int argc, const char *argv[])
           fprintf (stderr, "failed to load image: %s\n", infile);
           exit (1);
         }
+      fclose (in);
 
       programs_loaded++;
 
       if (interactive)
         printf ("successfully loaded\n");
     }
+  poptFreeContext (optCon);
 
   signal (SIGINT, handle_interrupt);
   disable_input_buffering ();
@@ -163,9 +165,6 @@ main (int argc, const char *argv[])
       rc = handle_interactive (&vm);
     }
   restore_input_buffering ();
-
-cleanup:
-  poptFreeContext (optCon);
 
   exit (rc);
 }

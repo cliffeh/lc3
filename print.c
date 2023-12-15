@@ -1,13 +1,38 @@
-#include "print.h"
+#include "program.h"
+
+#define SPACES(out, n)                                                        \
+  if (n)                                                                      \
+  n += fprintf (out, "  ")
 
 int
 print_program (FILE *out, int flags, program *prog)
 {
-  if (!flags)
-    return 0;
+  if (!flags) // write  assembled object code
+    {
+      uint16_t bytecode = SWAP16 (prog->orig);
+      if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+        {
+          fprintf (stderr, "write error...bailing.\n");
+          return 1;
+        }
+      for (instruction *inst = prog->instructions; inst; inst = inst->next)
+        {
+          bytecode = SWAP16 (inst->word);
+          if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+            {
+              fprintf (stderr, "write error...bailing.\n");
+              return 1;
+            }
+        }
 
-  if (flags & FORMAT_PRETTY)
-    fprintf (out, ".ORIG x%04x\n", prog->orig);
+      return 0;
+    }
+
+  int n = 0;
+
+  if (flags & FMT_PRETTY)
+    fprintf (out, (flags & FMT_LC) ? ".orig x%04x" : ".ORIG x%04X\n",
+             prog->orig);
 
   // ensure our symbols are in address order (for pretty-printing below)
   sort_symbols_by_addr (prog);
@@ -15,9 +40,7 @@ print_program (FILE *out, int flags, program *prog)
 
   for (instruction *inst = prog->instructions; inst; inst = inst->next)
     {
-      uint16_t bytecode = SWAP16 (inst->inst);
-
-      if (flags & FORMAT_PRETTY)
+      if (flags & FMT_PRETTY)
         {
           // NB if our symbols aren't sorted in address order this
           // won't work the way we expect it to
@@ -26,74 +49,119 @@ print_program (FILE *out, int flags, program *prog)
               // NB for the purposes of debugging it's generally more
               // convenient to output addresses relative to .ORIG
               // rather than indexed at zero
-              if (flags & FORMAT_ADDR)
-                fprintf (out, "%04x  ", inst->addr + 1);
-
-              fprintf (out, "%s\n", current_symbol->label);
+              if (flags & FMT_ADDR)
+                n += fprintf (out, (flags & FMT_LC) ? "%04x" : "%04X",
+                              inst->addr + 1);
+              SPACES (out, n);
+              n += fprintf (out, "%s\n", current_symbol->label);
               current_symbol = current_symbol->next;
             }
         }
 
-      if (inst->pretty) // only print the printable things (not, for
-                        // instance, raw string data)
+      n = 0;
+
+      if (flags & FMT_ADDR)
+        n += fprintf (out, (flags & FMT_LC) ? "%04x" : "%04X", inst->addr);
+
+      if (flags & FMT_HEX)
         {
-          // NB for the purposes of debugging it's generally more
-          // convenient to output addresses relative to .ORIG rather
-          // than indexed at zero
-          if (flags & FORMAT_ADDR)
-            fprintf (out, "%04x", inst->addr + 1);
+          SPACES (out, n);
+          uint16_t bytecode = SWAP16 (inst->word);
+          n += fprintf (out, (flags & FMT_LC) ? "%04x" : "%04X", bytecode);
+        }
 
-          if (flags & FORMAT_HEX)
-            fprintf (out, "%s%04x", (flags & FORMAT_ADDR) ? "  " : "",
-                     bytecode);
-
-          if (flags & FORMAT_BITS)
+      if (flags & FMT_BITS)
+        {
+          SPACES (out, n);
+          for (int i = 15; i >= 0; i--)
             {
-              if (flags & (FORMAT_ADDR | FORMAT_HEX))
-                fprintf (out, "  ");
-
-              for (int i = 15; i >= 0; i--)
-                {
-                  fprintf (out, "%c", ((inst->inst & (1 << i)) >> i) + '0');
-                  if (i && i % 4 == 0)
-                    fprintf (out, " ");
-                }
+              n += fprintf (out, "%c", ((inst->word & (1 << i)) >> i) + '0');
+              if (i && i % 4 == 0)
+                n += fprintf (out, " ");
             }
-
-          if (flags & FORMAT_PRETTY)
-            fprintf (out, "%s  %s",
-                     (flags & (FORMAT_ADDR | FORMAT_HEX | FORMAT_BITS)) ? "  "
-                                                                        : "",
-                     inst->pretty);
-
-          fprintf (out, "\n");
         }
-    }
 
-  if (flags & FORMAT_PRETTY)
-    fprintf (out, ".END\n");
-
-  return 0;
-}
-
-int
-write_bytecode (FILE *out, program *prog)
-{
-  uint16_t bytecode = SWAP16 (prog->orig);
-  if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
-    {
-      fprintf (stderr, "write error...bailing.\n");
-      return 1;
-    }
-  for (instruction *inst = prog->instructions; inst; inst = inst->next)
-    {
-      bytecode = SWAP16 (inst->inst);
-      if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
+      char buf[4096];
+      switch (inst->hint)
         {
-          fprintf (stderr, "write error...bailing.\n");
-          return 1;
+        case HINT_INST:
+          {
+            if (flags & FMT_PRETTY)
+              {
+                disassemble_instruction (buf, flags, prog->symbols, inst);
+                SPACES (out, n);
+                n += fprintf (out, "  %s", buf);
+              }
+          }
+          break;
+
+        case HINT_FILL:
+          {
+            if (flags & FMT_PRETTY)
+              {
+                SPACES (out, n);
+                if (inst->sym)
+                  n += fprintf (
+                      out, (flags & FMT_LC) ? "  .fill %s" : "  .FILL %s",
+                      inst->sym->label);
+                else
+                  n += fprintf (
+                      out, (flags & FMT_LC) ? "  .fill x%x" : "  .FILL x%X",
+                      inst->word);
+              }
+          }
+          break;
+
+        case HINT_STRINGZ:
+          {
+            if (flags & FMT_PRETTY)
+              {
+                SPACES (out, n);
+                n += fprintf (out, (flags & FMT_LC) ? "  .stringz \""
+                                                       : "  .STRINGZ \"");
+                while (inst && inst->word)
+                  {
+                    char c = (char)inst->word;
+                    switch (c)
+                      {
+                        // clang-format off
+                        case '\007': n += fprintf (out, "\\a");  break;
+                        case '\013': n += fprintf (out, "\\v");  break;
+                        case '\b':   n += fprintf (out, "\\b");  break;
+                        case '\e':   n += fprintf (out, "\\e");  break;
+                        case '\f':   n += fprintf (out, "\\f");  break;
+                        case '\n':   n += fprintf (out, "\\n");  break;
+                        case '\r':   n += fprintf (out, "\\r");  break;
+                        case '\t':   n += fprintf (out, "\\t");  break;
+                        case '\\':   n += fprintf (out, "\\\\"); break;
+                        case '"':    n += fprintf (out, "\\\""); break;
+                        default:     n += fprintf (out, "%c", c);
+                        // clang-format on
+                      }
+
+                    inst = inst->next;
+                  }
+
+                n += fprintf (out, "\"");
+              }
+            else
+              {
+                // still need to skip past the characters...
+                while (inst && inst->word)
+                  {
+                    inst = inst->next;
+                  }
+              }
+          }
+          break;
         }
+
+      fprintf (out, "\n");
+      n = 0;
     }
+
+  if (flags & FMT_PRETTY)
+    fprintf (out, (flags & FMT_LC) ? ".end" : ".END\n");
 
   return 0;
 }

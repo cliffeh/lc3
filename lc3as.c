@@ -3,26 +3,34 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#define HELP_POSTAMBLE "Report bugs to <" PACKAGE_BUGREPORT ">."
+#define HELP_BUGREPORT "Report bugs to <" PACKAGE_BUGREPORT ">."
 #else
 #define PACKAGE_VERSION "unknown"
 #endif
 
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
-#include "program.h"
 #include "parse.h"
 #include "popt/popt.h"
-#include "print.h"
+#include "program.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define HELP_PREAMBLE                                                         \
-  "If FILE is not provided this program will read from stdin.\n\n"            \
-  "Supported output formats:\n\n  a[ddress], b[its], d[ebug], h[ex], "        \
-  "o[bject], p[retty]\n\nNote: -Fdebug is shorthand for -Fa -Fh -Fp"
+  "If FILE is not provided this program will read from stdin."
+
+#define HELP_POSTAMBLE                                                        \
+  "Supported output formats:\n\n"                                             \
+  "  o[bject]   output assembled object code (default)\n"                     \
+  "  a[ddress]  print the address of each instruction\n"                      \
+  "  b[its]     print a binary representation\n"                              \
+  "  h[ex]      print a hexadecimal representation\n"                         \
+  "  p[retty]   pretty-print the assembly code itself\n"                      \
+  "  l[ower]    print everything in lowercase\n"                              \
+  "  u[pper]    print everything in uppercase (default)\n"                    \
+  "  d[ebug]    shorthand for -Fa -Fh -Fp"
 
 #define ERR_EXIT(args...)                                                     \
   do                                                                          \
@@ -39,9 +47,9 @@
 int
 main (int argc, const char *argv[])
 {
-  int rc, flags = FORMAT_OBJECT;
-  char *outfile = "-", *format = "object";
-  FILE *out = 0, *in = 0;
+  int rc, disassemble = 0, flags = FMT_OBJECT;
+  char *outfile = "-", *symbolfile = 0, *format = "object";
+  FILE *out = 0, *in = 0, *symin = 0;
 
   poptContext optCon;
 
@@ -50,8 +58,13 @@ main (int argc, const char *argv[])
 
   struct poptOption progOptions[]
       = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          // TODO implement
+          //{ "disassemble", 'D', POPT_ARG_NONE, &disassemble, 'D',
+          // "disassemble object code to assembly (implies -Fp)", 0 },
           { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
             &format, 'F', "output format", "FORMAT" },
+          { "symbols", 'S', POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL,
+            &symbolfile, 'F', "output format", "FORMAT" },
           { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
             &outfile, 'o', "write output to FILE", "FILE" },
           { "version", '\0', POPT_ARG_NONE, 0, 'V',
@@ -68,6 +81,9 @@ main (int argc, const char *argv[])
 #ifdef HELP_POSTAMBLE
     { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_POSTAMBLE, 0 },
 #endif
+#ifdef HELP_BUGREPORT
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_BUGREPORT, 0 },
+#endif
     POPT_TABLEEND
   };
 
@@ -78,24 +94,33 @@ main (int argc, const char *argv[])
     {
       switch (rc)
         {
+        case 'D':
+          flags |= FMT_PRETTY;
+          break;
+
         case 'F':
           {
             if (strcmp (format, "a") == 0 || strcmp (format, "address") == 0)
               {
-                flags |= FORMAT_ADDR;
+                flags |= FMT_ADDR;
               }
             else if (strcmp (format, "b") == 0 || strcmp (format, "bits") == 0)
               {
-                flags |= FORMAT_BITS;
+                flags |= FMT_BITS;
               }
             else if (strcmp (format, "d") == 0
                      || strcmp (format, "debug") == 0)
               {
-                flags = FORMAT_DEBUG;
+                flags = FMT_DEBUG;
               }
             else if (strcmp (format, "h") == 0 || strcmp (format, "hex") == 0)
               {
-                flags |= FORMAT_HEX;
+                flags |= FMT_HEX;
+              }
+            else if (strcmp (format, "l") == 0
+                     || strcmp (format, "lower") == 0)
+              {
+                flags |= FMT_LC;
               }
             else if (strcmp (format, "o") == 0
                      || strcmp (format, "object") == 0)
@@ -106,7 +131,7 @@ main (int argc, const char *argv[])
             else if (strcmp (format, "p") == 0
                      || strcmp (format, "pretty") == 0)
               {
-                flags |= FORMAT_PRETTY;
+                flags |= FMT_PRETTY;
               }
             else
               {
@@ -173,6 +198,7 @@ main (int argc, const char *argv[])
                     strerror (errno));
         }
     }
+  poptFreeContext (optCon);
 
   if (!in)
     in = stdin;
@@ -180,18 +206,31 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
-  if ((rc = parse_program (&prog, in)) != 0)
-    goto cleanup;
-  if ((rc = resolve_symbols (&prog)) != 0)
-    goto cleanup;
 
-  if (flags)
+  // TODO implement!
+  if (disassemble)
     {
-      rc = print_program (out, flags, &prog);
+      uint16_t orig, word, n = 0;
+      rc = fread (&orig, sizeof (uint16_t), 1, in);
+      orig = SWAP16 (orig);
+
+      while (!feof (in))
+        {
+          char buf[4096];
+          rc = fread (&word, sizeof (uint16_t), 1, in);
+          word = SWAP16 (word);
+          disassemble_word (buf, flags, 0, orig + n++, word);
+          fprintf (out, "%s\n", buf);
+        }
     }
   else
     {
-      rc = write_bytecode(out, &prog);
+      if ((rc = assemble_program (&prog, in)) != 0)
+        goto cleanup;
+
+      rc = print_program (out, flags, &prog);
+
+      // dump_symbols (stderr, prog.symbols);
     }
 
 cleanup:
@@ -199,7 +238,6 @@ cleanup:
   fclose (out);
   free_instructions (prog.instructions);
   free_symbols (prog.symbols);
-  poptFreeContext (optCon);
 
   exit (rc);
 }
