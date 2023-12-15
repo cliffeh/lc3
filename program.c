@@ -137,8 +137,12 @@ load_symbols (FILE *in)
     }
 }
 
-#define PPRINT(dest, flags, fmt, lc, UC, ...)                                 \
-  sprintf (dest, fmt, (flags & FMT_LC) ? lc : UC __VA_OPT__ (, ) __VA_ARGS__)
+const char *opnames[16][2] = {
+  { "BR", "br" },   { "ADD", "add" }, { "LD", "ld" },   { "ST", "st" },
+  { "JSR", "jsr" }, { "AND", "and" }, { "LDR", "ldr" }, { "STR", "str" },
+  { "RTI", "rti" }, { "NOT", "not" }, { "LDI", "ldi" }, { "STI", "sti" },
+  { "JMP", "jmp" }, { "RES", "res" }, { "LEA", "lea" }, { "TRAP", "trap" }
+};
 
 int
 disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
@@ -155,61 +159,43 @@ int
 disassemble_instruction (char *dest, int flags, symbol *symbols,
                          instruction *inst)
 {
-  int n = 0;
+  int n = 0, cas = (flags & FMT_LC) ? 1 : 0, op;
 
-  switch (inst->word >> 12)
+  switch (op = inst->word >> 12)
     {
     case OP_ADD:
-      {
-        n += PPRINT (dest + n, flags, "%s ", "add", "ADD");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 6) & 0x7));
-
-        if (inst->word & (1 << 5))
-          {
-            int16_t imm5 = SIGN_EXTEND (inst->word & 0x1F, 5);
-            n += sprintf (dest + n, "#%d", imm5);
-          }
-        else
-          n += PPRINT (dest + n, flags, "%c%d", 'r', 'R',
-                       ((inst->word >> 0) & 0x7));
-      }
-      break;
-
     case OP_AND:
       {
-        n += PPRINT (dest + n, flags, "%s ", "and", "AND");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 6) & 0x7));
+        n += sprintf (dest + n, "%s", opnames[op][cas]);
+        n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
+                      ((inst->word >> 9) & 0x7));
+        n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
+                      ((inst->word >> 6) & 0x7));
 
         if (inst->word & (1 << 5))
           {
             int16_t imm5 = SIGN_EXTEND (inst->word & 0x1F, 5);
-            n += sprintf (dest + n, "#%d", imm5);
+            n += sprintf (dest + n, " #%d", imm5);
           }
         else
-          n += PPRINT (dest + n, flags, "%c%d", 'r', 'R',
-                       ((inst->word >> 0) & 0x7));
+          n += sprintf (dest + n, " %c%d", cas ? 'r' : 'R',
+                        ((inst->word >> 0) & 0x7));
       }
       break;
 
     case OP_BR:
       {
-        n += PPRINT (dest + n, flags, "%s", "br", "BR");
+        n += sprintf (dest + n, "%s", opnames[op][cas]);
 
         // nzp flags always lowercase
-        n += sprintf (dest + n, "%s%s%s ", (inst->word & (1 << 11)) ? "n" : "",
+        n += sprintf (dest + n, "%s%s%s", (inst->word & (1 << 11)) ? "n" : "",
                       (inst->word & (1 << 10)) ? "z" : "",
                       (inst->word & (1 << 9)) ? "p" : "");
 
         if (inst->sym)
-          n += sprintf (dest + n, "%s", inst->sym->label);
+          n += sprintf (dest + n, " %s", inst->sym->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
+          n += sprintf (dest + n, " #%d", (inst->word & 0x1FF));
       }
       break;
 
@@ -217,11 +203,11 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
       {
         uint16_t BaseR = (inst->word >> 6) & 0x7;
         if (BaseR == 7) // assume RET special case
-          n += PPRINT (dest + n, flags, "%s", "ret", "RET");
+          n += sprintf (dest + n, "%s", cas ? "ret" : "RET");
         else
           {
-            n += PPRINT (dest + n, flags, "%s ", "jmp", "JMP");
-            n += PPRINT (dest + n, flags, "%c%d", 'r', 'R', BaseR);
+            n += sprintf (dest + n, "%s", opnames[op][cas]);
+            n += sprintf (dest + n, " %c%d", cas ? 'r' : 'R', BaseR);
           }
       }
       break;
@@ -230,126 +216,66 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
       {
         if (inst->word & (1 << 11))
           {
-            n += PPRINT (dest + n, flags, "%s ", "jsr", "JSR");
+            n += sprintf (dest + n, "%s", opnames[op][cas]);
 
             if (inst->sym)
-              n += sprintf (dest + n, "%s", inst->sym->label);
+              n += sprintf (dest + n, " %s", inst->sym->label);
             else // TODO sign extended int?
-              n += sprintf (dest + n, "#%d", (inst->word & 0x7FF));
+              n += sprintf (dest + n, " #%d", (inst->word & 0x7FF));
           }
         else
           {
-            n += PPRINT (dest + n, flags, "%s ", "jsrr", "JSRR");
-            n += PPRINT (dest + n, flags, "%c%d", 'r', 'R',
-                         ((inst->word >> 6) & 0x7));
+            n += sprintf (dest + n, "%s", cas ? "jsrr" : "JSRR");
+            n += sprintf (dest + n, " %c%d", cas ? 'r' : 'R',
+                          ((inst->word >> 6) & 0x7));
           }
       }
       break;
 
     case OP_LD:
-      {
-        n += PPRINT (dest + n, flags, "%s ", "ld", "LD");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-
-        if (inst->sym)
-          n += sprintf (dest + n, "%s", inst->sym->label);
-        else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
-      }
-      break;
-
     case OP_LDI:
+    case OP_LEA:
+    case OP_ST:
+    case OP_STI:
       {
-        n += PPRINT (dest + n, flags, "%s ", "ldi", "LDI");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
+        n += sprintf (dest + n, "%s", opnames[op][cas]);
+        n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
+                      ((inst->word >> 9) & 0x7));
 
         if (inst->sym)
-          n += sprintf (dest + n, "%s", inst->sym->label);
+          n += sprintf (dest + n, " %s", inst->sym->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
+          n += sprintf (dest + n, " #%d", (inst->word & 0x1FF));
       }
       break;
 
     case OP_LDR:
+    case OP_STR:
       {
-        n += PPRINT (dest + n, flags, "%s ", "ldr", "LDR");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 6) & 0x7));
+        n += sprintf (dest + n, "%s", opnames[op][cas]);
+        n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
+                      ((inst->word >> 9) & 0x7));
+        n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
+                      ((inst->word >> 6) & 0x7));
 
         int16_t offset6 = SIGN_EXTEND (inst->word & 0x3F, 6);
-        n += sprintf (dest + n, "#%d", offset6);
-      }
-      break;
-
-    case OP_LEA:
-      {
-        n += PPRINT (dest + n, flags, "%s ", "lea", "LEA");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-
-        if (inst->sym)
-          n += sprintf (dest + n, "%s", inst->sym->label);
-        else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
+        n += sprintf (dest + n, " #%d", offset6);
       }
       break;
 
     case OP_NOT:
       { // TODO check that the lower 6 bits are all 1s?
-        n += PPRINT (dest + n, flags, "%s ", "not", "NOT");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d", 'r', 'R',
-                     ((inst->word >> 6) & 0x7));
+        n += sprintf (dest + n, "%s", opnames[op][cas]);
+        n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
+                      ((inst->word >> 9) & 0x7));
+        n += sprintf (dest + n, " %c%d", cas ? 'r' : 'R',
+                      ((inst->word >> 6) & 0x7));
       }
       break;
 
     case OP_RTI:
       {
-        n += PPRINT (dest + n, flags, "%s", "rti", "RTI");
-      }
-      break;
-
-    case OP_ST:
-      {
-        n += PPRINT (dest + n, flags, "%s ", "st", "ST");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-
-        if (inst->sym)
-          n += sprintf (dest + n, "%s", inst->sym->label);
-        else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
-      }
-      break;
-
-    case OP_STI:
-      {
-        n += PPRINT (dest + n, flags, "%s ", "sti", "STI");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-
-        if (inst->sym)
-          n += sprintf (dest + n, "%s", inst->sym->label);
-        else // TODO sign extended int?
-          n += sprintf (dest + n, "#%d", (inst->word & 0x1FF));
-      }
-      break;
-
-    case OP_STR:
-      {
-        n += PPRINT (dest + n, flags, "%s ", "str", "STR");
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 9) & 0x7));
-        n += PPRINT (dest + n, flags, "%c%d, ", 'r', 'R',
-                     ((inst->word >> 6) & 0x7));
-
-        int16_t offset6 = SIGN_EXTEND (inst->word & 0x3F, 6);
-        n += sprintf (dest + n, "#%d", offset6);
+        n += sprintf (dest + n, "%s", opnames[op][cas]);
       }
       break;
 
@@ -359,29 +285,26 @@ disassemble_instruction (char *dest, int flags, symbol *symbols,
         switch (trapvect8)
           {
           case TRAP_GETC:
-            n += PPRINT (dest + n, flags, "%s", "getc", "GETC");
+            n += sprintf (dest + n, "%s", cas ? "getc" : "GETC");
             break;
           case TRAP_OUT:
-            n += PPRINT (dest + n, flags, "%s", "out", "OUT");
+            n += sprintf (dest + n, "%s", cas ? "out" : "OUT");
             break;
           case TRAP_PUTS:
-            n += PPRINT (dest + n, flags, "%s", "puts", "PUTS");
+            n += sprintf (dest + n, "%s", cas ? "puts" : "PUTS");
             break;
           case TRAP_IN:
-            n += PPRINT (dest + n, flags, "%s", "in", "IN");
+            n += sprintf (dest + n, "%s", cas ? "%s", "in" : "IN");
             break;
           case TRAP_PUTSP:
-            n += PPRINT (dest + n, flags, "%s", "putsp", "PUTSP");
+            n += sprintf (dest + n, "%s", cas ? "%s", "putsp" : "PUTSP");
             break;
           case TRAP_HALT:
-            n += PPRINT (dest + n, flags, "%s", "halt", "HALT");
+            n += sprintf (dest + n, "%s", cas ? "%s", "halt" : "HALT");
             break;
           default:
-            n += PPRINT (dest + n, flags, "%s", "trap ", "TRAP ");
-            if (flags & FMT_LC)
-              n += sprintf (dest + n, "x%x", trapvect8);
-            else
-              n += sprintf (dest + n, "x%X", trapvect8);
+            n += sprintf (dest + n, "%s", cas ? "%s", "trap " : "TRAP ");
+            n += sprintf (dest + n, cas ? " x%x" : "x%X", trapvect8);
           }
       }
       break;
