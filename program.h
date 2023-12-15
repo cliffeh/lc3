@@ -5,19 +5,12 @@
 #include <stdio.h>  // for FILE *
 
 /* output formatting flags */
-// print out assembled object code
-#define FMT_OBJECT 0
-// include instruction addresses
-#define FMT_ADDR (1 << 0)
-// print instructions as bit strings
-#define FMT_BITS (1 << 1)
-// print instructions as hex
-#define FMT_HEX (1 << 2)
-// pretty-print the assembly back out
-#define FMT_PRETTY (1 << 3)
-// default: uppercase
-#define FMT_LC (1 << 4)
-// debugging output
+#define FMT_OBJECT (0 << 0) // print assembled object code
+#define FMT_ADDR (1 << 0)   // include instruction addresses
+#define FMT_BITS (1 << 1)   // print instructions as bit strings
+#define FMT_HEX (1 << 2)    // print instructions as hex
+#define FMT_PRETTY (1 << 3) // pretty-print the assembly back out
+#define FMT_LC (1 << 4)     // default: uppercase
 #define FMT_DEBUG (FMT_ADDR | FMT_HEX | FMT_PRETTY)
 
 /* disassembler hints */
@@ -58,8 +51,8 @@ int disassemble_instruction (char *dest, int flags, symbol *symbols,
 
 int print_program (FILE *out, int flags, program *prog);
 
-int dump_symbols(FILE *out, symbol *symbols);
-symbol *load_symbols(FILE *in);
+int dump_symbols (FILE *out, symbol *symbols);
+symbol *load_symbols (FILE *in);
 
 int resolve_symbols (program *prog);
 symbol *find_or_create_symbol (program *prog, const char *label);
