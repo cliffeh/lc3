@@ -48,8 +48,8 @@ int
 main (int argc, const char *argv[])
 {
   int rc, disassemble = 0, flags = FMT_OBJECT;
-  char *outfile = "-", *format = "object";
-  FILE *out = 0, *in = 0;
+  char *outfile = "-", *symbolfile = 0, *format = "object";
+  FILE *out = 0, *in = 0, *symin = 0;
 
   poptContext optCon;
 
@@ -58,10 +58,13 @@ main (int argc, const char *argv[])
 
   struct poptOption progOptions[]
       = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
-          { "disassemble", 'D', POPT_ARG_NONE, &disassemble, 'D',
-            "disassemble object code to assembly (implies -Fp)", 0 },
+          // TODO implement
+          //{ "disassemble", 'D', POPT_ARG_NONE, &disassemble, 'D',
+          // "disassemble object code to assembly (implies -Fp)", 0 },
           { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
             &format, 'F', "output format", "FORMAT" },
+          { "symbols", 'S', POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL,
+            &symbolfile, 'F', "output format", "FORMAT" },
           { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
             &outfile, 'o', "write output to FILE", "FILE" },
           { "version", '\0', POPT_ARG_NONE, 0, 'V',
@@ -204,6 +207,7 @@ main (int argc, const char *argv[])
 
   program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
 
+  // TODO implement!
   if (disassemble)
     {
       uint16_t orig, word, n = 0;
