@@ -149,7 +149,7 @@ disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
                   uint16_t word)
 {
   instruction inst;
-  memset (&inst, 1, sizeof (instruction));
+  memset (&inst, 0, sizeof (instruction));
   inst.addr = addr;
   inst.word = word;
   return disassemble_instruction (dest, flags, symbols, &inst);
