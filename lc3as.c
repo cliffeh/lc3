@@ -255,8 +255,11 @@ main (int argc, const char *argv[])
 
       rc = print_program (out, flags, &prog);
 
-      if (symfp) // TODO sort?
-        dump_symbols (symfp, prog.symbols);
+      if (symfp)
+        {
+          sort_symbols_by_addr (&prog);
+          dump_symbols (symfp, prog.symbols);
+        }
     }
 
 cleanup:
@@ -279,6 +282,7 @@ compare_symbol_addrs (const void *sym1, const void *sym2)
   return addr1 - addr2;
 }
 
+// TODO put this elsewhere... (program.c)
 void // TODO there is probably a cleaner way to do this
 sort_symbols_by_addr (program *prog)
 {
