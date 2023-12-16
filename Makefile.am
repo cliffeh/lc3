@@ -2,6 +2,7 @@ bin_PROGRAMS = lc3as lc3vm lc3diff
 
 lc3as_SOURCES =   \
     lc3as.c       \
+    machine.c     \
     machine.h     \
     parse.h       \
     parse.y       \

@@ -81,16 +81,18 @@ instruction_list:
   /* empty */
 { $$ = 0; }
   // NB this means no labels after the last instruction
-| LABEL[sym] instruction_list
+| LABEL[sym] instruction[head] instruction_list[tail]
 {
   if($sym->is_set) {
     fprintf(stderr, "error: duplicate symbol: %s\n", $sym->label);
     YYERROR;
   } 
-  $sym->addr = $2->addr;
+  $sym->addr = $head->addr;
+  $sym->hint = $head->hint;
   $sym->is_set = 1;
-  // $2->last->next = $3;
-  $$ = $2;
+
+  $head->last->next = $tail;
+  $$ = $head;
 }
 | instruction instruction_list
 {

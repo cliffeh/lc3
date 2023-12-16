@@ -77,5 +77,5 @@ typedef struct machine
   uint16_t reg[R_COUNT];
 } machine;
 
-int execute_machine (machine *vm);        // execute.c
-int load_machine (machine *vm, FILE *in); // machine.c
+int execute_machine (machine *vm);           // execute.c
+int load_image (uint16_t *memory, FILE *in); // machine.c

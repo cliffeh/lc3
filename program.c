@@ -1,4 +1,5 @@
 #include "program.h"
+#include "machine.h"
 #include "parse.h"
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,111 @@ assemble_program (program *prog, FILE *in)
   yylex_destroy (scanner);
 
   return rc;
+}
+
+int
+disassemble_program (program *prog, FILE *symin, FILE *in)
+{
+  uint16_t memory[MEMORY_MAX];
+
+  // duplicates load_image, but we need to know both the origin and the length
+  uint16_t orig;
+  size_t read = fread (&orig, sizeof (orig), 1, in);
+
+  if (read != 1)
+    {
+      fprintf (stderr, "origin could not be read\n");
+      return -1;
+    }
+
+  orig = SWAP16 (orig);
+
+  /* we know the maximum file size so we only need one fread */
+  uint16_t *p = memory + orig;
+  read = fread (p, sizeof (uint16_t), (MEMORY_MAX - orig), in);
+
+  if (read == 0)
+    {
+      fprintf (stderr, "no bytes read\n");
+      return -1;
+    }
+
+  prog->orig = orig;
+  prog->len = read;
+
+  instruction handle, *tail = &handle;
+
+  uint16_t addr = 0;
+  /* swap to little endian */
+  while ((read - addr) > 0)
+    {
+      tail->next = calloc (1, sizeof (instruction));
+      tail->next->addr = orig + addr++;
+      tail->next->word = SWAP16 (*p);
+      tail = tail->next;
+      tail->last = tail;
+      ++p;
+    }
+  prog->instructions = handle.next;
+
+  if (symin)
+    {
+      prog->symbols = load_symbols (symin);
+      attach_symbols (prog->instructions, prog->symbols);
+    }
+
+  return 0;
+}
+
+int
+attach_symbols (instruction *instructions, symbol *symbols)
+{
+  for (symbol *sym = symbols; sym; sym = sym->next)
+    {
+      for (instruction *inst = instructions; inst; inst = inst->next)
+        {
+          if (sym->addr == inst->addr)
+            inst->hint = sym->hint;
+
+          switch (inst->word >> 12)
+            {
+            case OP_BR:
+            case OP_LD:
+            case OP_LDI:
+            case OP_LEA:
+            case OP_ST:
+            case OP_STI:
+              {
+                int16_t PCoffset9 = inst->word & 0x1FF;
+                int16_t reladdr = ((sym->addr - inst->addr) - 1) & 0x1FF;
+                if (PCoffset9 == reladdr)
+                  {
+                    inst->sym = sym;
+                  }
+              }
+              break;
+
+            case OP_JSR:
+              {
+                if (inst->word & (1 << 11))
+                  {
+                    int16_t PCoffset11 = inst->word & 0x7FF;
+                    int16_t reladdr = ((sym->addr - inst->addr) - 1) & 0x7FF;
+                    if (PCoffset11 == reladdr)
+                      {
+                        inst->sym = sym;
+                      }
+                  }
+              }
+              break;
+
+            default:
+              {
+                // TODO handle FILL?
+              }
+            }
+        }
+    }
 }
 
 int
@@ -116,7 +222,7 @@ dump_symbols (FILE *out, symbol *symbols)
 {
   for (symbol *sym = symbols; sym; sym = sym->next)
     {
-      fprintf (out, "x%04x %s\n", sym->addr, sym->label);
+      fprintf (out, "x%04x %s %d\n", sym->addr, sym->label, sym->hint);
     }
   return 0;
 }
@@ -125,16 +231,29 @@ dump_symbols (FILE *out, symbol *symbols)
 symbol *
 load_symbols (FILE *in)
 {
-  symbol *head;
+  symbol handle, *tail = &handle;
   char buf[1024], *p;
 
   while (fgets (buf, 1024, in))
     {
-      char *p = strtok (buf, " \t\n");
-      char *q = strtok (0, " \t\n");
-
-      // printf("%s %s\n", p, q);
+      char *addr = strtok (buf, " \t\n");
+      char *label = strtok (0, " \t\n");
+      char *hint = strtok (0, " \t\n");
+      // TODO this could be a little more sophisticated...
+      if (*addr && *addr == 'x' && *label) // hint optional
+        {
+          tail->next = calloc (1, sizeof (symbol));
+          // TODO check return ptr
+          tail->next->addr = strtol (addr + 1, 0, 16);
+          tail->next->label = strdup (label);
+          if (hint)
+            tail->next->hint = atoi (hint);
+          tail->next->is_set = 1;
+          tail = tail->next;
+        }
     }
+
+  return handle.next;
 }
 
 const char *opnames[16][2] = {

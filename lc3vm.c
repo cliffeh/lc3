@@ -140,7 +140,7 @@ main (int argc, const char *argv[])
           exit (1);
         }
 
-      if (load_machine (&vm, in) != 0)
+      if (load_image (vm.memory, in) != 0)
         {
           fprintf (stderr, "failed to load image: %s\n", infile);
           exit (1);

@@ -49,7 +49,7 @@ main (int argc, const char *argv[])
 {
   int rc, disassemble = 0, flags = FMT_OBJECT;
   char *outfile = "-", *symbolfile = 0, *format = "object";
-  FILE *out = 0, *in = 0, *symin = 0;
+  FILE *out = 0, *in = 0, *symfp = 0;
 
   poptContext optCon;
 
@@ -58,13 +58,12 @@ main (int argc, const char *argv[])
 
   struct poptOption progOptions[]
       = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
-          // TODO implement
-          //{ "disassemble", 'D', POPT_ARG_NONE, &disassemble, 'D',
-          // "disassemble object code to assembly (implies -Fp)", 0 },
+          { "disassemble", 'D', POPT_ARG_NONE, &disassemble, 'D',
+            "disassemble object code to assembly (implies -Fp)", 0 },
           { "format", 'F', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
             &format, 'F', "output format", "FORMAT" },
-          { "symbols", 'S', POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL,
-            &symbolfile, 'F', "output format", "FORMAT" },
+          { "symbols", 'S', POPT_ARG_STRING, &symbolfile, 'S',
+            "also read/write symbols to/from FILE", "FILE" },
           { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
             &outfile, 'o', "write output to FILE", "FILE" },
           { "version", '\0', POPT_ARG_NONE, 0, 'V',
@@ -163,6 +162,12 @@ main (int argc, const char *argv[])
           }
           break;
 
+        case 'S':
+          {
+            // nothing we can do here?
+          }
+          break;
+
         case 'V':
           {
             printf (VERSION_STRING);
@@ -190,12 +195,40 @@ main (int argc, const char *argv[])
     {
       in = stdin;
     }
-  else
+  else if (!(in = fopen (infile, "r")))
     {
-      if (!(in = fopen (infile, "r")))
-        {
-          ERR_EXIT ("couldn't open input file '%s': %s", infile,
-                    strerror (errno));
+      ERR_EXIT ("couldn't open input file '%s': %s", infile, strerror (errno));
+    }
+
+  if (symbolfile)
+    {
+      if (disassemble)
+        { // we're reading symbols
+          if (strcmp (symbolfile, "-") == 0)
+            {
+              if (in == stdin)
+                {
+                  ERR_EXIT ("stdin specified for both input and symbols");
+                }
+              symfp = stdin;
+            }
+          else if (!(symfp = fopen (symbolfile, "r")))
+            {
+              ERR_EXIT ("couldn't open symbol file '%s': %s", symbolfile,
+                        strerror (errno));
+            }
+        }
+      else
+        { // we're writing symbols
+          if (strcmp (symbolfile, "-") == 0)
+            {
+              symfp = stderr;
+            }
+          else if (!(symfp = fopen (symbolfile, "w")))
+            {
+              ERR_EXIT ("couldn't open symbol file '%s': %s", symbolfile,
+                        strerror (errno));
+            }
         }
     }
   poptFreeContext (optCon);
@@ -210,18 +243,10 @@ main (int argc, const char *argv[])
   // TODO implement!
   if (disassemble)
     {
-      uint16_t orig, word, n = 0;
-      rc = fread (&orig, sizeof (uint16_t), 1, in);
-      orig = SWAP16 (orig);
+      if ((rc = disassemble_program (&prog, symfp, in)) != 0)
+        goto cleanup;
 
-      while (!feof (in))
-        {
-          char buf[4096];
-          rc = fread (&word, sizeof (uint16_t), 1, in);
-          word = SWAP16 (word);
-          disassemble_word (buf, flags, 0, orig + n++, word);
-          fprintf (out, "%s\n", buf);
-        }
+      rc = print_program (out, flags, &prog);
     }
   else
     {
@@ -230,12 +255,18 @@ main (int argc, const char *argv[])
 
       rc = print_program (out, flags, &prog);
 
-      // dump_symbols (stderr, prog.symbols);
+      if (symfp)
+        {
+          sort_symbols_by_addr (&prog);
+          dump_symbols (symfp, prog.symbols);
+        }
     }
 
 cleanup:
   fclose (in);
   fclose (out);
+  if (symfp)
+    fclose (symfp);
   free_instructions (prog.instructions);
   free_symbols (prog.symbols);
 
@@ -251,6 +282,7 @@ compare_symbol_addrs (const void *sym1, const void *sym2)
   return addr1 - addr2;
 }
 
+// TODO put this elsewhere... (program.c)
 void // TODO there is probably a cleaner way to do this
 sort_symbols_by_addr (program *prog)
 {
