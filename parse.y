@@ -5,10 +5,9 @@
 %param       { void *scanner }
 
 %union {
-  instruction *inst;
-  symbol *sym;
   int num;
   char *str;
+  symbol *sym;
 }
 
 %code requires {
@@ -18,6 +17,8 @@
   #include <stdio.h>
   #include <stdlib.h>
   typedef void* yyscan_t;
+
+  #define ADDR(prog) prog->orig + prog->len
 }
 
 %code provides {
@@ -48,14 +49,14 @@
 // literals
 %token NUMLIT STRLIT LABEL
 
-%type <inst> instruction instruction_list
-%type <inst> ADD AND BR JMP JSR JSRR LD LDI LDR
-%type <inst> LEA NOT RET RTI ST STI STR TRAP
-%type <inst> GETC OUT PUTS IN PUTSP HALT
-%type <inst> FILL STRINGZ
-%type <sym>  LABEL
-%type <num>  NUMLIT REG
-%type <str>  STRLIT
+%type <num> ADD AND BR JMP JSR JSRR LD LDI LDR
+%type <num> LEA NOT RET RTI ST STI STR TRAP
+%type <num> GETC OUT PUTS IN PUTSP HALT
+%type <num> NUMLIT REG
+%type <str> STRLIT
+%type <sym> LABEL
+
+%type <num> r3 r2offset6 r2 r1lab r1 r0lab r0
 
 %start program
 
@@ -65,9 +66,6 @@ program:
   preamble
   instruction_list[instructions]
   END
-{
-  prog->instructions = $instructions;
-}
 ;
 
 preamble:
@@ -78,207 +76,108 @@ preamble:
 ;
 
 instruction_list:
-  /* empty */
-{ $$ = 0; }
-  // NB this means no labels after the last instruction
-| LABEL[sym] instruction[head] instruction_list[tail]
+  %empty
+| LABEL[sym]
 {
-  if($sym->is_set) {
-    fprintf(stderr, "error: duplicate symbol: %s\n", $sym->label);
-    YYERROR;
-  } 
-  $sym->addr = $head->addr;
-  $sym->hint = $head->hint;
-  $sym->is_set = 1;
+  for(int i = prog->orig; i < ADDR(prog); i++)
+    {
+      if(prog->symbols[i] && strcmp($sym->label, prog->symbols[i]->label) == 0)
+        {
+          fprintf(stderr, "error: duplicate label: %s\n", $sym->label);
+          YYERROR;
+        }
+    }
 
-  $head->last->next = $tail;
-  $$ = $head;
+  if(prog->symbols[ADDR(prog)])
+    {
+      // TODO allow multiple labels per address?
+      fprintf(stderr, "error: more than one label declared for address: %d", ADDR(prog));
+      YYERROR;
+    }
+
+  prog->symbols[ADDR(prog)] = $sym;
 }
 | instruction instruction_list
-{
-  $1->last->next = $2;
-  $$ = $1;
-}
 ;
+
+r3:        ADD | AND; // 3 registers
+r2offset6: LDR | STR; // 2 registers and an offset6
+r2:        NOT;       // 2 registers
+r1lab:     LD  | LDI | LEA | ST | STI;
+r1:        JMP | JSR | JSRR;
+r0lab:     BR;
+r0:        RET | RTI | GETC | OUT | PUTS | IN | PUTSP | HALT;
 
 instruction:
 /* operations */
-  ADD REG[DR] ',' REG[SR1] ',' REG[SR2]
+  r3[op] REG[DR] ',' REG[SR1] ',' REG[SR2]
 {
-  $1->word |= ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
 }
-| ADD REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
+| r3[op] REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
 {
-  $1->word |= ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
 }
-| AND REG[DR] ',' REG[SR1] ',' REG[SR2]
+| r2offset6[op] REG[DR] ',' REG[BaseR] ',' NUMLIT[offset6]
 {
-  $1->word |= ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
 }
-| AND REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
+| r2[op] REG[DR] ',' REG[SR]
 {
-  $1->word |= ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($SR << 6) | (0x003F << 0);
 }
-| BR LABEL[sym]
+| r1lab[op] REG[DR] ',' LABEL[sym]
 {
-  $1->word |= (OP_BR << 12);
-  $1->sym = $sym;
-  $1->flags = 0x01FF;
-  $$ = $1;
+  prog->memory[ADDR(prog)] = $op | ($DR << 9);
+  prog->ref[ADDR(prog)++] = $sym;
 }
-| BR NUMLIT[PCoffset9]
+| r1[op] REG[BaseR]
 {
-  $1->word |= (OP_BR << 12);
-  $1->word |= ($PCoffset9 & 0x01FF);
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $op | ($BaseR << 6);
 }
-| JMP REG[BaseR]
+| r0lab[op] LABEL[sym]
 {
-  $1->word |= ($BaseR << 6);
-  $$ = $1;
+  prog->memory[ADDR(prog)] = $op;
+  prog->ref[ADDR(prog)++] = $sym;
 }
-| JSR LABEL[sym]
+| r0lab[op] NUMLIT[PCoffset9]
 {
-  $1->word |= (1 << 11);
-  $1->sym = $sym;
-  $1->flags = 0x07FF;
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $op | ($PCoffset9 & 0x01FF);
 }
-| JSRR REG[BaseR]
+| r0[op]
 {
-  $1->word |= ($BaseR << 6);
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $op;
 }
-| LD REG[DR] ',' LABEL[sym]
+| TRAP[op] NUMLIT[trapvect8]
 {
-  $1->word |= ($DR << 9);
-  $1->sym = $sym;
-  $1->flags = 0x01FF;
-  $$ = $1;
-}
-| LDI REG[DR] ',' LABEL[sym]
-{
-  $1->word |= ($DR << 9);
-  $1->sym = $sym;
-  $1->flags = 0x01FF;
-  $$ = $1;
-}
-| LDR REG[DR] ',' REG[BaseR] ',' NUMLIT[offset6]
-{
-  $1->word |= ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
-  $$ = $1;
-}
-| LEA REG[DR] ',' LABEL[sym]
-{
-  $1->word |= ($DR << 9);
-  $1->sym = $sym;
-  $1->flags = 0x01FF;
-  $$ = $1;
-}
-| NOT REG[DR] ',' REG[SR]
-{
-  $1->word |= ($DR << 9) | ($SR << 6) | (0x003F << 0);
-  $$ = $1;
-}
-| RET
-{ // special case of JMP, where R7 is implied as DR
-  $1->word |= (R_R7 << 6);
-  $$ = $1;
-}
-| RTI /* $$ = $1 */
-| ST REG[SR] ',' LABEL[sym]
-{
-  $1->word |= ($SR << 9);
-  $1->sym = $sym;
-  $1->flags = 0x01FF;
-  $$ = $1;
-}
-| STI REG[SR] ',' LABEL[sym]
-{
-  $1->word |= ($SR << 9);
-  $1->sym = $sym;
-  $1->flags = 0x01FF;
-  $$ = $1;
-}
-| STR REG[SR] ',' REG[BaseR] ',' NUMLIT[offset6]
-{
-  $1->word |= ($SR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
-  $$ = $1;
-}
-| TRAP NUMLIT[trapvect8]
-{
-  $1->word |= ($trapvect8 << 0);
-  $$ = $1;
-}
-/* traps */
-| GETC
-{
-  $1->word |= (TRAP_GETC << 0);
-  $$ = $1;
-}
-| OUT
-{
-  $1->word |= (TRAP_OUT << 0);
-  $$ = $1;
-}
-| PUTS
-{
-  $1->word |= (TRAP_PUTS << 0);
-  $$ = $1;
-}
-| IN
-{
-  $1->word |= (TRAP_IN << 0);
-  $$ = $1;
-}
-| PUTSP
-{
-  $1->word |= (TRAP_PUTSP << 0);
-  $$ = $1;
-}
-| HALT
-{
-  $1->word |= (TRAP_HALT << 0);
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $op | ($trapvect8 << 0);
 }
 /* assembler directives */
 | FILL NUMLIT[data]
 {
-  $1->word = $data;
-  $$ = $1;
+  prog->memory[ADDR(prog)++] = $data;
 }
 | FILL LABEL[sym]
 {
-  $1->sym = $sym;
-  $$ = $1;
+  prog->ref[ADDR(prog)++] = $sym;
 }
 | STRINGZ STRLIT[raw]
 {
   char *escaped = calloc(strlen($raw)+1, sizeof(char));
   const char *test;
   if((test = unescape_string(escaped, $raw)) != 0)
-  {
-    fprintf(stderr, "error: unknown escape sequence in string literal: \\%c\n", *test);
-    YYERROR;
-  }
+    {
+      fprintf(stderr, "error: unknown escape sequence in string literal: \\%c\n", *test);
+      YYERROR;
+    }
 
-  instruction *inst = $1;
-  for(char *p = escaped; *p; p++) {
-    inst->word = *p;
-    inst->next = calloc(1, sizeof(instruction));
-    inst = inst->next;
-    inst->addr = prog->len++;
-  }
-  inst->word = 0;
+  for(char *p = escaped; *p; p++) 
+    {
+      prog->memory[prog->orig + prog->len++] = *p;
+    }
+  prog->memory[prog->orig + prog->len++] = 0; // null-terminate
   free(escaped);
   free($raw);
-
-  $1->last = inst;
-  $$ = $1;
 }
 ;
 
