@@ -5,9 +5,7 @@
 ## lc3as (assembler)
 * better string literal handling
 * for everything that can use a label, also allow it to use a NUMLIT
-* disassembler needs love
-  * dump/re-load symbol table
-    * include markers for assembler directives (.fill, .stringz)
+* disassembler needs just a few more things to be able to completely disassemble
 
 ## lc3vm (virtual machine)
 * support windows?
