@@ -126,19 +126,25 @@ instruction:
 {
   prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($SR << 6) | (0x003F << 0);
 }
-| r1lab[op] REG[DR] ',' LABEL[sym]
+| r1lab[op] REG[DR] ',' LABEL[ref]
 {
   prog->memory[ADDR(prog)] = $op | ($DR << 9);
-  prog->ref[ADDR(prog)++] = $sym;
+  $ref->flags = 0x1FF; // PCoffset9
+  prog->ref[ADDR(prog)++] = $ref;
+}
+| r1lab[op] REG[DR] ',' NUMLIT[PCoffset9]
+{
+  prog->memory[ADDR(prog)] = $op | ($DR << 9) | ($PCoffset9 & 0x01FF);
 }
 | r1[op] REG[BaseR]
 {
   prog->memory[ADDR(prog)++] = $op | ($BaseR << 6);
 }
-| r0lab[op] LABEL[sym]
+| r0lab[op] LABEL[ref]
 {
   prog->memory[ADDR(prog)] = $op;
-  prog->ref[ADDR(prog)++] = $sym;
+  $ref->flags = 0x1FF; // PCoffset9
+  prog->ref[ADDR(prog)++] = $ref;
 }
 | r0lab[op] NUMLIT[PCoffset9]
 {
@@ -155,14 +161,24 @@ instruction:
 /* assembler directives */
 | FILL NUMLIT[data]
 {
+  // type hint to the disassembler
+  symbol *ref = calloc(1, sizeof(symbol));
+  ref->flags = (HINT_FILL << 12);
+  prog->ref[ADDR(prog)] = ref;
   prog->memory[ADDR(prog)++] = $data;
 }
-| FILL LABEL[sym]
+| FILL LABEL[ref]
 {
-  prog->ref[ADDR(prog)++] = $sym;
+  $ref->flags = (HINT_FILL << 12);
+  prog->ref[ADDR(prog)++] = $ref;
 }
 | STRINGZ STRLIT[raw]
 {
+  // hint to the disassembler
+  symbol *ref = calloc(1, sizeof(symbol));
+  ref->flags = (HINT_STRINGZ << 12);
+  prog->ref[ADDR(prog)] = ref;
+
   char *escaped = calloc(strlen($raw)+1, sizeof(char));
   const char *test;
   if((test = unescape_string(escaped, $raw)) != 0)

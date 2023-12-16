@@ -37,6 +37,9 @@ typedef struct program
 
 int assemble_program (program *prog, FILE *in);
 int resolve_symbols (program *prog);
+symbol *find_symbol_by_label (program *prog, const char *label);
+int disassemble_addr(char *dest, int flags, uint16_t addr, program *prog);
+int print_program (FILE *out, int flags, program *prog);
 
 // int disassemble_program (program *prog, FILE *symin, FILE *in);
 
@@ -45,17 +48,14 @@ int resolve_symbols (program *prog);
 // int disassemble_instruction (char *dest, int flags, symbol *symbols,
 //                              instruction *inst);
 
-// int print_program (FILE *out, int flags, program *prog);
+// 
 
 // int dump_symbols (FILE *out, symbol *symbols);
 // symbol *load_symbols (FILE *in);
 
 // int attach_symbols (instruction *instructions, symbol *symbols);
 
-// symbol *find_or_create_symbol (program *prog, const char *label);
-// symbol *find_symbol_by_addr (symbol *symbols, uint16_t addr);
 // symbol *find_symbol_by_label (symbol *symbols, const char *label);
-// void sort_symbols_by_addr (program *prog);
 
 // void free_instructions (instruction *instructions);
 // void free_symbols (symbol *symbols);
