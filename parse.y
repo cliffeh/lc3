@@ -58,6 +58,8 @@
 
 %type <num> r3 r2offset6 r2 r1lab r1 r0lab r0
 
+%right LABEL
+
 %start program
 
 %%
@@ -76,7 +78,12 @@ preamble:
 ;
 
 instruction_list:
-  %empty
+| instruction_or_label
+| instruction_list instruction_or_label
+;
+
+instruction_or_label:
+instruction
 | LABEL[sym] instruction
 {
   for(int i = prog->orig; i < ADDR(prog); i++)
@@ -98,15 +105,14 @@ instruction_list:
   // hack: we're depending on our lexer to capture the address at the time the label is lexed
   prog->symbols[$sym->flags] = $sym;
 }
-| instruction instruction_list // TODO left recursion?
 ;
 
 r3:        ADD | AND; // 3 registers
 r2offset6: LDR | STR; // 2 registers and an offset6
 r2:        NOT;       // 2 registers
 r1lab:     LD  | LDI | LEA | ST | STI;
-r1:        JMP | JSR | JSRR;
-r0lab:     BR;
+r1:        JMP | JSRR;
+r0lab:     BR; // JSR
 r0:        RET | RTI | GETC | OUT | PUTS | IN | PUTSP | HALT;
 
 instruction:
@@ -154,6 +160,12 @@ instruction:
 | r0[op]
 {
   prog->memory[ADDR(prog)++] = $op;
+}
+| JSR[op] LABEL[ref]
+{
+  prog->memory[ADDR(prog)] = $op;
+  $ref->flags = 0x7FF; // PCoffset11
+  prog->ref[ADDR(prog)++] = $ref;
 }
 | TRAP[op] NUMLIT[trapvect8]
 {

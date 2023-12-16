@@ -38,7 +38,7 @@ BUILT_SOURCES = parse.h
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = subdir-objects
 
-AM_YFLAGS = -d -Wno-yacc
+AM_YFLAGS = -d -Wno-yacc -Wcounterexamples
 
 SUBDIRS = popt
 
