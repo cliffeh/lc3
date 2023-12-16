@@ -127,13 +127,18 @@ assemble_program (program *prog, FILE *in)
 int
 resolve_symbols (program *prog)
 {
+  // for every address in memory
   for (uint16_t iaddr = prog->orig; iaddr < prog->orig + prog->len; iaddr++)
     {
+      // ...if that instruction contains a label reference
       if (prog->ref[iaddr] && prog->ref[iaddr]->label)
         {
+          int resolved = 0;
+          // ...for every adress we know about
           for (uint16_t saddr = prog->orig; saddr < prog->orig + prog->len;
                saddr++)
             {
+              // ...if there is a symbol at that address that matches the label
               if (prog->symbols[saddr]
                   && strcmp (prog->ref[iaddr]->label,
                              prog->symbols[saddr]->label)
@@ -144,13 +149,17 @@ resolve_symbols (program *prog)
                   else
                     prog->memory[iaddr]
                         |= ((saddr - iaddr - 1) & prog->ref[iaddr]->flags);
-                  continue;
+                  resolved = 1;
+                  break;
                 }
             }
-          // if we get here, we've got an unresolved symbol
-          fprintf (stderr, "error: unresolved symbol: %s\n",
-                   prog->ref[iaddr]->label);
-          return 1;
+          if (!resolved)
+            {
+              // if we get here, we've got an unresolved symbol
+              fprintf (stderr, "error: unresolved symbol: %s\n",
+                       prog->ref[iaddr]->label);
+              return 1;
+            }
         }
     }
   return 0;

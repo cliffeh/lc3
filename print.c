@@ -15,7 +15,7 @@ print_program (FILE *out, int flags, program *prog)
           fprintf (stderr, "write error...bailing.\n");
           return 1;
         }
-      for (int i = prog->orig; i < prog->len + prog->len; i++)
+      for (int i = prog->orig; i < prog->orig + prog->len; i++)
         {
           bytecode = SWAP16 (prog->memory[i]);
           if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
@@ -32,7 +32,7 @@ print_program (FILE *out, int flags, program *prog)
     fprintf (out, (flags & FMT_LC) ? ".orig x%04x" : ".ORIG x%04X\n",
              prog->orig);
 
-  for (int i = prog->orig; i < prog->len + prog->len; i++)
+  for (int i = prog->orig; i < prog->orig + prog->len; i++)
     {
       if (flags & FMT_PRETTY && prog->symbols[i])
         {
@@ -70,7 +70,7 @@ print_program (FILE *out, int flags, program *prog)
       char buf[4096] = "";
       i += disassemble_addr (buf, flags, i, prog);
       if (flags & FMT_PRETTY)
-        fprintf (out, "%s\n", buf);
+        fprintf (out, "  %s\n", buf);
     }
 
   if (flags & FMT_PRETTY)

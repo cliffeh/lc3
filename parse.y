@@ -64,7 +64,7 @@
 
 program:
   preamble
-  instruction_list[instructions]
+  instruction_list
   END
 ;
 
@@ -77,7 +77,7 @@ preamble:
 
 instruction_list:
   %empty
-| LABEL[sym]
+| LABEL[sym] instruction
 {
   for(int i = prog->orig; i < ADDR(prog); i++)
     {
@@ -95,9 +95,10 @@ instruction_list:
       YYERROR;
     }
 
-  prog->symbols[ADDR(prog)] = $sym;
+  // hack: we're depending on our lexer to capture the address at the time the label is lexed
+  prog->symbols[$sym->flags] = $sym;
 }
-| instruction instruction_list
+| instruction instruction_list // TODO left recursion?
 ;
 
 r3:        ADD | AND; // 3 registers

@@ -85,7 +85,12 @@
 }
 
  /* labels */
-[_a-zA-Z][_\-a-zA-Z0-9]*       { yylval->sym = calloc(1, sizeof(symbol)); yylval->sym->label = strdup(yytext); return(LABEL); }
+[_a-zA-Z][_\-a-zA-Z0-9]*       {
+  yylval->sym = calloc(1, sizeof(symbol));
+  yylval->sym->label = strdup(yytext);
+  // hack: capture the current address at the time the label is lexed
+  yylval->sym->flags = prog->orig + prog->len;
+  return(LABEL);               }
 
  /* stuff to ignore */
 \n      { yylineno++; } // ignore newlines, but count them
