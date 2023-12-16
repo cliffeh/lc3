@@ -58,8 +58,6 @@
 
 %type <num> r3 r2offset6 r2 r1lab r1 r0lab r0
 
-%right LABEL
-
 %start program
 
 %%
@@ -78,8 +76,8 @@ preamble:
 ;
 
 instruction_list:
-| instruction_or_label
-| instruction_list instruction_or_label
+  instruction_or_label
+| instruction_or_label instruction_list
 ;
 
 instruction_or_label:
