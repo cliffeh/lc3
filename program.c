@@ -276,7 +276,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
                   }
               }
             n += sprintf (dest + n, "\"");
-            return (rc + 1); // strlen() + 1 for null-terminate
+            return rc;
           }
           break;
         }
