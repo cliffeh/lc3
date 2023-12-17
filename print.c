@@ -60,8 +60,7 @@ print_program (FILE *out, int flags, program *prog)
           SPACES (out, n);
           for (int i = 15; i >= 0; i--)
             {
-              n += fprintf (out, "%c",
-                            ((prog->mem[i] & (1 << i)) >> i) + '0');
+              n += fprintf (out, "%c", ((prog->mem[i] & (1 << i)) >> i) + '0');
               if (i && i % 4 == 0)
                 n += fprintf (out, " ");
             }
@@ -86,9 +85,11 @@ dump_symbols (FILE *out, int flags, program *prog)
     {
       if (prog->sym[saddr])
         {
-          fprintf(out, (flags & FMT_LC) ? "x%04x" : "x%0X", saddr);
-          fprintf(out, " %s", prog->sym[saddr]->label);
-          fprintf(out, " %d\n", (prog->sym[saddr]->flags >> 12));
+          fprintf (out, (flags & FMT_LC) ? "x%04x %s" : "x%0X %s", saddr,
+                   prog->sym[saddr]->label);
+          if (prog->ref[saddr] && (prog->ref[saddr]->flags >> 12))
+            fprintf (out, " %d", (prog->ref[saddr]->flags >> 12));
+          fprintf (out, "\n");
         }
     }
 }

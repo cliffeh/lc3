@@ -93,17 +93,19 @@ instruction
         }
     }
 
-  if(prog->sym[ADDR(prog)])
+  // hack: we're depending on our lexer to capture the address at the time the label is lexed
+  uint16_t saddr = $sym->flags;
+  // don't leak this hack
+  $sym->flags = 0;
+
+  if(prog->sym[saddr])
     {
       // TODO allow multiple labels per address?
-      fprintf(stderr, "error: more than one label declared for address: %d", ADDR(prog));
+      fprintf(stderr, "error: more than one label declared for address: %d", saddr);
       YYERROR;
     }
 
-  // hack: we're depending on our lexer to capture the address at the time the label is lexed
-  prog->sym[$sym->flags] = $sym;
-  // don't leak this hack
-  $sym->flags = 0;
+  prog->sym[saddr] = $sym;
 }
 ;
 
