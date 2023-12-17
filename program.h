@@ -105,13 +105,14 @@ typedef struct program
 
 int assemble_program (program *prog, FILE *in);
 int resolve_symbols (program *prog);
-symbol *find_symbol_by_label (program *prog, const char *label);
 int disassemble_addr (char *dest, int flags, uint16_t addr, program *prog);
 int print_program (FILE *out, int flags, program *prog);
 int load_program (program *prog, FILE *in);
 int execute_program (program *prog);
-
-// int disassemble_program (program *prog, FILE *symin, FILE *in);
+int disassemble_program (program *prog, FILE *symin, FILE *in);
+int attach_symbols (program *prog);
+int dump_symbols (FILE *out, int flags, program *prog);
+int load_symbols (program *prog, FILE *in);
 
 // int disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
 //                       uint16_t word);

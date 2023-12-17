@@ -239,15 +239,15 @@ main (int argc, const char *argv[])
     out = stdout;
 
   program prog;
-  memset(&prog, 0, sizeof(program));
+  memset (&prog, 0, sizeof (program));
 
   // TODO implement!
   if (disassemble)
     {
-      // if ((rc = disassemble_program (&prog, symfp, in)) != 0)
-      //   goto cleanup;
+      if ((rc = disassemble_program (&prog, symfp, in)) != 0)
+        goto cleanup;
 
-      // rc = print_program (out, flags, &prog);
+      rc = print_program (out, flags, &prog);
     }
   else
     {
@@ -256,10 +256,8 @@ main (int argc, const char *argv[])
 
       rc = print_program (out, flags, &prog);
 
-      // if (symfp)
-      //   {
-      //     dump_symbols (symfp, prog.symbols);
-      //   }
+      if (symfp)
+        dump_symbols (symfp, flags, &prog);
     }
 
 cleanup:

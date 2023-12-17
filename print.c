@@ -78,3 +78,17 @@ print_program (FILE *out, int flags, program *prog)
 
   return 0;
 }
+
+int
+dump_symbols (FILE *out, int flags, program *prog)
+{
+  for (int saddr = prog->orig; saddr < prog->orig + prog->len; saddr++)
+    {
+      if (prog->sym[saddr])
+        {
+          fprintf(out, (flags & FMT_LC) ? "x%04x" : "x%0X", saddr);
+          fprintf(out, " %s", prog->sym[saddr]->label);
+          fprintf(out, " %d\n", (prog->sym[saddr]->flags >> 12));
+        }
+    }
+}

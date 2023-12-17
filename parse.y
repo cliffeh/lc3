@@ -102,6 +102,8 @@ instruction
 
   // hack: we're depending on our lexer to capture the address at the time the label is lexed
   prog->sym[$sym->flags] = $sym;
+  // don't leak this hack
+  $sym->flags = 0;
 }
 ;
 

@@ -19,9 +19,10 @@ assemble_program (program *prog, FILE *in)
   return rc;
 }
 
-int load_program(program *prog, FILE *in)
+int
+load_program (program *prog, FILE *in)
 {
-   /* the origin tells us where in memory to place the image */
+  /* the origin tells us where in memory to place the image */
   size_t read = fread (&prog->orig, sizeof (prog->orig), 1, in);
   prog->orig = SWAP16 (prog->orig);
 
@@ -41,58 +42,33 @@ int load_program(program *prog, FILE *in)
   return 0;
 }
 
-// int
-// disassemble_program (program *prog, FILE *symin, FILE *in)
-// {
-//   uint16_t memory[MEMORY_MAX];
+int
+disassemble_program (program *prog, FILE *symin, FILE *in)
+{
+  if (load_program (prog, in) != 0)
+    {
+      fprintf (stderr, "error: failed to load program\n");
+      return 1;
+    }
 
-//   // duplicates load_image, but we need to know both the origin and the
-//   length uint16_t orig; size_t read = fread (&orig, sizeof (orig), 1, in);
+  if (symin)
+    {
+      if (load_symbols (prog, symin) != 0)
+        {
+          fprintf (stderr, "error: failed to load symbols\n");
+          return 1;
+        }
+      else
+        attach_symbols (prog);
+    }
 
-//   if (read != 1)
-//     {
-//       fprintf (stderr, "origin could not be read\n");
-//       return -1;
-//     }
+  return 0;
+}
 
-//   orig = SWAP16 (orig);
-
-//   /* we know the maximum file size so we only need one fread */
-//   uint16_t *p = memory + orig;
-//   read = fread (p, sizeof (uint16_t), (MEMORY_MAX - orig), in);
-
-//   if (read == 0)
-//     {
-//       fprintf (stderr, "no bytes read\n");
-//       return -1;
-//     }
-
-//   prog->orig = orig;
-//   prog->len = read;
-
-//   instruction handle, *tail = &handle;
-
-//   uint16_t addr = 0;
-//   /* swap to little endian */
-//   while ((read - addr) > 0)
-//     {
-//       tail->next = calloc (1, sizeof (instruction));
-//       tail->next->addr = orig + addr++;
-//       tail->next->word = SWAP16 (*p);
-//       tail = tail->next;
-//       tail->last = tail;
-//       ++p;
-//     }
-//   prog->instructions = handle.next;
-
-//   if (symin)
-//     {
-//       prog->symbols = load_symbols (symin);
-//       attach_symbols (prog->instructions, prog->symbols);
-//     }
-
-//   return 0;
-// }
+int
+attach_symbols (program *prog)
+{
+}
 
 // int
 // attach_symbols (instruction *instructions, symbol *symbols)
@@ -161,8 +137,7 @@ resolve_symbols (program *prog)
             {
               // ...if there is a symbol at that address that matches the label
               if (prog->sym[saddr]
-                  && strcmp (prog->ref[iaddr]->label,
-                             prog->sym[saddr]->label)
+                  && strcmp (prog->ref[iaddr]->label, prog->sym[saddr]->label)
                          == 0)
                 {
                   if ((prog->ref[iaddr]->flags >> 12) == HINT_FILL)
@@ -174,9 +149,10 @@ resolve_symbols (program *prog)
                   break;
                 }
             }
+
+          // if we get here, we've got an unresolved symbol
           if (!resolved)
             {
-              // if we get here, we've got an unresolved symbol
               fprintf (stderr, "error: unresolved symbol: %s\n",
                        prog->ref[iaddr]->label);
               return 1;
@@ -186,61 +162,29 @@ resolve_symbols (program *prog)
   return 0;
 }
 
-// void
-// free_symbols (symbol *symbols)
-// {
-//   // TODO figure out why this hangs!
-//   symbol *sym = symbols;
+int
+load_symbols (program *prog, FILE *in)
+{
+  char buf[4096];
 
-//   while (sym)
-//     {
-//       if (sym->label)
-//         free (sym->label);
+  while (fgets (buf, 4096, in))
+    {
+      char *p = strtok (buf, " \t\n");
+      char *label = strtok (0, " \t\n");
+      char *hint = strtok (0, " \t\n");
+      // TODO this could be a little more sophisticated...
+      if (*p && *p == 'x' && *label) // hint optional
+        {
+          // TODO capture endptr?
+          uint16_t saddr = strtol (p + 1, 0, 16);
+          prog->sym[saddr]->label = strdup (label);
+          if (hint)
+            prog->sym[saddr]->flags = atoi (hint) << 12;
+        }
+    }
 
-//       symbol *tmp = sym->next;
-//       free (sym);
-//       sym = tmp;
-//     }
-// }
-
-// int
-// dump_symbols (FILE *out, symbol *symbols)
-// {
-//   for (symbol *sym = symbols; sym; sym = sym->next)
-//     {
-//       fprintf (out, "x%04x %s %d\n", sym->addr, sym->label, sym->hint);
-//     }
-//   return 0;
-// }
-
-// // TODO finish implementing!
-// symbol *
-// load_symbols (FILE *in)
-// {
-//   symbol handle, *tail = &handle;
-//   char buf[1024], *p;
-
-//   while (fgets (buf, 1024, in))
-//     {
-//       char *addr = strtok (buf, " \t\n");
-//       char *label = strtok (0, " \t\n");
-//       char *hint = strtok (0, " \t\n");
-//       // TODO this could be a little more sophisticated...
-//       if (*addr && *addr == 'x' && *label) // hint optional
-//         {
-//           tail->next = calloc (1, sizeof (symbol));
-//           // TODO check return ptr
-//           tail->next->addr = strtol (addr + 1, 0, 16);
-//           tail->next->label = strdup (label);
-//           if (hint)
-//             tail->next->hint = atoi (hint);
-//           tail->next->is_set = 1;
-//           tail = tail->next;
-//         }
-//     }
-
-//   return handle.next;
-// }
+  return 0;
+}
 
 const char *opnames[16][2] = {
   { "BR", "br" },   { "ADD", "add" }, { "LD", "ld" },   { "ST", "st" },
@@ -281,7 +225,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
                 char c = (char)prog->mem[addr + rc++];
                 switch (c)
                   {
-                    // clang-format off
+                  // clang-format off
                     case '\007': n += sprintf (dest + n, "\\a");  break;
                     case '\013': n += sprintf (dest + n, "\\v");  break;
                     case '\b':   n += sprintf (dest + n, "\\b");  break;
