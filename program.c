@@ -127,6 +127,7 @@ load_symbols (program *prog, FILE *in)
         {
           // TODO capture endptr?
           uint16_t saddr = strtol (p + 1, 0, 16);
+          prog->sym[saddr] = calloc (1, sizeof (symbol));
           prog->sym[saddr]->label = strdup (label);
           if (hint)
             prog->sym[saddr]->flags = atoi (hint) << 12;
@@ -175,7 +176,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
                 char c = (char)prog->mem[addr + rc++];
                 switch (c)
                   {
-                    // clang-format off
+                  // clang-format off
                     case '\007': n += sprintf (dest + n, "\\a");  break;
                     case '\013': n += sprintf (dest + n, "\\v");  break;
                     case '\b':   n += sprintf (dest + n, "\\b");  break;
