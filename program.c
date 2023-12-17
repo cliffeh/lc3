@@ -139,15 +139,15 @@ resolve_symbols (program *prog)
                saddr++)
             {
               // ...if there is a symbol at that address that matches the label
-              if (prog->symbols[saddr]
+              if (prog->sym[saddr]
                   && strcmp (prog->ref[iaddr]->label,
-                             prog->symbols[saddr]->label)
+                             prog->sym[saddr]->label)
                          == 0)
                 {
                   if ((prog->ref[iaddr]->flags >> 12) == HINT_FILL)
-                    prog->memory[iaddr] = saddr;
+                    prog->mem[iaddr] = saddr;
                   else
-                    prog->memory[iaddr]
+                    prog->mem[iaddr]
                         |= ((saddr - iaddr - 1) & prog->ref[iaddr]->flags);
                   resolved = 1;
                   break;
@@ -245,7 +245,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
               n += sprintf (dest + n, " %s", prog->ref[addr]->label);
             else
               n += sprintf (dest + n, cas ? " x%0x" : " x%0X",
-                            prog->memory[addr]);
+                            prog->mem[addr]);
 
             return rc; // 0
           }
@@ -254,10 +254,10 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
         case HINT_STRINGZ:
           {
             n += sprintf (dest + n, cas ? ".stringz \"" : ".STRINGZ \"");
-            while (prog->memory[addr + rc] != 0
+            while (prog->mem[addr + rc] != 0
                    && (addr + rc) < (prog->orig + prog->len))
               {
-                char c = (char)prog->memory[addr + rc++];
+                char c = (char)prog->mem[addr + rc++];
                 switch (c)
                   {
                     // clang-format off
@@ -282,25 +282,25 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
         }
     }
 
-  switch (op = prog->memory[addr] >> 12)
+  switch (op = prog->mem[addr] >> 12)
     {
     case OP_ADD:
     case OP_AND:
       {
         n += sprintf (dest + n, "%s", opnames[op][cas]);
         n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
-                      ((prog->memory[addr] >> 9) & 0x7));
+                      ((prog->mem[addr] >> 9) & 0x7));
         n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
-                      ((prog->memory[addr] >> 6) & 0x7));
+                      ((prog->mem[addr] >> 6) & 0x7));
 
-        if (prog->memory[addr] & (1 << 5))
+        if (prog->mem[addr] & (1 << 5))
           {
-            int16_t imm5 = SIGN_EXTEND (prog->memory[addr] & 0x1F, 5);
+            int16_t imm5 = SIGN_EXTEND (prog->mem[addr] & 0x1F, 5);
             n += sprintf (dest + n, " #%d", imm5);
           }
         else
           n += sprintf (dest + n, " %c%d", cas ? 'r' : 'R',
-                        ((prog->memory[addr] >> 0) & 0x7));
+                        ((prog->mem[addr] >> 0) & 0x7));
       }
       break;
 
@@ -310,20 +310,20 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
 
         // nzp flags always lowercase
         n += sprintf (dest + n, "%s%s%s",
-                      (prog->memory[addr] & (1 << 11)) ? "n" : "",
-                      (prog->memory[addr] & (1 << 10)) ? "z" : "",
-                      (prog->memory[addr] & (1 << 9)) ? "p" : "");
+                      (prog->mem[addr] & (1 << 11)) ? "n" : "",
+                      (prog->mem[addr] & (1 << 10)) ? "z" : "",
+                      (prog->mem[addr] & (1 << 9)) ? "p" : "");
 
         if (prog->ref[addr])
           n += sprintf (dest + n, " %s", prog->ref[addr]->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, " #%d", (prog->memory[addr] & 0x1FF));
+          n += sprintf (dest + n, " #%d", (prog->mem[addr] & 0x1FF));
       }
       break;
 
     case OP_JMP:
       {
-        uint16_t BaseR = (prog->memory[addr] >> 6) & 0x7;
+        uint16_t BaseR = (prog->mem[addr] >> 6) & 0x7;
         if (BaseR == 7) // assume RET special case
           n += sprintf (dest + n, "%s", cas ? "ret" : "RET");
         else
@@ -336,20 +336,20 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
 
     case OP_JSR:
       {
-        if (prog->memory[addr] & (1 << 11))
+        if (prog->mem[addr] & (1 << 11))
           {
             n += sprintf (dest + n, "%s", opnames[op][cas]);
 
             if (prog->ref[addr])
               n += sprintf (dest + n, " %s", prog->ref[addr]->label);
             else // TODO sign extended int?
-              n += sprintf (dest + n, " #%d", (prog->memory[addr] & 0x7FF));
+              n += sprintf (dest + n, " #%d", (prog->mem[addr] & 0x7FF));
           }
         else
           {
             n += sprintf (dest + n, "%s", cas ? "jsrr" : "JSRR");
             n += sprintf (dest + n, " %c%d", cas ? 'r' : 'R',
-                          ((prog->memory[addr] >> 6) & 0x7));
+                          ((prog->mem[addr] >> 6) & 0x7));
           }
       }
       break;
@@ -362,12 +362,12 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
       {
         n += sprintf (dest + n, "%s", opnames[op][cas]);
         n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
-                      ((prog->memory[addr] >> 9) & 0x7));
+                      ((prog->mem[addr] >> 9) & 0x7));
 
         if (prog->ref[addr])
           n += sprintf (dest + n, " %s", prog->ref[addr]->label);
         else // TODO sign extended int?
-          n += sprintf (dest + n, " #%d", (prog->memory[addr] & 0x1FF));
+          n += sprintf (dest + n, " #%d", (prog->mem[addr] & 0x1FF));
       }
       break;
 
@@ -376,11 +376,11 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
       {
         n += sprintf (dest + n, "%s", opnames[op][cas]);
         n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
-                      ((prog->memory[addr] >> 9) & 0x7));
+                      ((prog->mem[addr] >> 9) & 0x7));
         n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
-                      ((prog->memory[addr] >> 6) & 0x7));
+                      ((prog->mem[addr] >> 6) & 0x7));
 
-        int16_t offset6 = SIGN_EXTEND (prog->memory[addr] & 0x3F, 6);
+        int16_t offset6 = SIGN_EXTEND (prog->mem[addr] & 0x3F, 6);
         n += sprintf (dest + n, " #%d", offset6);
       }
       break;
@@ -389,9 +389,9 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
       { // TODO check that the lower 6 bits are all 1s?
         n += sprintf (dest + n, "%s", opnames[op][cas]);
         n += sprintf (dest + n, " %c%d,", cas ? 'r' : 'R',
-                      ((prog->memory[addr] >> 9) & 0x7));
+                      ((prog->mem[addr] >> 9) & 0x7));
         n += sprintf (dest + n, " %c%d", cas ? 'r' : 'R',
-                      ((prog->memory[addr] >> 6) & 0x7));
+                      ((prog->mem[addr] >> 6) & 0x7));
       }
       break;
 
@@ -403,7 +403,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
 
     case OP_TRAP:
       { // TODO string table for trap names
-        uint16_t trapvect8 = prog->memory[addr] & 0xFF;
+        uint16_t trapvect8 = prog->mem[addr] & 0xFF;
         switch (trapvect8)
           {
           case TRAP_GETC:

@@ -17,7 +17,7 @@ print_program (FILE *out, int flags, program *prog)
         }
       for (int i = prog->orig; i < prog->orig + prog->len; i++)
         {
-          bytecode = SWAP16 (prog->memory[i]);
+          bytecode = SWAP16 (prog->mem[i]);
           if (fwrite (&bytecode, sizeof (uint16_t), 1, out) != 1)
             {
               fprintf (stderr, "write error...bailing.\n");
@@ -34,13 +34,13 @@ print_program (FILE *out, int flags, program *prog)
 
   for (int i = prog->orig; i < prog->orig + prog->len; i++)
     {
-      if (flags & FMT_PRETTY && prog->symbols[i])
+      if (flags & FMT_PRETTY && prog->sym[i])
         {
           int n = 0;
           if (flags & FMT_ADDR)
             n += fprintf (out, (flags & FMT_LC) ? "%04x" : "%04X", i);
           SPACES (out, n);
-          n += fprintf (out, "%s\n", prog->symbols[i]->label);
+          n += fprintf (out, "%s\n", prog->sym[i]->label);
         }
 
       int n = 0;
@@ -51,7 +51,7 @@ print_program (FILE *out, int flags, program *prog)
       if (flags & FMT_HEX)
         {
           SPACES (out, n);
-          uint16_t bytecode = SWAP16 (prog->memory[i]);
+          uint16_t bytecode = SWAP16 (prog->mem[i]);
           n += fprintf (out, (flags & FMT_LC) ? "%04x" : "%04X", bytecode);
         }
 
@@ -61,7 +61,7 @@ print_program (FILE *out, int flags, program *prog)
           for (int i = 15; i >= 0; i--)
             {
               n += fprintf (out, "%c",
-                            ((prog->memory[i] & (1 << i)) >> i) + '0');
+                            ((prog->mem[i] & (1 << i)) >> i) + '0');
               if (i && i % 4 == 0)
                 n += fprintf (out, " ");
             }

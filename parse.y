@@ -86,14 +86,14 @@ instruction
 {
   for(int i = prog->orig; i < ADDR(prog); i++)
     {
-      if(prog->symbols[i] && strcmp($sym->label, prog->symbols[i]->label) == 0)
+      if(prog->sym[i] && strcmp($sym->label, prog->sym[i]->label) == 0)
         {
           fprintf(stderr, "error: duplicate label: %s\n", $sym->label);
           YYERROR;
         }
     }
 
-  if(prog->symbols[ADDR(prog)])
+  if(prog->sym[ADDR(prog)])
     {
       // TODO allow multiple labels per address?
       fprintf(stderr, "error: more than one label declared for address: %d", ADDR(prog));
@@ -101,7 +101,7 @@ instruction
     }
 
   // hack: we're depending on our lexer to capture the address at the time the label is lexed
-  prog->symbols[$sym->flags] = $sym;
+  prog->sym[$sym->flags] = $sym;
 }
 ;
 
@@ -117,57 +117,57 @@ instruction:
 /* operations */
   r3[op] REG[DR] ',' REG[SR1] ',' REG[SR2]
 {
-  prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
+  prog->mem[ADDR(prog)++] = $op | ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
 }
 | r3[op] REG[DR] ',' REG[SR1] ',' NUMLIT[imm5]
 {
-  prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
+  prog->mem[ADDR(prog)++] = $op | ($DR << 9) | ($SR1 << 6) | (1 << 5) | ($imm5 & 0x001F);
 }
 | r2offset6[op] REG[DR] ',' REG[BaseR] ',' NUMLIT[offset6]
 {
-  prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
+  prog->mem[ADDR(prog)++] = $op | ($DR << 9) | ($BaseR << 6) | ($offset6 & 0x003F);
 }
 | r2[op] REG[DR] ',' REG[SR]
 {
-  prog->memory[ADDR(prog)++] = $op | ($DR << 9) | ($SR << 6) | (0x003F << 0);
+  prog->mem[ADDR(prog)++] = $op | ($DR << 9) | ($SR << 6) | (0x003F << 0);
 }
 | r1lab[op] REG[DR] ',' LABEL[ref]
 {
-  prog->memory[ADDR(prog)] = $op | ($DR << 9);
+  prog->mem[ADDR(prog)] = $op | ($DR << 9);
   $ref->flags = 0x1FF; // PCoffset9
   prog->ref[ADDR(prog)++] = $ref;
 }
 | r1lab[op] REG[DR] ',' NUMLIT[PCoffset9]
 {
-  prog->memory[ADDR(prog)] = $op | ($DR << 9) | ($PCoffset9 & 0x01FF);
+  prog->mem[ADDR(prog)] = $op | ($DR << 9) | ($PCoffset9 & 0x01FF);
 }
 | r1[op] REG[BaseR]
 {
-  prog->memory[ADDR(prog)++] = $op | ($BaseR << 6);
+  prog->mem[ADDR(prog)++] = $op | ($BaseR << 6);
 }
 | r0lab[op] LABEL[ref]
 {
-  prog->memory[ADDR(prog)] = $op;
+  prog->mem[ADDR(prog)] = $op;
   $ref->flags = 0x1FF; // PCoffset9
   prog->ref[ADDR(prog)++] = $ref;
 }
 | r0lab[op] NUMLIT[PCoffset9]
 {
-  prog->memory[ADDR(prog)++] = $op | ($PCoffset9 & 0x01FF);
+  prog->mem[ADDR(prog)++] = $op | ($PCoffset9 & 0x01FF);
 }
 | r0[op]
 {
-  prog->memory[ADDR(prog)++] = $op;
+  prog->mem[ADDR(prog)++] = $op;
 }
 | JSR[op] LABEL[ref]
 {
-  prog->memory[ADDR(prog)] = $op;
+  prog->mem[ADDR(prog)] = $op;
   $ref->flags = 0x7FF; // PCoffset11
   prog->ref[ADDR(prog)++] = $ref;
 }
 | TRAP[op] NUMLIT[trapvect8]
 {
-  prog->memory[ADDR(prog)++] = $op | ($trapvect8 << 0);
+  prog->mem[ADDR(prog)++] = $op | ($trapvect8 << 0);
 }
 /* assembler directives */
 | FILL NUMLIT[data]
@@ -176,7 +176,7 @@ instruction:
   symbol *ref = calloc(1, sizeof(symbol));
   ref->flags = (HINT_FILL << 12);
   prog->ref[ADDR(prog)] = ref;
-  prog->memory[ADDR(prog)++] = $data;
+  prog->mem[ADDR(prog)++] = $data;
 }
 | FILL LABEL[ref]
 {
@@ -200,9 +200,9 @@ instruction:
 
   for(char *p = escaped; *p; p++) 
     {
-      prog->memory[prog->orig + prog->len++] = *p;
+      prog->mem[prog->orig + prog->len++] = *p;
     }
-  prog->memory[prog->orig + prog->len++] = 0; // null-terminate
+  prog->mem[prog->orig + prog->len++] = 0; // null-terminate
   free(escaped);
   free($raw);
 }

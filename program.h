@@ -30,15 +30,16 @@ typedef struct symbol
 typedef struct program
 {
   uint16_t orig, len;
-  uint16_t memory[MEMORY_MAX];
-  symbol *symbols[MEMORY_MAX];
+  uint16_t mem[MEMORY_MAX];
+  uint16_t reg[R_COUNT];
+  symbol *sym[MEMORY_MAX];
   symbol *ref[MEMORY_MAX];
 } program;
 
 int assemble_program (program *prog, FILE *in);
 int resolve_symbols (program *prog);
 symbol *find_symbol_by_label (program *prog, const char *label);
-int disassemble_addr(char *dest, int flags, uint16_t addr, program *prog);
+int disassemble_addr (char *dest, int flags, uint16_t addr, program *prog);
 int print_program (FILE *out, int flags, program *prog);
 
 // int disassemble_program (program *prog, FILE *symin, FILE *in);
@@ -48,7 +49,7 @@ int print_program (FILE *out, int flags, program *prog);
 // int disassemble_instruction (char *dest, int flags, symbol *symbols,
 //                              instruction *inst);
 
-// 
+//
 
 // int dump_symbols (FILE *out, symbol *symbols);
 // symbol *load_symbols (FILE *in);
