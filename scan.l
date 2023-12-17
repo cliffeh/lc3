@@ -85,7 +85,7 @@
 }
 
  /* labels */
-[_a-zA-Z][_\-a-zA-Z0-9]*       {
+[a-zA-Z][_\-a-zA-Z0-9]*        { // NB labels cannot start with a _
   yylval->sym = calloc(1, sizeof(symbol));
   yylval->sym->label = strdup(yytext);
   // hack: capture the current address at the time the label is lexed
