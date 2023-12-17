@@ -68,7 +68,44 @@ disassemble_program (program *prog, FILE *symin, FILE *in)
 int
 attach_symbols (program *prog)
 {
-  // TODO
+  for (int iaddr = prog->orig; iaddr < prog->orig + prog->len; iaddr++)
+    {
+      switch (prog->mem[iaddr] >> 12)
+        {
+        case OP_BR:
+        case OP_LD:
+        case OP_LDI:
+        case OP_LEA:
+        case OP_ST:
+        case OP_STI:
+          {
+            int16_t PCoffset9 = prog->mem[iaddr] & 0x1FF;
+            uint16_t saddr = PCoffset9 + iaddr + 1;
+            if (prog->sym[saddr])
+              {
+                if (!prog->ref[iaddr])
+                  prog->ref[iaddr] = calloc (1, sizeof (symbol));
+                prog->ref[iaddr]->label = strdup (prog->sym[saddr]->label);
+                prog->ref[iaddr]->flags |= 0x1FF;
+              }
+          }
+          break;
+
+        case OP_JSR:
+          {
+            int16_t PCoffset11 = prog->mem[iaddr] & 0x7FF;
+            uint16_t saddr = PCoffset11 + iaddr + 1;
+            if (prog->sym[saddr])
+              {
+                if (!prog->ref[iaddr])
+                  prog->ref[iaddr] = calloc (1, sizeof (symbol));
+                prog->ref[iaddr]->label = strdup (prog->sym[saddr]->label);
+                prog->ref[iaddr]->flags |= 0x7FF;
+              }
+          }
+          break;
+        }
+    }
 }
 
 int
@@ -176,7 +213,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
                 char c = (char)prog->mem[addr + rc++];
                 switch (c)
                   {
-                  // clang-format off
+                    // clang-format off
                     case '\007': n += sprintf (dest + n, "\\a");  break;
                     case '\013': n += sprintf (dest + n, "\\v");  break;
                     case '\b':   n += sprintf (dest + n, "\\b");  break;
