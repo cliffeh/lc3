@@ -38,9 +38,9 @@ SUBDIRS = popt
 # check_PROGRAMS =
 
 check_SCRIPTS =   \
-    test/hello.sh \
-    test/2048.sh  \
-    test/rogue.sh \
+    test/run-hello.test \
+    test/asm-2048.test  \
+    test/asm-rogue.test \
     test/pretty-2048.sh      \
     test/pretty-rogue.sh      \
     test/all-instructions.sh \
@@ -53,14 +53,14 @@ MEMCHECKS = \
 # uncomment to run memory leak checks (SLOW)
 # check_SCRIPTS += $(MEMCHECKS)
 
-CLEANFILES = test/*.valgrind
+CLEANFILES = test/*.valgrind test/*.out
 
 TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 TEST_INPUTS = \
-    test/2048.asm test/2048.obj   \
-    test/rogue.asm test/rogue.obj \
-    test/hello.asm test/hello.obj \
+    test/2048.asm  test/2048.obj  test/2048.sym  \
+    test/rogue.asm test/rogue.obj test/rogue.sym \
+    test/hello.asm test/hello.obj test/hello.sym \
     test/all-instructions.asm
 
 TEST_OUTPUTS = test/interactive-hello.out
