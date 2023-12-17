@@ -38,13 +38,13 @@ SUBDIRS = popt
 # check_PROGRAMS =
 
 check_SCRIPTS = \
-    test/hello.run.test         \
-    test/2048.asm.test          \
-    test/rogue.asm.test         \
-    test/pretty-2048.test       \
-    test/pretty-rogue.test      \
-    test/hello.interactive.test \
-    test/pretty-all-instructions.test
+    test/hello.run.test          \
+    test/2048.asm.test           \
+    test/rogue.asm.test          \
+    test/2048.pretty.test        \
+    test/rogue.pretty.test       \
+    test/hello.interactive.test  \
+    test/all-instructions.pretty.test
 MEMCHECKS = \
     test/valgrind-interactive.sh \
     test/valgrind-lc3as-2048.sh  \
