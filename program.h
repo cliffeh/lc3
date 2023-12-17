@@ -114,19 +114,4 @@ int attach_symbols (program *prog);
 int dump_symbols (FILE *out, int flags, program *prog);
 int load_symbols (program *prog, FILE *in);
 
-// int disassemble_word (char *dest, int flags, symbol *symbols, uint16_t addr,
-//                       uint16_t word);
-// int disassemble_instruction (char *dest, int flags, symbol *symbols,
-//                              instruction *inst);
-
-//
-
-// int dump_symbols (FILE *out, symbol *symbols);
-// symbol *load_symbols (FILE *in);
-
-// int attach_symbols (instruction *instructions, symbol *symbols);
-
-// symbol *find_symbol_by_label (symbol *symbols, const char *label);
-
-// void free_instructions (instruction *instructions);
-// void free_symbols (symbol *symbols);
+void free_symbols (program *prog);

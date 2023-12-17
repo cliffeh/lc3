@@ -165,5 +165,7 @@ main (int argc, const char *argv[])
     }
   restore_input_buffering ();
 
+  free_symbols (&prog);
+
   exit (rc);
 }

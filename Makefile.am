@@ -53,7 +53,7 @@ MEMCHECKS = \
     test/valgrind-lc3vm-hello.sh
 
 # uncomment to run memory leak checks (SLOW)
-# check_SCRIPTS += $(MEMCHECKS)
+check_SCRIPTS += $(MEMCHECKS)
 
 CLEANFILES = test/*.valgrind test/*.out
 

@@ -265,7 +265,7 @@ cleanup:
   fclose (out);
   if (symfp)
     fclose (symfp);
-  // free_symbols (prog.symbols);
+  free_symbols (&prog);
 
   exit (rc);
 }

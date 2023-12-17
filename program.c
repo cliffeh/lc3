@@ -68,58 +68,8 @@ disassemble_program (program *prog, FILE *symin, FILE *in)
 int
 attach_symbols (program *prog)
 {
+  // TODO
 }
-
-// int
-// attach_symbols (instruction *instructions, symbol *symbols)
-// {
-// for (symbol *sym = symbols; sym; sym = sym->next)
-//   {
-//     for (instruction *inst = instructions; inst; inst = inst->next)
-//       {
-//         if (sym->addr == inst->addr)
-//           inst->hint = sym->hint;
-
-//         switch (inst->word >> 12)
-//           {
-//           case OP_BR:
-//           case OP_LD:
-//           case OP_LDI:
-//           case OP_LEA:
-//           case OP_ST:
-//           case OP_STI:
-//             {
-//               int16_t PCoffset9 = inst->word & 0x1FF;
-//               int16_t reladdr = ((sym->addr - inst->addr) - 1) & 0x1FF;
-//               if (PCoffset9 == reladdr)
-//                 {
-//                   inst->sym = sym;
-//                 }
-//             }
-//             break;
-
-//           case OP_JSR:
-//             {
-//               if (inst->word & (1 << 11))
-//                 {
-//                   int16_t PCoffset11 = inst->word & 0x7FF;
-//                   int16_t reladdr = ((sym->addr - inst->addr) - 1) &
-//                   0x7FF; if (PCoffset11 == reladdr)
-//                     {
-//                       inst->sym = sym;
-//                     }
-//                 }
-//             }
-//             break;
-
-//           default:
-//             {
-//               // TODO handle FILL?
-//             }
-//           }
-//       }
-//   }
-// }
 
 int
 resolve_symbols (program *prog)
@@ -225,7 +175,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
                 char c = (char)prog->mem[addr + rc++];
                 switch (c)
                   {
-                  // clang-format off
+                    // clang-format off
                     case '\007': n += sprintf (dest + n, "\\a");  break;
                     case '\013': n += sprintf (dest + n, "\\v");  break;
                     case '\b':   n += sprintf (dest + n, "\\b");  break;
@@ -401,4 +351,22 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
     }
 
   return rc;
+}
+
+void
+free_symbols (program *prog)
+{
+  for (int i = prog->orig; i < prog->orig + prog->len; i++)
+    {
+      if (prog->sym[i])
+        {
+          free (prog->sym[i]->label);
+          free (prog->sym[i]);
+        }
+      if (prog->ref[i])
+        {
+          free (prog->ref[i]->label);
+          free (prog->ref[i]);
+        }
+    }
 }
