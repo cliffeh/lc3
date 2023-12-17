@@ -38,10 +38,12 @@ SUBDIRS = popt
 # check_PROGRAMS =
 
 check_SCRIPTS = \
+    test/hello.asm.test          \
+    test/hello.pretty.test       \
     test/hello.run.test          \
     test/2048.asm.test           \
-    test/rogue.asm.test          \
     test/2048.pretty.test        \
+    test/rogue.asm.test          \
     test/rogue.pretty.test       \
     test/hello.interactive.test  \
     test/all-instructions.pretty.test
@@ -61,9 +63,9 @@ TEST_INPUTS = \
     test/2048.asm  test/2048.obj  test/2048.sym  \
     test/rogue.asm test/rogue.obj test/rogue.sym \
     test/hello.asm test/hello.obj test/hello.sym \
-    test/all-instructions.asm
+    test/all-instructions.asm test/all-instructions.obj
 
-TEST_OUTPUTS = test/hello.interactive.out
+TEST_OUTPUTS = test/hello.interactive.expect
 
 dist_doc_DATA = LICENSE README.md TODO.md
 

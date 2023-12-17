@@ -9,11 +9,8 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-ASM="$SRCDIR/test/rogue.asm"
-OBJ="$SRCDIR/test/rogue.obj"
-OBJOUT="$BUILDDIR/test/rogue.asm.obj.out"
-SYM="$SRCDIR/test/rogue.sym"
-SYMOUT="$BUILDDIR/test/rogue.asm.sym.out"
+ASM="$SRCDIR/test/hello.asm"
+OBJ="$SRCDIR/test/hello.obj"
+# SYM="$SRCDIR/test/2048.sym"
 
-"$BUILDDIR/lc3as" "$ASM" -o "$OBJOUT" -S "$SYMOUT"
-diff "$OBJ" "$OBJOUT" && diff "$SYM" "$SYMOUT"
+"$BUILDDIR/lc3as" -Fpretty "$ASM" -o- | "$BUILDDIR/lc3as" | diff "$OBJ" -

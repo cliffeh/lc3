@@ -11,7 +11,9 @@ BUILDDIR=${BUILDDIR:-$DIR/..}
 
 ASM="$SRCDIR/test/2048.asm"
 OBJ="$SRCDIR/test/2048.obj"
+OBJOUT="$BUILDDIR/test/2048.asm.obj.out"
 SYM="$SRCDIR/test/2048.sym"
+SYMOUT="$BUILDDIR/test/2048.asm.sym.out"
 
-"$BUILDDIR/lc3as" "$ASM" -o "$OBJ.out" -S "$SYM.out"
-diff "$OBJ" "$OBJ.out" && diff "$SYM" "$SYM.out"
+"$BUILDDIR/lc3as" "$ASM" -o "$OBJOUT" -S "$SYMOUT"
+diff "$OBJ" "$OBJOUT" && diff "$SYM" "$SYMOUT"

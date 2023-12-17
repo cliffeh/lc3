@@ -9,4 +9,4 @@ BUILDDIR=${BUILDDIR:-$DIR/..}
 CMDS="asm $SRCDIR/test/hello.asm\nrun"
 
 # TODO this is admittedly a bit fragile
-echo -e "$CMDS" | "$BUILDDIR/lc3vm" -i | tail -3 | diff "$SRCDIR/test/hello.interactive.out" -
+echo -e "$CMDS" | "$BUILDDIR/lc3vm" -i | tail -3 | diff "$SRCDIR/test/hello.interactive.expect" -
