@@ -76,13 +76,9 @@ preamble:
 ;
 
 instruction_list:
-  instruction_or_label
-| instruction_or_label instruction_list
-;
-
-instruction_or_label:
-instruction
-| LABEL[sym] instruction
+  instruction
+| instruction instruction_list
+| LABEL[sym]  instruction_list
 {
   for(int i = prog->orig; i < ADDR(prog); i++)
     {
