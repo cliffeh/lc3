@@ -1,5 +1,4 @@
 #include "program.h"
-#include "machine.h"
 #include "parse.h"
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +17,28 @@ assemble_program (program *prog, FILE *in)
   yylex_destroy (scanner);
 
   return rc;
+}
+
+int load_program(program *prog, FILE *in)
+{
+   /* the origin tells us where in memory to place the image */
+  size_t read = fread (&prog->orig, sizeof (prog->orig), 1, in);
+  prog->orig = SWAP16 (prog->orig);
+
+  /* we know the maximum file size so we only need one fread */
+  uint16_t *p = prog->mem + prog->orig;
+  read = fread (p, sizeof (uint16_t), (MEMORY_MAX - prog->orig), in);
+  prog->len = read;
+
+  /* swap to little endian */
+  while (read-- > 0)
+    {
+      *p = SWAP16 (*p);
+      ++p;
+    }
+
+  // TODO check for read errors?
+  return 0;
 }
 
 // int

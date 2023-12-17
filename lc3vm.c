@@ -10,7 +10,6 @@
 
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
-#include "machine.h"
 #include "parse.h"
 #include "popt/popt.h"
 #include "program.h"

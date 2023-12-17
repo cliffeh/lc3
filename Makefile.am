@@ -2,16 +2,12 @@ bin_PROGRAMS = lc3as lc3vm lc3diff
 
 lc3as_SOURCES =   \
     lc3as.c       \
-    machine.c     \
-    machine.h     \
     parse.h       \
     parse.y       \
     print.c       \
     program.c     \
     program.h     \
     scan.l        \
-    util.c        \
-    util.h        \
     popt/popt.h
 lc3as_LDADD = popt/libpopt.a
 
@@ -19,15 +15,11 @@ lc3vm_SOURCES =   \
     lc3vm.c       \
     execute.c     \
     interactive.c \
-    machine.c     \
-    machine.h     \
     parse.h       \
     parse.y       \
     program.c     \
     program.h     \
     scan.l        \
-    util.c        \
-    util.h        \
     popt/popt.h
 lc3vm_LDADD = popt/libpopt.a
 
