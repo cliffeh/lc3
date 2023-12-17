@@ -1,4 +1,4 @@
-#include "machine.h"
+#include "program.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -63,11 +63,11 @@ mem_read (uint16_t memory[], uint16_t address)
 }
 
 int
-execute_machine (machine *vm)
+execute_program (program *prog)
 {
   // for convenience (may refactor later)
-  uint16_t *memory = vm->memory;
-  uint16_t *reg = vm->reg;
+  uint16_t *memory = prog->mem;
+  uint16_t *reg = prog->reg;
 
   /* since exactly one condition flag should be set at any given time, set the
    * Z flag */

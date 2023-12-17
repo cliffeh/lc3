@@ -109,6 +109,7 @@ symbol *find_symbol_by_label (program *prog, const char *label);
 int disassemble_addr (char *dest, int flags, uint16_t addr, program *prog);
 int print_program (FILE *out, int flags, program *prog);
 int load_program (program *prog, FILE *in);
+int execute_program (program *prog);
 
 // int disassemble_program (program *prog, FILE *symin, FILE *in);
 
