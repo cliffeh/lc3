@@ -41,14 +41,14 @@
   }
   return(BR);                  }
 [jJ][mM][pP]                   { yylval->num = (OP_JMP << 12);  return(JMP);   }
-[jJ][sS][rR]                   { yylval->num = ((OP_JSR << 12) | (1 << 11));  return(JSR);   }
+[jJ][sS][rR]                   { yylval->num = ((OP_JSR << 12) | (1 << 11));   return(JSR);   }
 [jJ][sS][rR][rR]               { yylval->num = (OP_JSR << 12);  return(JSRR);  }
 [lL][dD]                       { yylval->num = (OP_LD << 12);   return(LD);    }
 [lL][dD][iI]                   { yylval->num = (OP_LDI << 12);  return(LDI);   }
 [lL][dD][rR]                   { yylval->num = (OP_LDR << 12);  return(LDR);   }
 [lL][eE][aA]                   { yylval->num = (OP_LEA << 12);  return(LEA);   }
 [nN][oO][tT]                   { yylval->num = (OP_NOT << 12);  return(NOT);   }
-[rR][eE][tT]                   { yylval->num = ((OP_JMP << 12) | (R_R7 << 6));   return(RET);   }
+[rR][eE][tT]                   { yylval->num = ((OP_JMP << 12) | (R_R7 << 6)); return(RET);   }
 [rR][tT][iI]                   { yylval->num = (OP_RTI << 12);  return(RTI);   }
 [sS][tT]                       { yylval->num = (OP_ST << 12);   return(ST);    }
 [sS][tT][iI]                   { yylval->num = (OP_STI << 12);  return(STI);   }
@@ -56,21 +56,21 @@
 [tT][rR][aA][pP]               { yylval->num = (OP_TRAP << 12); return(TRAP);  }
 
  /* trap routines */
-[gG][eE][tT][cC]               { yylval->num = ((OP_TRAP << 12) | TRAP_GETC); return(GETC);  }
-[oO][uU][tT]                   { yylval->num = ((OP_TRAP << 12) | TRAP_OUT); return(OUT);   }
-[pP][uU][tT][sS]               { yylval->num = ((OP_TRAP << 12) | TRAP_PUTS); return(PUTS);  }
-[iI][nN]                       { yylval->num = ((OP_TRAP << 12) | TRAP_IN); return(IN);    }
+[gG][eE][tT][cC]               { yylval->num = ((OP_TRAP << 12) | TRAP_GETC);  return(GETC);  }
+[oO][uU][tT]                   { yylval->num = ((OP_TRAP << 12) | TRAP_OUT);   return(OUT);   }
+[pP][uU][tT][sS]               { yylval->num = ((OP_TRAP << 12) | TRAP_PUTS);  return(PUTS);  }
+[iI][nN]                       { yylval->num = ((OP_TRAP << 12) | TRAP_IN);    return(IN);    }
 [pP][uU][tT][sS][pP]           { yylval->num = ((OP_TRAP << 12) | TRAP_PUTSP); return(PUTSP); }
-[hH][aA][lL][tT]               { yylval->num = ((OP_TRAP << 12) | TRAP_HALT); return(HALT);  }
+[hH][aA][lL][tT]               { yylval->num = ((OP_TRAP << 12) | TRAP_HALT);  return(HALT);  }
 
  /* registers */
 [rR][0-7]                      { yylval->num = *(yytext+1) - '0'; return(REG); }
 
  /* assembler directives */
-\.[oO][rR][iI][gG]             { return(ORIG); }
-\.[eE][nN][dD]                 { return(END);  }
-\.[fF][iI][lL][lL]             { return(FILL);     }
-\.[sS][tT][rR][iI][nN][gG][zZ] { return(STRINGZ);  }
+\.[oO][rR][iI][gG]             { return(ORIG);    }
+\.[eE][nN][dD]                 { return(END);     }
+\.[fF][iI][lL][lL]             { return(FILL);    }
+\.[sS][tT][rR][iI][nN][gG][zZ] { return(STRINGZ); }
 
  /* literals */
 [xX][0-9a-fA-F]{1,4}           { yylval->num = strtol(yytext+1, 0, 16); return(NUMLIT); }

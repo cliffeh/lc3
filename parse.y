@@ -77,7 +77,7 @@ preamble:
 
 instruction_list:
   instruction
-| instruction instruction_list
+| instruction_list instruction // left recursion
 ;
 
 r3:        ADD | AND; // 3 registers
