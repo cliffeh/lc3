@@ -3,17 +3,20 @@
 
 #include <ctype.h> // isprint()
 
-#define CMD_UNK 0
-#define CMD_ASM 1
-#define CMD_LOAD 2
-#define CMD_RUN 3
-#define CMD_HELP 4
-#define CMD_EXIT 99
+enum
+{
+  CMD_UNK = 0,
+  CMD_ASM,  /* assemble and load */
+  CMD_LOAD, /* load object files */
+  CMD_RUN,  /* execute what's loaded */
+  CMD_HELP, /* display help */
+  CMD_EXIT  /* exit */
+};
 
 typedef struct command
 {
   int code;
-  char *name, *args, *desc, *aliases[8]; // surely 8 is enough for anyone?
+  char *name, *args, *desc, *aliases[4]; // surely 4 is enough for anyone?
 } command;
 
 static command command_table[]

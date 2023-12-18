@@ -1,3 +1,15 @@
+#define PROGRAM_NAME "lc3diff"
+#define PROGRAM_DESCRIPTION "an LC-3 object code diff tool"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#define HELP_POSTAMBLE "Report bugs to <" PACKAGE_BUGREPORT ">."
+#else
+#define PACKAGE_VERSION "unknown"
+#endif
+
+#define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
+
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
