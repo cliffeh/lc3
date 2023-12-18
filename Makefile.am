@@ -54,9 +54,9 @@ check_SCRIPTS = \
     test/rogue.pretty.test
 
 MEMCHECKS = \
-    test/valgrind-interactive.sh \
-    test/valgrind-lc3as-2048.sh  \
-    test/valgrind-lc3vm-hello.sh
+    test/valgrind-interactive.test \
+    test/valgrind-lc3as-2048.test  \
+    test/valgrind-lc3vm-hello.test
 
 # uncomment to run memory leak checks (SLOW)
 # check_SCRIPTS += $(MEMCHECKS)
