@@ -1,5 +1,5 @@
-#include "machine.h"
 #include "parse.h"
+#include "program.h"
 
 #include <ctype.h> // isprint()
 
@@ -80,7 +80,7 @@ parse_command (const char *s)
 }
 
 static int
-process_command (machine *vm, const char *cmd, char *args)
+process_command (program *prog, const char *cmd, char *args)
 {
   int error_count = 0;
   switch (parse_command (cmd))
@@ -98,9 +98,6 @@ process_command (machine *vm, const char *cmd, char *args)
         for (char *arg = args; arg; arg = strtok (0, " ")) // danger!
           {
             printf ("assembling %s...", arg);
-
-            program prog
-                = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
             FILE *in = fopen (arg, "r");
 
             if (!in)
@@ -108,25 +105,15 @@ process_command (machine *vm, const char *cmd, char *args)
                 printf ("failed to open: %s\n", arg);
                 error_count++;
               }
-            else if (assemble_program (&prog, in) != 0)
+            else if (assemble_program (prog, in) != 0)
               {
-
                 printf ("failed to assemble: %s\n", arg);
                 error_count++;
               }
             else
-              {
-                uint16_t orig = prog.orig;
-                for (instruction *inst = prog.instructions; inst;
-                     inst = inst->next)
-                  vm->memory[orig++] = inst->word;
-
-                printf ("successfully loaded\n");
-              }
+              printf ("successfully loaded\n");
 
             fclose (in);
-            free_instructions (prog.instructions);
-            free_symbols (prog.symbols);
           }
       }
       break;
@@ -143,21 +130,19 @@ process_command (machine *vm, const char *cmd, char *args)
                 printf ("failed to open: %s\n", arg);
                 error_count++;
               }
-            else if (load_image (vm->memory, in) != 0)
+            else if (load_program (prog, in) != 0)
               {
                 printf ("failed to load image: %s\n", arg);
                 error_count++;
               }
             else
-              {
-                printf ("successfully loaded\n");
-              }
+              printf ("successfully loaded\n");
           }
       }
       break;
 
     case CMD_RUN:
-      if (execute_machine (vm) != 0)
+      if (execute_program (prog) != 0)
         error_count++;
       break;
 
@@ -196,7 +181,7 @@ extend_cursor (char *cursor, int n)
 #define INPUT_BUFFER_SIZE 4096
 
 int
-handle_interactive (machine *vm)
+handle_interactive (program *prog)
 {
   char buf[INPUT_BUFFER_SIZE] = "", cpbuf[INPUT_BUFFER_SIZE] = "", c,
        *cursor = buf;
@@ -354,7 +339,7 @@ handle_interactive (machine *vm)
                 char *args = strtok (0, " ");
 
                 if (cmd)
-                  rc = process_command (vm, cmd, args);
+                  rc = process_command (prog, cmd, args);
 
                 if (rc == -1) // exit
                   running = 0;

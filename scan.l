@@ -20,20 +20,6 @@
     yylloc->last_column = yyleng;             \
   }
 
-#define NEW_INST(yylval, op)                       \
-  do {                                             \
-    yylval->inst = calloc(1, sizeof(instruction)); \
-    yylval->inst->word = (op << 12);               \
-    yylval->inst->addr = prog->orig + prog->len++; \
-    yylval->inst->last = yylval->inst;             \
-  } while (0)
-
-#define NEW_DIRECTIVE(yylval, _hint) \
-  do {                               \
-    NEW_INST(yylval, 0);             \
-    yylval->inst->hint = _hint;      \
-  } while (0)
-
 %}
 
 %option noyywrap nounput noinput
@@ -42,40 +28,40 @@
 %x STRING
 %%
  /* op codes */
-[aA][dD][dD]                   { NEW_INST(yylval, OP_ADD); return(ADD);    }
-[aA][nN][dD]                   { NEW_INST(yylval, OP_AND); return(AND);    }
+[aA][dD][dD]                   { yylval->num = (OP_ADD << 12); return(ADD);    }
+[aA][nN][dD]                   { yylval->num = (OP_AND << 12); return(AND);    }
 [bB][rR][nN]?[zZ]?[pP]?        { 
-  NEW_INST(yylval, OP_BR);
+  yylval->num = (OP_BR << 12);
   for(char *p = yytext+2; *p; p++) {
     switch(*p) {
-      case 'n': case 'N': yylval->inst->word |= (1 << 11); break;
-      case 'z': case 'Z': yylval->inst->word |= (1 << 10); break;
-      case 'p': case 'P': yylval->inst->word |= (1 << 9);  break;
+      case 'n': case 'N': yylval->num |= (1 << 11); break;
+      case 'z': case 'Z': yylval->num |= (1 << 10); break;
+      case 'p': case 'P': yylval->num |= (1 << 9);  break;
     }
   }
   return(BR);                  }
-[jJ][mM][pP]                   { NEW_INST(yylval, OP_JMP);  return(JMP);   }
-[jJ][sS][rR]                   { NEW_INST(yylval, OP_JSR);  return(JSR);   }
-[jJ][sS][rR][rR]               { NEW_INST(yylval, OP_JSR);  return(JSRR);  }
-[lL][dD]                       { NEW_INST(yylval, OP_LD);   return(LD);    }
-[lL][dD][iI]                   { NEW_INST(yylval, OP_LDI);  return(LDI);   }
-[lL][dD][rR]                   { NEW_INST(yylval, OP_LDR);  return(LDR);   }
-[lL][eE][aA]                   { NEW_INST(yylval, OP_LEA);  return(LEA);   }
-[nN][oO][tT]                   { NEW_INST(yylval, OP_NOT);  return(NOT);   }
-[rR][eE][tT]                   { NEW_INST(yylval, OP_JMP);  return(RET);   }
-[rR][tT][iI]                   { NEW_INST(yylval, OP_RTI);  return(RTI);   }
-[sS][tT]                       { NEW_INST(yylval, OP_ST);   return(ST);    }
-[sS][tT][iI]                   { NEW_INST(yylval, OP_STI);  return(STI);   }
-[sS][tT][rR]                   { NEW_INST(yylval, OP_STR);  return(STR);   }
-[tT][rR][aA][pP]               { NEW_INST(yylval, OP_TRAP); return(TRAP);  }
+[jJ][mM][pP]                   { yylval->num = (OP_JMP << 12);  return(JMP);   }
+[jJ][sS][rR]                   { yylval->num = ((OP_JSR << 12) | (1 << 11));  return(JSR);   }
+[jJ][sS][rR][rR]               { yylval->num = (OP_JSR << 12);  return(JSRR);  }
+[lL][dD]                       { yylval->num = (OP_LD << 12);   return(LD);    }
+[lL][dD][iI]                   { yylval->num = (OP_LDI << 12);  return(LDI);   }
+[lL][dD][rR]                   { yylval->num = (OP_LDR << 12);  return(LDR);   }
+[lL][eE][aA]                   { yylval->num = (OP_LEA << 12);  return(LEA);   }
+[nN][oO][tT]                   { yylval->num = (OP_NOT << 12);  return(NOT);   }
+[rR][eE][tT]                   { yylval->num = ((OP_JMP << 12) | (R_R7 << 6));   return(RET);   }
+[rR][tT][iI]                   { yylval->num = (OP_RTI << 12);  return(RTI);   }
+[sS][tT]                       { yylval->num = (OP_ST << 12);   return(ST);    }
+[sS][tT][iI]                   { yylval->num = (OP_STI << 12);  return(STI);   }
+[sS][tT][rR]                   { yylval->num = (OP_STR << 12);  return(STR);   }
+[tT][rR][aA][pP]               { yylval->num = (OP_TRAP << 12); return(TRAP);  }
 
  /* trap routines */
-[gG][eE][tT][cC]               { NEW_INST(yylval, OP_TRAP); return(GETC);  }
-[oO][uU][tT]                   { NEW_INST(yylval, OP_TRAP); return(OUT);   }
-[pP][uU][tT][sS]               { NEW_INST(yylval, OP_TRAP); return(PUTS);  }
-[iI][nN]                       { NEW_INST(yylval, OP_TRAP); return(IN);    }
-[pP][uU][tT][sS][pP]           { NEW_INST(yylval, OP_TRAP); return(PUTSP); }
-[hH][aA][lL][tT]               { NEW_INST(yylval, OP_TRAP); return(HALT);  }
+[gG][eE][tT][cC]               { yylval->num = ((OP_TRAP << 12) | TRAP_GETC); return(GETC);  }
+[oO][uU][tT]                   { yylval->num = ((OP_TRAP << 12) | TRAP_OUT); return(OUT);   }
+[pP][uU][tT][sS]               { yylval->num = ((OP_TRAP << 12) | TRAP_PUTS); return(PUTS);  }
+[iI][nN]                       { yylval->num = ((OP_TRAP << 12) | TRAP_IN); return(IN);    }
+[pP][uU][tT][sS][pP]           { yylval->num = ((OP_TRAP << 12) | TRAP_PUTSP); return(PUTSP); }
+[hH][aA][lL][tT]               { yylval->num = ((OP_TRAP << 12) | TRAP_HALT); return(HALT);  }
 
  /* registers */
 [rR][0-7]                      { yylval->num = *(yytext+1) - '0'; return(REG); }
@@ -83,8 +69,8 @@
  /* assembler directives */
 \.[oO][rR][iI][gG]             { return(ORIG); }
 \.[eE][nN][dD]                 { return(END);  }
-\.[fF][iI][lL][lL]             { NEW_DIRECTIVE(yylval, HINT_FILL);    return(FILL);     }
-\.[sS][tT][rR][iI][nN][gG][zZ] { NEW_DIRECTIVE(yylval, HINT_STRINGZ); return(STRINGZ);  }
+\.[fF][iI][lL][lL]             { return(FILL);     }
+\.[sS][tT][rR][iI][nN][gG][zZ] { return(STRINGZ);  }
 
  /* literals */
 [xX][0-9a-fA-F]{1,4}           { yylval->num = strtol(yytext+1, 0, 16); return(NUMLIT); }
@@ -99,7 +85,12 @@
 }
 
  /* labels */
-[_a-zA-Z][_\-a-zA-Z0-9]*       { yylval->sym = find_or_create_symbol(prog, yytext); return(LABEL); }
+[a-zA-Z][_\-a-zA-Z0-9]*        { // NB labels cannot start with a _
+  yylval->sym = calloc(1, sizeof(symbol));
+  yylval->sym->label = strdup(yytext);
+  // hack: capture the current address at the time the label is lexed
+  yylval->sym->flags = prog->orig + prog->len;
+  return(LABEL);               }
 
  /* stuff to ignore */
 \n      { yylineno++; } // ignore newlines, but count them

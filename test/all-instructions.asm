@@ -29,7 +29,7 @@ THERE
   ST R5, HERE
   STI R5, THERE
   STR R4, R2, #5
-_test_longer_label_
+test_longer_label_
   .FILL x5
   TRAP x27
   GETC

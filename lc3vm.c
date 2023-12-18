@@ -10,7 +10,6 @@
 
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
-#include "machine.h"
 #include "parse.h"
 #include "popt/popt.h"
 #include "program.h"
@@ -66,7 +65,7 @@ handle_interrupt (int signal)
   while (0)
 
 // TODO put this in a header somewhere?
-int handle_interactive (machine *vm);
+int handle_interactive (program *prog);
 
 int
 main (int argc, const char *argv[])
@@ -122,8 +121,8 @@ main (int argc, const char *argv[])
                 poptStrerror (rc));
     }
 
-  machine vm;
-  memset (&vm, 0, sizeof (machine));
+  program prog;
+  memset (&prog, 0, sizeof (program));
 
   int programs_loaded = 0;
   for (const char *infile = poptGetArg (optCon); infile;
@@ -140,7 +139,7 @@ main (int argc, const char *argv[])
           exit (1);
         }
 
-      if (load_image (vm.memory, in) != 0)
+      if (load_program (&prog, in) != 0)
         {
           fprintf (stderr, "failed to load image: %s\n", infile);
           exit (1);
@@ -158,13 +157,15 @@ main (int argc, const char *argv[])
   disable_input_buffering ();
   if (!interactive)
     {
-      rc = execute_machine (&vm);
+      rc = execute_program (&prog);
     }
   else
     {
-      rc = handle_interactive (&vm);
+      rc = handle_interactive (&prog);
     }
   restore_input_buffering ();
+
+  free_symbols (&prog);
 
   exit (rc);
 }

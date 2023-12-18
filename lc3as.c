@@ -238,7 +238,8 @@ main (int argc, const char *argv[])
   if (!out)
     out = stdout;
 
-  program prog = { .orig = 0, .len = 0, .instructions = 0, .symbols = 0 };
+  program prog;
+  memset (&prog, 0, sizeof (program));
 
   // TODO implement!
   if (disassemble)
@@ -256,10 +257,7 @@ main (int argc, const char *argv[])
       rc = print_program (out, flags, &prog);
 
       if (symfp)
-        {
-          sort_symbols_by_addr (&prog);
-          dump_symbols (symfp, prog.symbols);
-        }
+        dump_symbols (symfp, flags, &prog);
     }
 
 cleanup:
@@ -267,50 +265,7 @@ cleanup:
   fclose (out);
   if (symfp)
     fclose (symfp);
-  free_instructions (prog.instructions);
-  free_symbols (prog.symbols);
+  free_symbols (&prog);
 
   exit (rc);
-}
-
-static int
-compare_symbol_addrs (const void *sym1, const void *sym2)
-{
-  int addr1 = (*(symbol **)sym1)->addr;
-  int addr2 = (*(symbol **)sym2)->addr;
-
-  return addr1 - addr2;
-}
-
-// TODO put this elsewhere... (program.c)
-void // TODO there is probably a cleaner way to do this
-sort_symbols_by_addr (program *prog)
-{
-  if (!prog->symbols || !prog->symbols->next)
-    return;
-
-  // figure out how many symbols we have
-  int len = 0;
-  for (symbol *sym = prog->symbols; sym; sym = sym->next)
-    len++;
-
-  // ...pack them all into an array so we can sort it using qsort()
-  symbol **symbols = malloc (len * sizeof (symbol *) + sizeof (symbol **));
-  len = 0;
-  for (symbol *sym = prog->symbols; sym; sym = sym->next)
-    symbols[len++] = sym;
-
-  // ...sort it
-  qsort (symbols, len, sizeof (symbol *), compare_symbol_addrs);
-
-  // ...and then pack them all back into a linked list
-  symbol *sym = prog->symbols = symbols[0];
-  for (int i = 1; i < len; i++)
-    {
-      sym->next = symbols[i];
-      sym = sym->next;
-    }
-  sym->next = 0;
-
-  free (symbols);
 }

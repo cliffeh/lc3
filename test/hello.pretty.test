@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euxo pipefail
+
+# TODO maybe do this with hexdump to give some more information about what went sideways
+# which hexdump >& /dev/null || { echo "can't find hexdump; skipping test..."; exit 77; }
+
+# if unset we'll expect our input to reside in the directory alongside our script
+DIR=$(dirname "$0")
+SRCDIR=${SRCDIR:-$DIR/..}
+BUILDDIR=${BUILDDIR:-$DIR/..}
+
+ASM="$SRCDIR/test/hello.asm"
+OBJ="$SRCDIR/test/hello.obj"
+# SYM="$SRCDIR/test/2048.sym"
+
+"$BUILDDIR/lc3as" -Fpretty "$ASM" -o- | "$BUILDDIR/lc3as" | diff "$OBJ" -

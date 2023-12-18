@@ -6,4 +6,7 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-"$BUILDDIR/lc3as" -Fpretty "$SRCDIR/test/all-instructions.asm" -o- | diff "$SRCDIR/test/all-instructions.asm" -
+CMDS="asm $SRCDIR/test/hello.asm\nrun"
+
+# TODO this is admittedly a bit fragile
+echo -e "$CMDS" | "$BUILDDIR/lc3vm" -i | tail -3 | diff "$SRCDIR/test/hello.interactive.expect" -

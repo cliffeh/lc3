@@ -62,7 +62,6 @@ Makefile
 /parse.c
 /parse.h
 /scan.c
-/scan.h
 
 # generated object files
 *.o
@@ -75,10 +74,8 @@ lc3vm
 # generated dist files
 lc3-*.tar.gz
 
-# testing logs
+# testing & logs
 *.log
+*.out
 *.trs
 *.valgrind
-
-# test binaries
-test/unescape_string
