@@ -46,20 +46,27 @@ Usage: lc3as [FILE]
 
 If FILE is not provided this program will read from stdin.
 
-Supported output formats:
-
-  a[ddress], b[its], d[ebug], h[ex], o[bject], p[retty]
-
-Note: -Fdebug is shorthand for -Fa -Fh -Fp
-
 Options:
+  -D, --disassemble       disassemble object code to assembly (implies -Fp)
   -F, --format=FORMAT     output format (default: "object")
+  -S, --symbols=FILE      also read/write symbols to/from FILE
   -o, --output=FILE       write output to FILE (default: "-")
       --version           show version information and exit
 
 Help options:
   -?, --help              Show this help message
       --usage             Display brief usage message
+
+Supported output formats:
+
+  o[bject]   output assembled object code (default)
+  a[ddress]  print the address of each instruction
+  b[its]     print a binary representation
+  h[ex]      print a hexadecimal representation
+  p[retty]   pretty-print the assembly code itself
+  l[ower]    print everything in lowercase
+  u[pper]    print everything in uppercase (default)
+  d[ebug]    shorthand for -Fa -Fh -Fp
 
 Report bugs to <cliff.snyder@gmail.com>.
 ```
@@ -80,23 +87,42 @@ Help options:
 Report bugs to <cliff.snyder@gmail.com>.
 ```
 
-### lc3diff
-
-```usage: ./lc3diff file1 file2```
-
 ### lc3vm (interactive mode):
 ```
-assemble  [file...] assemble and load one or more assembly files
-load      [file...] load one or more object files
-run                 run the currently-loaded program
-help                display this help message
-exit                exit the program
+Command             Arguments   Description
+asm , a             file        assemble and load one or more assembly files
+load, l             file        load one or more object files
+run , r                         run the currently-loaded program
+help, h, ?                      display this help message
+exit, quit, q, x                exit the program
+```
+
+### lc3diff
+
+```
+Usage: lc3diff FILE1 FILE2
+
+Either FILE1 or FILE2 may be specified as - for stdin.
+
+Options:
+  -c, --colorize            colorize output
+  -m, --marker[=STRING]     set diff marker to STRING (default: "*")
+  -o, --output=FILE         write output to FILE (default: "-")
+  -q, --quiet               only output differences
+  -s, --summary             output a summary of the differences at the end
+      --version             show version information and exit
+
+Help options:
+  -?, --help                Show this help message
+      --usage               Display brief usage message
+
+Report bugs to <cliff.snyder@gmail.com>.
 ```
 
 ## [TODOs](TODO.md)
 At time of writing, the `lc3as` assembler generates LC-3 object code that is executable using both `lc3vm` as well as the reference simulator found [here](https://highered.mheducation.com/sites/0072467509/student_view0/lc-3_simulator.html). `lc3vm` appears to be working correctly (on Linux) - I've played through several games of [2048](https://github.com/rpendleton/lc3-2048) - and features an interactive mode for assembling, loading, and running programs. I don't think there's much left to do in the assembler, but I'd like to continue to flesh out the interactive mode of the virtual machine. I _think_ getting it to run on Windows should be a relatively straightforward matter of swapping around some of the platform-specific bits w/rt terminal I/O using the code [here](https://www.jmeiners.com/lc3-vm/src/lc3-win.c) as a guide, but I haven't gotten around to it just yet.
 
-There is also a binary diff tool `lc3diff` that I wrote mostly because I couldn't figure out what flags I wanted/needed in any of the available hex dump tools (hexdump/od/xxd). It's functional, but pretty barebones and could use a little love.
+There is also a binary diff tool `lc3diff` that I wrote mostly because I couldn't figure out what flags I wanted/needed in any of the available hex dump tools (hexdump/od/xxd). It works pretty okay - it could be "smarter", but it's functional.
 
 ...and, of course, there could always be more tests. I have a handful of tests I've built up as I've implemented this, but they're incomplete, don't check edge cases/failure modes, etc.
 

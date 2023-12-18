@@ -10,90 +10,277 @@
 
 #define VERSION_STRING PROGRAM_NAME " " PACKAGE_VERSION
 
+#include "popt/popt.h"
+#include "program.h"
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define COLOR_RED "\x1B[31m"
-#define COLOR_GRN "\x1B[32m"
-#define COLOR_RST "\x1B[0m"
+#define HELP_PREAMBLE "Either FILE1 or FILE2 may be specified as - for stdin."
 
-// diff 2 lc3 object files
+#define COLOR_RED "\e[31m"
+#define COLOR_GRN "\e[32m"
+#define COLOR_RST "\e[0m"
+#define COLOR_NON ""
+
+#define ERR_EXIT(args...)                                                     \
+  do                                                                          \
+    {                                                                         \
+      fprintf (stderr, "error: ");                                            \
+      fprintf (stderr, args);                                                 \
+      fprintf (stderr, "\n");                                                 \
+      poptPrintHelp (optCon, stderr, 0);                                      \
+      poptFreeContext (optCon);                                               \
+      exit (1);                                                               \
+    }                                                                         \
+  while (0)
+
+// TODO there are more efficient ways to do this...
+#define PPRINT(out, color, marker, fmt, args...)                              \
+  do                                                                          \
+    {                                                                         \
+      if (color)                                                              \
+        fprintf (out, "%s", color);                                           \
+                                                                              \
+      fprintf (out, fmt, args);                                               \
+                                                                              \
+      if (color)                                                              \
+        fprintf (out, COLOR_RST);                                             \
+                                                                              \
+      if (marker)                                                             \
+        fprintf (out, " %s", marker);                                         \
+                                                                              \
+      fprintf (out, "\n");                                                    \
+    }                                                                         \
+  while (0)
+
+#define DEFAULT_DIFF_MARKER "*"
 
 int
-main (int argc, char *argv[])
+main (int argc, const char *argv[])
 {
-  FILE *f1, *f2;
-  uint16_t lineno = 0, r1, r2;
-  int diff_count = 0, rc;
+  poptContext optCon;
+  char *outfile = "-", *color_match = 0, *color_diff = 0,
+       *marker_diff = DEFAULT_DIFF_MARKER, *marker_match = 0;
+  int summary = 0, quiet = 0;
+  FILE *out = 0;
 
-  if (argc != 3)
+  // hack for injecting preamble/postamble into the help message
+  struct poptOption emptyTable[] = { POPT_TABLEEND };
+
+  struct poptOption progOptions[] = {
+    /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+    { "colorize", 'c', POPT_ARG_NONE, 0, 'c', "colorize output", 0 },
+    { "marker", 'm',
+      POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARGFLAG_OPTIONAL,
+      &marker_diff, 'm', "set diff marker to STRING", "STRING" },
+    { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &outfile,
+      'o', "write output to FILE", "FILE" },
+    { "quiet", 'q', POPT_ARG_NONE, &quiet, 's', "only output differences", 0 },
+    { "summary", 's', POPT_ARG_NONE, &summary, 's',
+      "output a summary of the differences at the end", 0 },
+    { "version", '\0', POPT_ARG_NONE, 0, 'V',
+      "show version information and exit", 0 },
+    POPT_TABLEEND
+  };
+
+  struct poptOption options[] = {
+#ifdef HELP_PREAMBLE
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_PREAMBLE, 0 },
+#endif
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &progOptions, 0, "Options:", 0 },
+    POPT_AUTOHELP
+#ifdef HELP_POSTAMBLE
+    { 0, '\0', POPT_ARG_INCLUDE_TABLE, &emptyTable, 0, HELP_POSTAMBLE, 0 },
+#endif
+    POPT_TABLEEND
+  };
+
+  optCon = poptGetContext (0, argc, argv, options, 0);
+  poptSetOtherOptionHelp (optCon, "FILE1 FILE2");
+
+  int rc;
+  while ((rc = poptGetNextOpt (optCon)) > 0)
     {
-      fprintf (stderr, "usage: %s file1 file2\n", argv[0]);
-      exit (1);
-    }
-
-  if (!(f1 = fopen (argv[1], "r")))
-    {
-      fprintf (stderr, "error opening %s: %s\n", argv[1], strerror (errno));
-      exit (1);
-    }
-
-  if (strcmp (argv[2], "-") == 0)
-    {
-      f2 = stdin;
-    }
-  else if (!(f2 = fopen (argv[2], "r")))
-    {
-      fprintf (stderr, "error opening %s: %s\n", argv[2], strerror (errno));
-      exit (1);
-    }
-
-  // TODO use load_program() instead!
-  // TODO also load symbols
-
-  while (!feof (f1) && !feof (f2))
-    {
-      // TODO check for rc == 1
-      rc = fread (&r1, sizeof (uint16_t), 1, f1);
-      rc = fread (&r2, sizeof (uint16_t), 1, f2);
-
-      if (r1 == r2)
+      switch (rc)
         {
-          printf (COLOR_GRN "%04x %04x %04x" COLOR_RST "\n", 0x3000 + lineno++ - 1,
-                  r1, r2);
+        case 'c':
+          {
+            color_match = COLOR_GRN;
+            color_diff = COLOR_RED;
+          }
+          break;
+
+        case 'o':
+          {
+            if (out)
+              {
+                ERR_EXIT ("more than one output file specified");
+              }
+            else if (strcmp (outfile, "-") == 0)
+              {
+                out = stdout;
+              }
+            else
+              {
+                if (!(out = fopen (outfile, "w")))
+                  {
+                    ERR_EXIT ("couldn't open output file '%s': %s", outfile,
+                              strerror (errno));
+                  }
+              }
+            free (outfile);
+          }
+          break;
+
+        case 'V':
+          {
+            printf (VERSION_STRING);
+            poptFreeContext (optCon);
+            exit (0);
+          }
+          break;
         }
-      else
+    }
+
+  if (rc != -1)
+    {
+      ERR_EXIT ("%s: %s\n", poptBadOption (optCon, POPT_BADOPTION_NOALIAS),
+                poptStrerror (rc));
+    }
+
+  FILE *in1, *in2;
+  const char *infile1, *infile2;
+
+  if (!(infile1 = poptGetArg (optCon)))
+    {
+      ERR_EXIT ("two arguments required");
+    }
+  else if (strcmp (infile1, "-") == 0)
+    {
+      in1 = stdin;
+    }
+  else if (!(in1 = fopen (infile1, "r")))
+    {
+      ERR_EXIT ("couldn't open input file '%s': %s", infile1,
+                strerror (errno));
+    }
+
+  if (!(infile2 = poptGetArg (optCon)))
+    {
+      ERR_EXIT ("two arguments required");
+    }
+  else if (strcmp (infile2, "-") == 0)
+    {
+      in2 = stdin;
+    }
+  else if (!(in2 = fopen (infile2, "r")))
+    {
+      ERR_EXIT ("couldn't open input file '%s': %s", infile2,
+                strerror (errno));
+    }
+
+  if (in1 == stdin && in2 == stdin)
+    ERR_EXIT ("can't compare stdin against itself");
+
+  if (poptGetArg (optCon))
+    {
+      ERR_EXIT ("unexpected extra argument");
+    }
+
+  if (!out)
+    out = stdout;
+
+  program prog1, prog2;
+
+  // TODO also load symbols
+  if (load_program (&prog1, in1) != 0)
+    ERR_EXIT ("unable to load program from %s", infile1);
+  if (load_program (&prog2, in2) != 0)
+    ERR_EXIT ("unable to load program from %s", infile2);
+
+  fclose (in1);
+  fclose (in2);
+
+  uint16_t pos1 = prog1.orig, pos2 = prog2.orig, v1 = SWAP16 (pos1),
+           v2 = SWAP16 (pos2), diff_count = 0;
+  if (prog1.orig != prog2.orig)
+    {
+      fprintf (stderr,
+               "warning: programs have different origins: %04x, %04x\n",
+               prog1.orig, prog2.orig);
+      PPRINT (out, color_diff, marker_diff, "orig %04x %04x", v1, v2);
+      diff_count++;
+    }
+  else if(!quiet)
+    {
+        PPRINT (out, color_match, marker_match, "orig %04x %04x", v1, v2);
+    }
+
+  // prog1 has lower origin
+  while (pos1 < pos2 && pos1 < prog1.orig + prog1.len)
+    {
+      v1 = SWAP16 (prog1.mem[pos1]);
+      PPRINT (out, color_diff, marker_diff, "%04x %04x     ", pos1, v1);
+      pos1++;
+      diff_count++;
+    }
+
+  // prog2 has lower origin
+  while (pos2 < pos1 && pos2 < prog2.orig + prog2.len)
+    {
+      v2 = SWAP16 (prog2.mem[pos2]);
+      PPRINT (out, color_diff, marker_diff, "%04x      %04x", pos2, v2);
+      pos2++;
+      diff_count++;
+    }
+
+  // pos1 == pos2
+  while (pos1 < prog1.orig + prog1.len && pos2 < prog2.orig + prog2.len)
+    {
+      v1 = SWAP16 (prog1.mem[pos1]);
+      v2 = SWAP16 (prog2.mem[pos2]);
+      if (v1 != v2)
         {
-          printf (COLOR_RED "%04x %04x %04x" COLOR_RST "\n", 0x3000 + lineno++ - 1,
-                  r1, r2);
+          PPRINT (out, color_diff, marker_diff, "%04x %04x %04x", pos1, v1,
+                  v2);
           diff_count++;
         }
+      else if(!quiet)
+        {
+          PPRINT (out, color_match, marker_match, "%04x %04x %04x", pos2, v1,
+                  v2);
+        }
+      pos1++;
+      pos2++;
     }
 
-  while (!feof (f1))
+  // prog1 longer than prog2
+  while (pos1 < prog1.orig + prog1.len)
     {
-      rc = fread (&r1, sizeof (uint16_t), 1, f1);
-      printf (COLOR_RED "%04x %04x     " COLOR_RST "\n", 0x3000 + lineno++ - 1,
-              r1);
+      v1 = SWAP16 (prog1.mem[pos1]);
+      PPRINT (out, color_diff, marker_diff, "%04x %04x     ", pos1, v1);
+      pos1++;
       diff_count++;
     }
 
-  while (!feof (f2))
+  // prog2 longer than prog1
+  while (pos2 < prog2.orig + prog2.len)
     {
-      rc = fread (&r2, sizeof (uint16_t), 1, f2);
-      printf (COLOR_RED "%04x      %04x" COLOR_RST "\n", 0x3000 + lineno++ - 1,
-              r2);
+      v2 = SWAP16 (prog2.mem[pos2]);
+      PPRINT (out, color_diff, marker_diff, "%04x      %04x", pos2, v2);
+      pos2++;
       diff_count++;
     }
 
-  if (diff_count)
-    {
-      printf ("%d differences\n", diff_count);
-      exit (1);
-    }
+  if (summary)
+    fprintf (out, "%d differences\n", diff_count);
 
-  exit (0);
+cleanup:
+  poptFreeContext (optCon);
+  fclose (out);
+
+  exit (diff_count ? 1 : 0);
 }
