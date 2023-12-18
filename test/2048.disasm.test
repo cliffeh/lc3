@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-# tests that a pretty-printed representation still assembles to the same object code
+# tests that disassembling the object code with a symbol table results in the same output as pretty-printing
 
 # TODO maybe do this with hexdump to give some more information about what went sideways
 # which hexdump >& /dev/null || { echo "can't find hexdump; skipping test..."; exit 77; }
@@ -11,8 +11,9 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-ASM="$SRCDIR/test/hello.asm"
-OBJ="$SRCDIR/test/hello.obj"
-# SYM="$SRCDIR/test/hello.sym"
+# ASM="$SRCDIR/test/all-instructions.asm"
+OBJ="$SRCDIR/test/2048.obj"
+SYM="$SRCDIR/test/2048.sym"
+EXPECT="$SRCDIR/test/2048.pretty.expect"
 
-"$BUILDDIR/lc3as" -Fpretty "$ASM" -o- | "$BUILDDIR/lc3as" | diff "$OBJ" -
+"$BUILDDIR/lc3as" -D "$OBJ" -S "$SYM" -o- | diff "$EXPECT" -

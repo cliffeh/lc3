@@ -11,8 +11,8 @@ DIR=$(dirname "$0")
 SRCDIR=${SRCDIR:-$DIR/..}
 BUILDDIR=${BUILDDIR:-$DIR/..}
 
-ASM="$SRCDIR/test/all-instructions.asm"
-OBJ="$SRCDIR/test/all-instructions.obj"
+ASM="$SRCDIR/test/gammut.asm"
+OBJ="$SRCDIR/test/gammut.obj"
 # SYM="$SRCDIR/test/2048.sym"
 
 "$BUILDDIR/lc3as" -Fpretty "$ASM" -o- | "$BUILDDIR/lc3as" | diff "$OBJ" -

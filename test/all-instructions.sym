@@ -1,8 +1,0 @@
-x3000 label1 0
-x3001 label2 0
-x3005 TARGET 0
-x300a label3 1
-x3011 HERE 0
-x3022 THERE 0
-x3025 _test_longer_label_ 1
-x302d HELLO 2

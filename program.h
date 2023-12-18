@@ -103,15 +103,23 @@ typedef struct program
   symbol *ref[MEMORY_MAX];
 } program;
 
+/* for assembly */
 int assemble_program (program *prog, FILE *in);
 int resolve_symbols (program *prog);
-int disassemble_addr (char *dest, int flags, uint16_t addr, program *prog);
-int print_program (FILE *out, int flags, program *prog);
-int load_program (program *prog, FILE *in);
-int execute_program (program *prog);
-int disassemble_program (program *prog, FILE *symin, FILE *in);
-int attach_symbols (program *prog);
-int dump_symbols (FILE *out, int flags, program *prog);
-int load_symbols (program *prog, FILE *in);
 
+/* for disassembly */
+int disassemble_program (program *prog, FILE *symin, FILE *in);
+int disassemble_addr (char *dest, int flags, uint16_t addr, program *prog);
+int attach_symbols (program *prog);
+
+/* execution (execute.c) */
+int execute_program (program *prog);
+
+/* input/output */
+int load_program (program *prog, FILE *in);
+int load_symbols (program *prog, FILE *in);
+int print_program (FILE *out, int flags, program *prog);
+int dump_symbols (FILE *out, int flags, program *prog);
+
+/* memory management */
 void free_symbols (program *prog);
