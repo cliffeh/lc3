@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define HELP_PREAMBLE "Either FILE1 or FILE2 may be specified as - for stdin."
+
 #define COLOR_RED "\e[31m"
 #define COLOR_GRN "\e[32m"
 #define COLOR_RST "\e[0m"
@@ -39,12 +41,16 @@ int
 main (int argc, const char *argv[])
 {
   poptContext optCon;
+  char *outfile = "-";
+  FILE *out = 0;
 
   // hack for injecting preamble/postamble into the help message
   struct poptOption emptyTable[] = { POPT_TABLEEND };
 
   struct poptOption progOptions[]
       = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+          { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
+            &outfile, 'o', "write output to FILE", "FILE" },
           { "version", '\0', POPT_ARG_NONE, 0, 'V',
             "show version information and exit", 0 },
           POPT_TABLEEND
@@ -70,6 +76,28 @@ main (int argc, const char *argv[])
     {
       switch (rc)
         {
+        case 'o':
+          {
+            if (out)
+              {
+                ERR_EXIT ("more than one output file specified");
+              }
+            else if (strcmp (outfile, "-") == 0)
+              {
+                out = stdout;
+              }
+            else
+              {
+                if (!(out = fopen (outfile, "w")))
+                  {
+                    ERR_EXIT ("couldn't open output file '%s': %s", outfile,
+                              strerror (errno));
+                  }
+              }
+            free (outfile);
+          }
+          break;
+
         case 'V':
           {
             printf (VERSION_STRING);
@@ -125,47 +153,98 @@ main (int argc, const char *argv[])
       ERR_EXIT ("unexpected extra argument");
     }
 
+  if (!out)
+    out = stdout;
+
   program prog1, prog2;
 
   // TODO also load symbols
   if (load_program (&prog1, in1) != 0)
     ERR_EXIT ("unable to load program from %s", infile1);
-  if (load_program (&prog1, in2) != 0)
-    ERR_EXIT ("unable to load program from %s", infile1);
+  if (load_program (&prog2, in2) != 0)
+    ERR_EXIT ("unable to load program from %s", infile2);
 
-  uint16_t pos1 = prog1.orig, pos2 = prog2.orig, diff_count = 0;
+  fclose (in1);
+  fclose (in2);
+
+  uint16_t pos1 = prog1.orig, pos2 = prog2.orig, v1 = SWAP16 (pos1),
+           v2 = SWAP16 (pos2), diff_count = 0;
   if (prog1.orig != prog2.orig)
     {
       fprintf (stderr,
                "warning: programs have different origins: %04x, %04x\n",
                prog1.orig, prog2.orig);
+      fprintf (out, COLOR_RED "orig %04x %04x\n" COLOR_RST, v1, v2);
       diff_count++;
     }
+  else
+    {
+      fprintf (out, COLOR_GRN "orig %04x %04x\n" COLOR_RST, v1, v2);
+    }
 
+  // prog1 has lower origin
   while (pos1 < pos2 && pos1 < prog1.orig + prog1.len)
     {
-      printf ("%04x %04x     \n", pos1, prog1.mem[pos1++]);
+      v1 = SWAP16 (prog1.mem[pos1]);
+      fprintf (out, COLOR_RED "%04x %04x     \n" COLOR_RST, pos1, v1);
+      pos1++;
       diff_count++;
     }
 
+  // prog2 has lower origin
   while (pos2 < pos1 && pos2 < prog2.orig + prog2.len)
     {
-      printf ("%04x      %04x\n", pos2, prog2.mem[pos2++]);
+      v2 = SWAP16 (prog2.mem[pos2]);
+      fprintf (out, COLOR_RED "%04x      %04x\n" COLOR_RST, pos2, v2);
+      pos2++;
       diff_count++;
     }
 
   // pos1 == pos2
-
   while (pos1 < prog1.orig + prog1.len && pos2 < prog2.orig + prog2.len)
-    { // TODO do the diff
-      // if(prog1.mem[pos1] )
+    {
+      v1 = SWAP16 (prog1.mem[pos1]);
+      v2 = SWAP16 (prog2.mem[pos2]);
+      if (v1 != v2)
+        {
+          fprintf (out, COLOR_RED "%04x %04x %04x\n" COLOR_RST, pos1, v1, v2);
+          diff_count++;
+        }
+      else
+        {
+          fprintf (out, COLOR_GRN "%04x %04x %04x\n" COLOR_RST, pos2, v1, v2);
+        }
+      pos1++;
+      pos2++;
+    }
+
+  // prog1 longer than prog2
+  while (pos1 < prog1.orig + prog1.len)
+    {
+      v1 = SWAP16 (prog1.mem[pos1]);
+      fprintf (out, COLOR_RED "%04x %04x     \n" COLOR_RST, pos1, v1);
+      pos1++;
+      diff_count++;
+    }
+
+  // prog2 longer than prog1
+  while (pos2 < prog2.orig + prog2.len)
+    {
+      v2 = SWAP16 (prog2.mem[pos2]);
+      fprintf (out, COLOR_RED "%04x      %04x\n" COLOR_RST, pos2, v2);
+      pos2++;
+      diff_count++;
     }
 
   if (diff_count)
     {
-      printf ("%d differences\n", diff_count);
+      fprintf (out, "%d differences\n", diff_count);
       exit (1);
     }
+
+cleanup:
+  poptFreeContext (optCon);
+  fclose (out);
 
   exit (0);
 }

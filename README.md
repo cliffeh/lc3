@@ -46,20 +46,27 @@ Usage: lc3as [FILE]
 
 If FILE is not provided this program will read from stdin.
 
-Supported output formats:
-
-  a[ddress], b[its], d[ebug], h[ex], o[bject], p[retty]
-
-Note: -Fdebug is shorthand for -Fa -Fh -Fp
-
 Options:
+  -D, --disassemble       disassemble object code to assembly (implies -Fp)
   -F, --format=FORMAT     output format (default: "object")
+  -S, --symbols=FILE      also read/write symbols to/from FILE
   -o, --output=FILE       write output to FILE (default: "-")
       --version           show version information and exit
 
 Help options:
   -?, --help              Show this help message
       --usage             Display brief usage message
+
+Supported output formats:
+
+  o[bject]   output assembled object code (default)
+  a[ddress]  print the address of each instruction
+  b[its]     print a binary representation
+  h[ex]      print a hexadecimal representation
+  p[retty]   pretty-print the assembly code itself
+  l[ower]    print everything in lowercase
+  u[pper]    print everything in uppercase (default)
+  d[ebug]    shorthand for -Fa -Fh -Fp
 
 Report bugs to <cliff.snyder@gmail.com>.
 ```
@@ -80,17 +87,32 @@ Help options:
 Report bugs to <cliff.snyder@gmail.com>.
 ```
 
-### lc3diff
-
-```usage: ./lc3diff file1 file2```
-
 ### lc3vm (interactive mode):
 ```
-assemble  [file...] assemble and load one or more assembly files
-load      [file...] load one or more object files
-run                 run the currently-loaded program
-help                display this help message
-exit                exit the program
+Command             Arguments   Description
+asm , a             file        assemble and load one or more assembly files
+load, l             file        load one or more object files
+run , r                         run the currently-loaded program
+help, h, ?                      display this help message
+exit, quit, q, x                exit the program
+```
+
+### lc3diff
+
+```
+Usage: lc3diff FILE1 FILE2
+
+Either FILE1 or FILE2 may be specified as - for stdin.
+
+Options:
+  -o, --output=FILE     write output to FILE (default: "-")
+      --version         show version information and exit
+
+Help options:
+  -?, --help            Show this help message
+      --usage           Display brief usage message
+
+Report bugs to <cliff.snyder@gmail.com>.
 ```
 
 ## [TODOs](TODO.md)

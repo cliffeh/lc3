@@ -19,7 +19,7 @@
 * step-wise execution
 
 ## lc3diff
-* make it moar prettier?
 * options
   * turn on/off coloring
 * include prinable chars as a column?
+* include symbol tables?
