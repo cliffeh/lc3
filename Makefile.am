@@ -39,13 +39,14 @@ SUBDIRS = popt
 
 check_SCRIPTS = \
     test/hello.asm.test          \
+    test/hello.disasm.test       \
+    test/hello.interactive.test  \
     test/hello.pretty.test       \
     test/hello.run.test          \
     test/2048.asm.test           \
     test/2048.pretty.test        \
     test/rogue.asm.test          \
     test/rogue.pretty.test       \
-    test/hello.interactive.test  \
     test/all-instructions.pretty.test
 MEMCHECKS = \
     test/valgrind-interactive.sh \
@@ -53,7 +54,7 @@ MEMCHECKS = \
     test/valgrind-lc3vm-hello.sh
 
 # uncomment to run memory leak checks (SLOW)
-check_SCRIPTS += $(MEMCHECKS)
+# check_SCRIPTS += $(MEMCHECKS)
 
 CLEANFILES = test/*.valgrind test/*.out
 
@@ -65,7 +66,7 @@ TEST_INPUTS = \
     test/hello.asm test/hello.obj test/hello.sym \
     test/all-instructions.asm test/all-instructions.obj
 
-TEST_OUTPUTS = test/hello.interactive.expect
+TEST_OUTPUTS = test/hello.pretty.expect test/hello.interactive.expect
 
 dist_doc_DATA = LICENSE README.md TODO.md
 

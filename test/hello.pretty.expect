@@ -1,0 +1,7 @@
+.ORIG x3000
+  LEA R0, msg
+  PUTS
+  HALT
+msg
+  .STRINGZ "hello world!\n"
+.END
