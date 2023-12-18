@@ -37,24 +37,54 @@
     }                                                                         \
   while (0)
 
+// TODO there are more efficient ways to do this...
+#define PPRINT(out, color, marker, fmt, args...)                              \
+  do                                                                          \
+    {                                                                         \
+      if (color)                                                              \
+        fprintf (out, "%s", color);                                           \
+                                                                              \
+      fprintf (out, fmt, args);                                               \
+                                                                              \
+      if (color)                                                              \
+        fprintf (out, COLOR_RST);                                             \
+                                                                              \
+      if (marker)                                                             \
+        fprintf (out, " %s", marker);                                         \
+                                                                              \
+      fprintf (out, "\n");                                                    \
+    }                                                                         \
+  while (0)
+
+#define DEFAULT_DIFF_MARKER "*"
+
 int
 main (int argc, const char *argv[])
 {
   poptContext optCon;
-  char *outfile = "-";
+  char *outfile = "-", *color_match = 0, *color_diff = 0,
+       *marker_diff = DEFAULT_DIFF_MARKER, *marker_match = 0;
+  int summary = 0, quiet = 0;
   FILE *out = 0;
 
   // hack for injecting preamble/postamble into the help message
   struct poptOption emptyTable[] = { POPT_TABLEEND };
 
-  struct poptOption progOptions[]
-      = { /* longName, shortName, argInfo, arg, val, descrip, argDescript */
-          { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
-            &outfile, 'o', "write output to FILE", "FILE" },
-          { "version", '\0', POPT_ARG_NONE, 0, 'V',
-            "show version information and exit", 0 },
-          POPT_TABLEEND
-        };
+  struct poptOption progOptions[] = {
+    /* longName, shortName, argInfo, arg, val, descrip, argDescript */
+    { "colorize", 'c', POPT_ARG_NONE, 0, 'c', "colorize output", 0 },
+    { "marker", 'm',
+      POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARGFLAG_OPTIONAL,
+      &marker_diff, 'm', "set diff marker to STRING", "STRING" },
+    { "output", 'o', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &outfile,
+      'o', "write output to FILE", "FILE" },
+    { "quiet", 'q', POPT_ARG_NONE, &quiet, 's', "only output differences", 0 },
+    { "summary", 's', POPT_ARG_NONE, &summary, 's',
+      "output a summary of the differences at the end", 0 },
+    { "version", '\0', POPT_ARG_NONE, 0, 'V',
+      "show version information and exit", 0 },
+    POPT_TABLEEND
+  };
 
   struct poptOption options[] = {
 #ifdef HELP_PREAMBLE
@@ -76,6 +106,13 @@ main (int argc, const char *argv[])
     {
       switch (rc)
         {
+        case 'c':
+          {
+            color_match = COLOR_GRN;
+            color_diff = COLOR_RED;
+          }
+          break;
+
         case 'o':
           {
             if (out)
@@ -174,19 +211,19 @@ main (int argc, const char *argv[])
       fprintf (stderr,
                "warning: programs have different origins: %04x, %04x\n",
                prog1.orig, prog2.orig);
-      fprintf (out, COLOR_RED "orig %04x %04x\n" COLOR_RST, v1, v2);
+      PPRINT (out, color_diff, marker_diff, "orig %04x %04x", v1, v2);
       diff_count++;
     }
-  else
+  else if(!quiet)
     {
-      fprintf (out, COLOR_GRN "orig %04x %04x\n" COLOR_RST, v1, v2);
+        PPRINT (out, color_match, marker_match, "orig %04x %04x", v1, v2);
     }
 
   // prog1 has lower origin
   while (pos1 < pos2 && pos1 < prog1.orig + prog1.len)
     {
       v1 = SWAP16 (prog1.mem[pos1]);
-      fprintf (out, COLOR_RED "%04x %04x     \n" COLOR_RST, pos1, v1);
+      PPRINT (out, color_diff, marker_diff, "%04x %04x     ", pos1, v1);
       pos1++;
       diff_count++;
     }
@@ -195,7 +232,7 @@ main (int argc, const char *argv[])
   while (pos2 < pos1 && pos2 < prog2.orig + prog2.len)
     {
       v2 = SWAP16 (prog2.mem[pos2]);
-      fprintf (out, COLOR_RED "%04x      %04x\n" COLOR_RST, pos2, v2);
+      PPRINT (out, color_diff, marker_diff, "%04x      %04x", pos2, v2);
       pos2++;
       diff_count++;
     }
@@ -207,12 +244,14 @@ main (int argc, const char *argv[])
       v2 = SWAP16 (prog2.mem[pos2]);
       if (v1 != v2)
         {
-          fprintf (out, COLOR_RED "%04x %04x %04x\n" COLOR_RST, pos1, v1, v2);
+          PPRINT (out, color_diff, marker_diff, "%04x %04x %04x", pos1, v1,
+                  v2);
           diff_count++;
         }
-      else
+      else if(!quiet)
         {
-          fprintf (out, COLOR_GRN "%04x %04x %04x\n" COLOR_RST, pos2, v1, v2);
+          PPRINT (out, color_match, marker_match, "%04x %04x %04x", pos2, v1,
+                  v2);
         }
       pos1++;
       pos2++;
@@ -222,7 +261,7 @@ main (int argc, const char *argv[])
   while (pos1 < prog1.orig + prog1.len)
     {
       v1 = SWAP16 (prog1.mem[pos1]);
-      fprintf (out, COLOR_RED "%04x %04x     \n" COLOR_RST, pos1, v1);
+      PPRINT (out, color_diff, marker_diff, "%04x %04x     ", pos1, v1);
       pos1++;
       diff_count++;
     }
@@ -231,20 +270,17 @@ main (int argc, const char *argv[])
   while (pos2 < prog2.orig + prog2.len)
     {
       v2 = SWAP16 (prog2.mem[pos2]);
-      fprintf (out, COLOR_RED "%04x      %04x\n" COLOR_RST, pos2, v2);
+      PPRINT (out, color_diff, marker_diff, "%04x      %04x", pos2, v2);
       pos2++;
       diff_count++;
     }
 
-  if (diff_count)
-    {
-      fprintf (out, "%d differences\n", diff_count);
-      exit (1);
-    }
+  if (summary)
+    fprintf (out, "%d differences\n", diff_count);
 
 cleanup:
   poptFreeContext (optCon);
   fclose (out);
 
-  exit (0);
+  exit (diff_count ? 1 : 0);
 }

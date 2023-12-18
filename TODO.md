@@ -19,7 +19,6 @@
 * step-wise execution
 
 ## lc3diff
-* options
-  * turn on/off coloring
-* include prinable chars as a column?
 * include symbol tables?
+* allow an arbitrary number of files?
+* allow assembly of one or both files
