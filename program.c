@@ -92,7 +92,7 @@ attach_symbols (program *prog)
         case OP_STI:
           {
             int16_t PCoffset9 = SIGN_EXTEND (prog->mem[iaddr] & 0x1FF, 9);
-            uint16_t saddr = SIGN_EXTEND (PCoffset9 + iaddr + 1, 9);
+            uint16_t saddr = PCoffset9 + iaddr + 1;
             if (prog->sym[saddr] && *prog->sym[saddr]->label != '_')
               {
                 prog->ref[iaddr] = calloc (1, sizeof (symbol));
@@ -227,7 +227,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
                 char c = (char)prog->mem[addr + rc++];
                 switch (c)
                   {
-                  // clang-format off
+                    // clang-format off
                     case '\007': n += sprintf (dest + n, "\\a");  break;
                     case '\013': n += sprintf (dest + n, "\\v");  break;
                     case '\b':   n += sprintf (dest + n, "\\b");  break;
