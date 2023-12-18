@@ -20,5 +20,5 @@
 
 ## lc3diff
 * include symbol tables?
-* allow an arbitrary number of files?
 * allow assembly of one or both files
+* TESTS!
