@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euxo pipefail
 
+# tests that the object code and symbol table are generated correctly
+
 # TODO maybe do this with hexdump to give some more information about what went sideways
 # which hexdump >& /dev/null || { echo "can't find hexdump; skipping test..."; exit 77; }
 

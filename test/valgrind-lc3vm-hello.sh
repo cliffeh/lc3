@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euxo pipefail
 
+# tests for memory leaks in the VM
+
 which valgrind >& /dev/null || { echo "can't find valgrind; skipping test..."; exit 77; }
 
 # if unset we'll expect our input to reside in the directory alongside our script
