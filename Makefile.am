@@ -47,6 +47,7 @@ check_SCRIPTS = \
     test/hello.pretty.test       \
     test/hello.run.test          \
     test/rogue.asm.test          \
+    test/rogue.disasm.test        \
     test/rogue.pretty.test       \
     test/gammut.disasm.test      \
     test/gammut.pretty.test
@@ -72,6 +73,7 @@ TEST_OUTPUTS = \
     test/2048.pretty.expect   \
     test/gammut.pretty.expect \
     test/hello.pretty.expect  \
+    test/rogue.pretty.expect  \
     test/hello.interactive.expect
 
 dist_doc_DATA = LICENSE README.md TODO.md
