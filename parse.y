@@ -219,6 +219,22 @@ instruction:
 
 %%
 
+int
+assemble_program (program *prog, FILE *in)
+{
+  yyscan_t scanner;
+  yylex_init (&scanner);
+  yyset_in (in, scanner);
+
+  int rc = yyparse (prog, scanner);
+  if (rc == 0)
+    rc = resolve_symbols (prog);
+
+  yylex_destroy (scanner);
+
+  return rc;
+}
+
 const char *
 unescape_string (char *dest, const char *str)
 {

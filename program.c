@@ -4,22 +4,6 @@
 #include <string.h>
 
 int
-assemble_program (program *prog, FILE *in)
-{
-  yyscan_t scanner;
-  yylex_init (&scanner);
-  yyset_in (in, scanner);
-
-  int rc = yyparse (prog, scanner);
-  if (rc == 0)
-    rc = resolve_symbols (prog);
-
-  yylex_destroy (scanner);
-
-  return rc;
-}
-
-int
 load_program (program *prog, FILE *in)
 {
   /* the origin tells us where in memory to place the image */

@@ -23,7 +23,8 @@ lc3vm_SOURCES =   \
     popt/popt.h
 lc3vm_LDADD = popt/libpopt.a
 
-lc3diff_SOURCES = lc3diff.c
+lc3diff_SOURCES = lc3diff.c program.c program.h
+lc3diff_LDADD = popt/libpopt.a
 
 BUILT_SOURCES = parse.h
 
