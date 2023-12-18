@@ -67,7 +67,7 @@ TEST_INPUTS = \
     test/hello.asm  test/hello.obj  test/hello.sym  \
     test/gammut.asm test/gammut.obj test/gammut.sym
 
-TEST_OUTPUTS = test/all-instructions.pretty.expect test/hello.pretty.expect test/hello.interactive.expect
+TEST_OUTPUTS = test/gammut.pretty.expect test/hello.pretty.expect test/hello.interactive.expect
 
 dist_doc_DATA = LICENSE README.md TODO.md
 

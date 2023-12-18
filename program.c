@@ -70,6 +70,17 @@ attach_symbols (program *prog)
 {
   for (int iaddr = prog->orig; iaddr < prog->orig + prog->len; iaddr++)
     {
+      if (prog->sym[iaddr] && (prog->sym[iaddr]->flags >> 12) == HINT_FILL)
+        {
+          uint16_t saddr = prog->mem[iaddr];
+          if (prog->sym[saddr])
+            {
+              prog->ref[iaddr] = calloc (1, sizeof (symbol));
+              prog->ref[iaddr]->label = strdup (prog->sym[saddr]->label);
+              prog->ref[iaddr]->flags |= (HINT_FILL << 12);
+            }
+        }
+
       switch (prog->mem[iaddr] >> 12)
         {
         case OP_BR:
@@ -79,12 +90,11 @@ attach_symbols (program *prog)
         case OP_ST:
         case OP_STI:
           {
-            int16_t PCoffset9 = prog->mem[iaddr] & 0x1FF;
-            uint16_t saddr = PCoffset9 + iaddr + 1;
+            int16_t PCoffset9 = SIGN_EXTEND (prog->mem[iaddr] & 0x1FF, 9);
+            uint16_t saddr = SIGN_EXTEND (PCoffset9 + iaddr + 1, 9);
             if (prog->sym[saddr])
               {
-                if (!prog->ref[iaddr])
-                  prog->ref[iaddr] = calloc (1, sizeof (symbol));
+                prog->ref[iaddr] = calloc (1, sizeof (symbol));
                 prog->ref[iaddr]->label = strdup (prog->sym[saddr]->label);
                 prog->ref[iaddr]->flags |= 0x1FF;
               }
@@ -93,12 +103,11 @@ attach_symbols (program *prog)
 
         case OP_JSR:
           {
-            int16_t PCoffset11 = prog->mem[iaddr] & 0x7FF;
+            int16_t PCoffset11 = SIGN_EXTEND (prog->mem[iaddr] & 0x7FF, 11);
             uint16_t saddr = PCoffset11 + iaddr + 1;
             if (prog->sym[saddr])
               {
-                if (!prog->ref[iaddr])
-                  prog->ref[iaddr] = calloc (1, sizeof (symbol));
+                prog->ref[iaddr] = calloc (1, sizeof (symbol));
                 prog->ref[iaddr]->label = strdup (prog->sym[saddr]->label);
                 prog->ref[iaddr]->flags |= 0x7FF;
               }
@@ -106,6 +115,8 @@ attach_symbols (program *prog)
           break;
         }
     }
+
+  return 0;
 }
 
 int
@@ -122,7 +133,8 @@ resolve_symbols (program *prog)
           for (uint16_t saddr = prog->orig; saddr < prog->orig + prog->len;
                saddr++)
             {
-              // ...if there is a symbol at that address that matches the label
+              // ...if there is a symbol at that address that matches the
+              // label
               if (prog->sym[saddr]
                   && strcmp (prog->ref[iaddr]->label, prog->sym[saddr]->label)
                          == 0)
@@ -140,8 +152,9 @@ resolve_symbols (program *prog)
           // if we get here, we've got an unresolved symbol
           if (!resolved)
             {
-              fprintf (stderr, "error: unresolved symbol at address %04x: %s\n",
-                       iaddr, prog->ref[iaddr]->label);
+              fprintf (stderr,
+                       "error: unresolved symbol at address %04x: %s\n", iaddr,
+                       prog->ref[iaddr]->label);
               return 1;
             }
         }
