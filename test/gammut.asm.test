@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euxo pipefail
+
+# tests that the object code and symbol table are generated correctly
+
+# TODO maybe do this with hexdump to give some more information about what went sideways
+# which hexdump >& /dev/null || { echo "can't find hexdump; skipping test..."; exit 77; }
+
+# if unset we'll expect our input to reside in the directory alongside our script
+DIR=$(dirname "$0")
+SRCDIR=${SRCDIR:-$DIR/..}
+BUILDDIR=${BUILDDIR:-$DIR/..}
+
+ASM="$SRCDIR/test/gammut.asm"
+OBJ="$SRCDIR/test/gammut.obj"
+OBJOUT="$BUILDDIR/test/gammut.asm.obj.out"
+SYM="$SRCDIR/test/gammut.sym"
+SYMOUT="$BUILDDIR/test/gammut.asm.sym.out"
+
+"$BUILDDIR/lc3as" "$ASM" -o "$OBJOUT" -S "$SYMOUT"
+diff "$OBJ" "$OBJOUT" && diff "$SYM" "$SYMOUT"

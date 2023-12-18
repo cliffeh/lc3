@@ -41,16 +41,18 @@ check_SCRIPTS = \
     test/2048.asm.test           \
     test/2048.disasm.test        \
     test/2048.pretty.test        \
+    test/gammut.asm.test         \
+    test/gammut.disasm.test      \
+    test/gammut.pretty.test      \
     test/hello.asm.test          \
     test/hello.disasm.test       \
     test/hello.interactive.test  \
     test/hello.pretty.test       \
     test/hello.run.test          \
     test/rogue.asm.test          \
-    test/rogue.disasm.test        \
-    test/rogue.pretty.test       \
-    test/gammut.disasm.test      \
-    test/gammut.pretty.test
+    test/rogue.disasm.test       \
+    test/rogue.pretty.test
+
 MEMCHECKS = \
     test/valgrind-interactive.sh \
     test/valgrind-lc3as-2048.sh  \
