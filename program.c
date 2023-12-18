@@ -73,12 +73,13 @@ attach_symbols (program *prog)
       if (prog->sym[iaddr] && (prog->sym[iaddr]->flags >> 12) == HINT_FILL)
         {
           uint16_t saddr = prog->mem[iaddr];
-          if (prog->sym[saddr])
+          if (prog->sym[saddr] && *prog->sym[saddr]->label != '_')
             {
               prog->ref[iaddr] = calloc (1, sizeof (symbol));
               prog->ref[iaddr]->label = strdup (prog->sym[saddr]->label);
               prog->ref[iaddr]->flags |= (HINT_FILL << 12);
             }
+          continue;
         }
 
       switch (prog->mem[iaddr] >> 12)
@@ -92,7 +93,7 @@ attach_symbols (program *prog)
           {
             int16_t PCoffset9 = SIGN_EXTEND (prog->mem[iaddr] & 0x1FF, 9);
             uint16_t saddr = SIGN_EXTEND (PCoffset9 + iaddr + 1, 9);
-            if (prog->sym[saddr])
+            if (prog->sym[saddr] && *prog->sym[saddr]->label != '_')
               {
                 prog->ref[iaddr] = calloc (1, sizeof (symbol));
                 prog->ref[iaddr]->label = strdup (prog->sym[saddr]->label);
@@ -105,7 +106,7 @@ attach_symbols (program *prog)
           {
             int16_t PCoffset11 = SIGN_EXTEND (prog->mem[iaddr] & 0x7FF, 11);
             uint16_t saddr = PCoffset11 + iaddr + 1;
-            if (prog->sym[saddr])
+            if (prog->sym[saddr] && *prog->sym[saddr]->label != '_')
               {
                 prog->ref[iaddr] = calloc (1, sizeof (symbol));
                 prog->ref[iaddr]->label = strdup (prog->sym[saddr]->label);
@@ -135,7 +136,7 @@ resolve_symbols (program *prog)
             {
               // ...if there is a symbol at that address that matches the
               // label
-              if (prog->sym[saddr]
+              if (prog->sym[saddr] && *prog->sym[saddr]->label
                   && strcmp (prog->ref[iaddr]->label, prog->sym[saddr]->label)
                          == 0)
                 {
@@ -226,7 +227,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
                 char c = (char)prog->mem[addr + rc++];
                 switch (c)
                   {
-                    // clang-format off
+                  // clang-format off
                     case '\007': n += sprintf (dest + n, "\\a");  break;
                     case '\013': n += sprintf (dest + n, "\\v");  break;
                     case '\b':   n += sprintf (dest + n, "\\b");  break;

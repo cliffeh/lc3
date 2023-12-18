@@ -38,16 +38,17 @@ SUBDIRS = popt
 # check_PROGRAMS =
 
 check_SCRIPTS = \
+    test/2048.asm.test           \
+    test/2048.disasm.test        \
+    test/2048.pretty.test        \
     test/hello.asm.test          \
     test/hello.disasm.test       \
     test/hello.interactive.test  \
     test/hello.pretty.test       \
     test/hello.run.test          \
-    test/2048.asm.test           \
-    test/2048.pretty.test        \
     test/rogue.asm.test          \
     test/rogue.pretty.test       \
-    test/gammut.disasm.test \
+    test/gammut.disasm.test      \
     test/gammut.pretty.test
 MEMCHECKS = \
     test/valgrind-interactive.sh \
@@ -67,7 +68,11 @@ TEST_INPUTS = \
     test/hello.asm  test/hello.obj  test/hello.sym  \
     test/gammut.asm test/gammut.obj test/gammut.sym
 
-TEST_OUTPUTS = test/gammut.pretty.expect test/hello.pretty.expect test/hello.interactive.expect
+TEST_OUTPUTS = \
+    test/2048.pretty.expect   \
+    test/gammut.pretty.expect \
+    test/hello.pretty.expect  \
+    test/hello.interactive.expect
 
 dist_doc_DATA = LICENSE README.md TODO.md
 
