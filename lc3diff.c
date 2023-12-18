@@ -39,6 +39,9 @@ main (int argc, char *argv[])
       exit (1);
     }
 
+  // TODO use load_program() instead!
+  // TODO also load symbols
+
   while (!feof (f1) && !feof (f2))
     {
       // TODO check for rc == 1
@@ -47,11 +50,13 @@ main (int argc, char *argv[])
 
       if (r1 == r2)
         {
-          printf (COLOR_GRN "%04x %04x %04x" COLOR_RST "\n", lineno++, r1, r2);
+          printf (COLOR_GRN "%04x %04x %04x" COLOR_RST "\n", 0x3000 + lineno++ - 1,
+                  r1, r2);
         }
       else
         {
-          printf (COLOR_RED "%04x %04x %04x" COLOR_RST "\n", lineno++, r1, r2);
+          printf (COLOR_RED "%04x %04x %04x" COLOR_RST "\n", 0x3000 + lineno++ - 1,
+                  r1, r2);
           diff_count++;
         }
     }
@@ -59,14 +64,16 @@ main (int argc, char *argv[])
   while (!feof (f1))
     {
       rc = fread (&r1, sizeof (uint16_t), 1, f1);
-      printf (COLOR_RED "%04x %04x     " COLOR_RST "\n", lineno++, r1);
+      printf (COLOR_RED "%04x %04x     " COLOR_RST "\n", 0x3000 + lineno++ - 1,
+              r1);
       diff_count++;
     }
 
   while (!feof (f2))
     {
       rc = fread (&r2, sizeof (uint16_t), 1, f2);
-      printf (COLOR_RED "%04x      %04x" COLOR_RST "\n", lineno++, r2);
+      printf (COLOR_RED "%04x      %04x" COLOR_RST "\n", 0x3000 + lineno++ - 1,
+              r2);
       diff_count++;
     }
 

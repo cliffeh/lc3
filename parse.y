@@ -78,31 +78,6 @@ preamble:
 instruction_list:
   instruction
 | instruction instruction_list
-| LABEL[sym]  instruction_list
-{
-  for(int i = prog->orig; i < ADDR(prog); i++)
-    {
-      if(prog->sym[i] && strcmp($sym->label, prog->sym[i]->label) == 0)
-        {
-          fprintf(stderr, "error: duplicate label: %s\n", $sym->label);
-          YYERROR;
-        }
-    }
-
-  // hack: we're depending on our lexer to capture the address at the time the label is lexed
-  uint16_t saddr = $sym->flags;
-  // don't leak this hack
-  $sym->flags = 0;
-
-  if(prog->sym[saddr])
-    {
-      // TODO allow multiple labels per address?
-      fprintf(stderr, "error: more than one label declared for address: %d", saddr);
-      YYERROR;
-    }
-
-  prog->sym[saddr] = $sym;
-}
 ;
 
 r3:        ADD | AND; // 3 registers
@@ -114,8 +89,35 @@ r0lab:     BR; // JSR
 r0:        RET | RTI | GETC | OUT | PUTS | IN | PUTSP | HALT;
 
 instruction:
+  LABEL[sym] instruction
+{
+  for(int i = prog->orig; i < ADDR(prog); i++)
+    {
+      if(prog->sym[i] && prog->sym[i]->label && strcmp($sym->label, prog->sym[i]->label) == 0)
+        {
+          fprintf(stderr, "error: duplicate label: %s\n", $sym->label);
+          YYERROR;
+        }
+    }
+
+  // hack: we're depending on our lexer to capture the address at the time the label is lexed
+  uint16_t saddr = $sym->flags;
+  // don't leak this hack
+  $sym->flags = 0;
+
+  if(prog->sym[saddr]) // we have a symbol already allocated (type hint)
+    {
+      free(prog->sym[saddr]->label);
+      prog->sym[saddr]->label = $sym->label;
+      free($sym);
+    }
+  else
+    {
+      prog->sym[saddr] = $sym;
+    }
+}
 /* operations */
-  r3[op] REG[DR] ',' REG[SR1] ',' REG[SR2]
+| r3[op] REG[DR] ',' REG[SR1] ',' REG[SR2]
 {
   prog->mem[ADDR(prog)++] = $op | ($DR << 9) | ($SR1 << 6) | ($SR2 << 0);
 }
@@ -172,23 +174,30 @@ instruction:
 /* assembler directives */
 | FILL NUMLIT[data]
 {
-  // type hint to the disassembler
-  symbol *ref = calloc(1, sizeof(symbol));
-  ref->flags = (HINT_FILL << 12);
-  prog->ref[ADDR(prog)] = ref;
+  // hint to the disassembler
+  symbol *sym = calloc(1, sizeof(symbol));
+  sym->flags = (HINT_FILL << 12);
+  sym->label = strdup("_FILL");
+  prog->sym[ADDR(prog)] = sym;
   prog->mem[ADDR(prog)++] = $data;
 }
 | FILL LABEL[ref]
 {
-  $ref->flags = (HINT_FILL << 12);
+  // hint to the disassembler
+  symbol *sym = calloc(1, sizeof(symbol));
+  sym->flags = (HINT_FILL << 12);
+  sym->label = strdup("_FILL");
+  prog->sym[ADDR(prog)] = sym;
+  $ref->flags = (HINT_FILL << 12); // so we know to use the whole thing
   prog->ref[ADDR(prog)++] = $ref;
 }
 | STRINGZ STRLIT[raw]
 {
   // hint to the disassembler
-  symbol *ref = calloc(1, sizeof(symbol));
-  ref->flags = (HINT_STRINGZ << 12);
-  prog->ref[ADDR(prog)] = ref;
+  symbol *sym = calloc(1, sizeof(symbol));
+  sym->flags = (HINT_STRINGZ << 12);
+  sym->label = strdup("_STRINGZ");
+  prog->sym[ADDR(prog)] = sym;
 
   char *escaped = calloc(strlen($raw)+1, sizeof(char));
   const char *test;

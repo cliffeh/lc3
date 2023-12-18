@@ -34,7 +34,7 @@ print_program (FILE *out, int flags, program *prog)
 
   for (int i = prog->orig; i < prog->orig + prog->len; i++)
     {
-      if (flags & FMT_PRETTY && prog->sym[i])
+      if (flags & FMT_PRETTY && prog->sym[i] && *prog->sym[i]->label != '_')
         {
           int n = 0;
           if (flags & FMT_ADDR)
@@ -87,8 +87,8 @@ dump_symbols (FILE *out, int flags, program *prog)
         {
           fprintf (out, (flags & FMT_LC) ? "x%04x %s" : "x%0X %s", saddr,
                    prog->sym[saddr]->label);
-          if (prog->ref[saddr] && (prog->ref[saddr]->flags >> 12))
-            fprintf (out, " %d", (prog->ref[saddr]->flags >> 12));
+          if (prog->sym[saddr]->flags >> 12)
+            fprintf (out, " %d", (prog->sym[saddr]->flags >> 12));
           fprintf (out, "\n");
         }
     }

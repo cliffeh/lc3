@@ -140,8 +140,8 @@ resolve_symbols (program *prog)
           // if we get here, we've got an unresolved symbol
           if (!resolved)
             {
-              fprintf (stderr, "error: unresolved symbol: %s\n",
-                       prog->ref[iaddr]->label);
+              fprintf (stderr, "error: unresolved symbol at address %04x: %s\n",
+                       iaddr, prog->ref[iaddr]->label);
               return 1;
             }
         }
@@ -187,14 +187,14 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
   int n = 0, rc = 0, cas = (flags & FMT_LC) ? 1 : 0, op;
 
   // special cases supported by assembler hinting
-  if (prog->ref[addr])
+  if (prog->sym[addr])
     {
-      switch (prog->ref[addr]->flags >> 12)
+      switch (prog->sym[addr]->flags >> 12)
         {
         case HINT_FILL:
           {
             n += sprintf (dest + n, cas ? ".fill" : ".FILL");
-            if (prog->ref[addr]->label)
+            if (prog->ref[addr] && prog->ref[addr]->label)
               n += sprintf (dest + n, " %s", prog->ref[addr]->label);
             else
               n += sprintf (dest + n, cas ? " x%0x" : " x%0X",
