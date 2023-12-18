@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euxo pipefail
+
+# tests that disassembling the object code with a symbol table results in the same output as pretty-printing
+
+# TODO maybe do this with hexdump to give some more information about what went sideways
+# which hexdump >& /dev/null || { echo "can't find hexdump; skipping test..."; exit 77; }
+
+# if unset we'll expect our input to reside in the directory alongside our script
+DIR=$(dirname "$0")
+SRCDIR=${SRCDIR:-$DIR/..}
+BUILDDIR=${BUILDDIR:-$DIR/..}
+
+# ASM="$SRCDIR/test/all-instructions.asm"
+OBJ="$SRCDIR/test/gammut.obj"
+SYM="$SRCDIR/test/gammut.sym"
+EXPECT="$SRCDIR/test/gammut.pretty.expect"
+
+"$BUILDDIR/lc3as" -D "$OBJ" -S "$SYM" -o- | diff "$EXPECT" -

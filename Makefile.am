@@ -47,7 +47,8 @@ check_SCRIPTS = \
     test/2048.pretty.test        \
     test/rogue.asm.test          \
     test/rogue.pretty.test       \
-    test/all-instructions.pretty.test
+    test/gammut.disasm.test \
+    test/gammut.pretty.test
 MEMCHECKS = \
     test/valgrind-interactive.sh \
     test/valgrind-lc3as-2048.sh  \
@@ -61,12 +62,12 @@ CLEANFILES = test/*.valgrind test/*.out
 TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 TEST_INPUTS = \
-    test/2048.asm  test/2048.obj  test/2048.sym  \
-    test/rogue.asm test/rogue.obj test/rogue.sym \
-    test/hello.asm test/hello.obj test/hello.sym \
-    test/all-instructions.asm test/all-instructions.obj
+    test/2048.asm   test/2048.obj   test/2048.sym   \
+    test/rogue.asm  test/rogue.obj  test/rogue.sym  \
+    test/hello.asm  test/hello.obj  test/hello.sym  \
+    test/gammut.asm test/gammut.obj test/gammut.sym
 
-TEST_OUTPUTS = test/hello.pretty.expect test/hello.interactive.expect
+TEST_OUTPUTS = test/all-instructions.pretty.expect test/hello.pretty.expect test/hello.interactive.expect
 
 dist_doc_DATA = LICENSE README.md TODO.md
 
