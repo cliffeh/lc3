@@ -4,8 +4,6 @@
 
 ## lc3as (assembler)
 * better string literal handling
-* for everything that can use a label, also allow it to use a NUMLIT
-* disassembler needs just a few more things to be able to completely disassemble
 
 ## lc3vm (virtual machine)
 * support windows?
@@ -18,10 +16,7 @@
 * better prompt?
   * include currently-loaded program?
   * include indicator of last return code?
-* better instrumented
-  * dump regs/memory
-  * maintain symbol table
-  * step-wise execution
+* step-wise execution
 
 ## lc3diff
 * make it moar prettier?
