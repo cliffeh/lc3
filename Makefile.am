@@ -67,9 +67,9 @@ TESTS_ENVIRONMENT = SRCDIR=$(srcdir) BUILDDIR=$(builddir)
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 TEST_INPUTS = \
     test/2048.asm   test/2048.obj   test/2048.sym   \
-    test/rogue.asm  test/rogue.obj  test/rogue.sym  \
+    test/gammut.asm test/gammut.obj test/gammut.sym \
     test/hello.asm  test/hello.obj  test/hello.sym  \
-    test/gammut.asm test/gammut.obj test/gammut.sym
+    test/rogue.asm  test/rogue.obj  test/rogue.sym
 
 TEST_OUTPUTS = \
     test/2048.pretty.expect   \
