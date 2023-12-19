@@ -4,7 +4,7 @@
   if (n)                                                                      \
   n += fprintf (out, "  ")
 
-int
+uint16_t
 print_program (FILE *out, int flags, program *prog)
 {
   if (!flags) // write  assembled object code
@@ -78,7 +78,7 @@ print_program (FILE *out, int flags, program *prog)
   return 0;
 }
 
-int
+uint16_t
 dump_symbols (FILE *out, int flags, program *prog)
 {
   for (int saddr = prog->orig; saddr < prog->orig + prog->len; saddr++)
@@ -92,4 +92,5 @@ dump_symbols (FILE *out, int flags, program *prog)
           fprintf (out, "\n");
         }
     }
+  return 0;
 }

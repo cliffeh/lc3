@@ -104,22 +104,22 @@ typedef struct program
 } program;
 
 /* for assembly */
-int assemble_program (program *prog, FILE *in);
-int resolve_symbols (program *prog);
+uint16_t assemble_program (program *prog, FILE *in);
+uint16_t resolve_symbols (program *prog);
 
 /* for disassembly */
-int disassemble_program (program *prog, FILE *symin, FILE *in);
-int disassemble_addr (char *dest, int flags, uint16_t addr, program *prog);
-int attach_symbols (program *prog);
+uint16_t disassemble_program (program *prog, FILE *symin, FILE *in);
+uint16_t disassemble_addr (char *dest, int flags, uint16_t addr, program *prog);
+uint16_t attach_symbols (program *prog);
 
 /* execution (execute.c) */
-int execute_program (program *prog);
+uint16_t execute_program (program *prog);
 
 /* input/output */
-int load_program (program *prog, FILE *in);
-int load_symbols (program *prog, FILE *in);
-int print_program (FILE *out, int flags, program *prog);
-int dump_symbols (FILE *out, int flags, program *prog);
+uint16_t load_program (program *prog, FILE *in);
+uint16_t load_symbols (program *prog, FILE *in);
+uint16_t print_program (FILE *out, int flags, program *prog);
+uint16_t dump_symbols (FILE *out, int flags, program *prog);
 
 /* memory management */
 void free_symbols (program *prog);

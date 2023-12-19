@@ -1,18 +1,29 @@
 #include "program.h"
 #include "parse.h"
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-int
+uint16_t
 load_program (program *prog, FILE *in)
 {
   /* the origin tells us where in memory to place the image */
   size_t read = fread (&prog->orig, sizeof (prog->orig), 1, in);
+  if (ferror (in))
+    {
+      fprintf (stderr, "error loading program: %s\n", strerror (errno));
+      return 1;
+    }
   prog->orig = SWAP16 (prog->orig);
 
   /* we know the maximum file size so we only need one fread */
   uint16_t *p = prog->mem + prog->orig;
   read = fread (p, sizeof (uint16_t), (MEMORY_MAX - prog->orig), in);
+  if (ferror (in))
+    {
+      fprintf (stderr, "error loading program: %s\n", strerror (errno));
+      return 1;
+    }
   prog->len = read;
 
   /* swap to little endian */
@@ -22,11 +33,10 @@ load_program (program *prog, FILE *in)
       ++p;
     }
 
-  // TODO check for read errors?
   return 0;
 }
 
-int
+uint16_t
 disassemble_program (program *prog, FILE *symin, FILE *in)
 {
   if (load_program (prog, in) != 0)
@@ -49,7 +59,7 @@ disassemble_program (program *prog, FILE *symin, FILE *in)
   return 0;
 }
 
-int
+uint16_t
 attach_symbols (program *prog)
 {
   for (int iaddr = prog->orig; iaddr < prog->orig + prog->len; iaddr++)
@@ -104,7 +114,7 @@ attach_symbols (program *prog)
   return 0;
 }
 
-int
+uint16_t
 resolve_symbols (program *prog)
 {
   // for every address in memory
@@ -118,9 +128,8 @@ resolve_symbols (program *prog)
           for (uint16_t saddr = prog->orig; saddr < prog->orig + prog->len;
                saddr++)
             {
-              // ...if there is a symbol at that address that matches the
-              // label
-              if (prog->sym[saddr] && *prog->sym[saddr]->label
+              // ...if there is a symbol that matches the label
+              if (prog->sym[saddr]
                   && strcmp (prog->ref[iaddr]->label, prog->sym[saddr]->label)
                          == 0)
                 {
@@ -147,13 +156,18 @@ resolve_symbols (program *prog)
   return 0;
 }
 
-int
+uint16_t
 load_symbols (program *prog, FILE *in)
 {
   char buf[4096];
 
   while (fgets (buf, 4096, in))
     {
+      if (ferror (in))
+        {
+          fprintf (stderr, "error loading symbols: %s\n", strerror (errno));
+          return 1;
+        }
       char *p = strtok (buf, " \t\n");
       char *label = strtok (0, " \t\n");
       char *hint = strtok (0, " \t\n");
@@ -172,14 +186,14 @@ load_symbols (program *prog, FILE *in)
   return 0;
 }
 
-const char *opnames[16][2] = {
+static const char *opnames[16][2] = {
   { "BR", "br" },   { "ADD", "add" }, { "LD", "ld" },   { "ST", "st" },
   { "JSR", "jsr" }, { "AND", "and" }, { "LDR", "ldr" }, { "STR", "str" },
   { "RTI", "rti" }, { "NOT", "not" }, { "LDI", "ldi" }, { "STI", "sti" },
   { "JMP", "jmp" }, { "RES", "res" }, { "LEA", "lea" }, { "TRAP", "trap" }
 };
 
-int
+uint16_t
 disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
 {
   int n = 0, rc = 0, cas = (flags & FMT_LC) ? 1 : 0, op;
@@ -211,7 +225,7 @@ disassemble_addr (char *dest, int flags, uint16_t addr, program *prog)
                 char c = (char)prog->mem[addr + rc++];
                 switch (c)
                   {
-                    // clang-format off
+                  // clang-format off
                     case '\007': n += sprintf (dest + n, "\\a");  break;
                     case '\013': n += sprintf (dest + n, "\\v");  break;
                     case '\b':   n += sprintf (dest + n, "\\b");  break;

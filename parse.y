@@ -93,7 +93,7 @@ instruction:
 {
   for(int i = prog->orig; i < ADDR(prog); i++)
     {
-      if(prog->sym[i] && prog->sym[i]->label && strcmp($sym->label, prog->sym[i]->label) == 0)
+      if(prog->sym[i] && strcmp($sym->label, prog->sym[i]->label) == 0)
         {
           fprintf(stderr, "error: duplicate label: %s\n", $sym->label);
           YYERROR;
@@ -219,14 +219,14 @@ instruction:
 
 %%
 
-int
+uint16_t
 assemble_program (program *prog, FILE *in)
 {
   yyscan_t scanner;
   yylex_init (&scanner);
   yyset_in (in, scanner);
 
-  int rc = yyparse (prog, scanner);
+  uint16_t rc = yyparse (prog, scanner);
   if (rc == 0)
     rc = resolve_symbols (prog);
 

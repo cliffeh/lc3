@@ -62,7 +62,7 @@ mem_read (uint16_t memory[], uint16_t address)
   return memory[address];
 }
 
-int
+uint16_t
 execute_program (program *prog)
 {
   // for convenience (may refactor later)
