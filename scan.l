@@ -32,11 +32,17 @@
 [aA][nN][dD]                   { yylval->num = (OP_AND << 12); return(AND);    }
 [bB][rR][nN]?[zZ]?[pP]?        { 
   yylval->num = (OP_BR << 12);
-  for(char *p = yytext+2; *p; p++) {
-    switch(*p) {
-      case 'n': case 'N': yylval->num |= (1 << 11); break;
-      case 'z': case 'Z': yylval->num |= (1 << 10); break;
-      case 'p': case 'P': yylval->num |= (1 << 9);  break;
+  if(strlen(yytext) == 2) {
+    // NB "The assembly language opcode BR is interpreted the same as BRnzp;
+    // that is, always branch to the target address."
+    yylval->num |= (1 << 11) | (1 << 10) | (1 << 9);
+  } else {
+    for(char *p = yytext+2; *p; p++) {
+      switch(*p) {
+        case 'n': case 'N': yylval->num |= (1 << 11); break;
+        case 'z': case 'Z': yylval->num |= (1 << 10); break;
+        case 'p': case 'P': yylval->num |= (1 << 9);  break;
+      }
     }
   }
   return(BR);                  }
